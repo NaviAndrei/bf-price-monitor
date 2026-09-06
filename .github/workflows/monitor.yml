@@ -1,5 +1,15 @@
 name: Price Monitor
 
+# ============================================================================
+# WARNING — SELF-HOSTED RUNNER IS REGISTERED ON THE OWNER'S PERSONAL MACHINE.
+# This repo is PUBLIC. Do NOT add a `pull_request` or `pull_request_target`
+# trigger to this or any other workflow in this repo while that runner is
+# registered — either trigger lets a forked PR execute arbitrary code on
+# the runner host. If a PR-based trigger is ever needed, either scope it to
+# `runs-on: ubuntu-latest` (GitHub-hosted, disposable) instead of
+# `self-hosted`, or unregister the self-hosted runner first.
+# ============================================================================
+
 on:
   schedule:
     - cron: "0 */2 * * *"
@@ -10,7 +20,7 @@ permissions:
 
 jobs:
   monitor:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v4
 
