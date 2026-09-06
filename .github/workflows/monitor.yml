@@ -21,25 +21,27 @@ permissions:
 jobs:
   monitor:
     runs-on: self-hosted
+    env:
+      PYTHON: C:\Program Files\Python312\python.exe
     steps:
       - uses: actions/checkout@v4
 
       - name: Install dependencies
-        run: python -m pip install -r requirements.txt
+        run: "& \"$env:PYTHON\" -m pip install -r requirements.txt"
 
       - name: Scrape prices
-        run: python scripts/scrape.py
+        run: "& \"$env:PYTHON\" scripts/scrape.py"
 
       - name: Analyze alerts
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        run: python scripts/analyze.py
+        run: "& \"$env:PYTHON\" scripts/analyze.py"
 
       - name: Send Telegram alerts
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: python scripts/notify.py
+        run: "& \"$env:PYTHON\" scripts/notify.py"
 
       - name: Commit updated price history
         run: |
