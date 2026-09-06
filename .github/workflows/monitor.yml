@@ -44,6 +44,7 @@ jobs:
         run: "& \"$env:PYTHON\" scripts/notify.py"
 
       - name: Commit updated price history
+        shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
