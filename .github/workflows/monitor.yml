@@ -44,10 +44,12 @@ jobs:
         run: "& \"$env:PYTHON\" scripts/notify.py"
 
       - name: Commit updated price history
-        shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/price_history.json data/watchlist.json
-          git diff --staged --quiet || git commit -m "chore: update price history [skip ci]"
+          git diff --staged --quiet
+          if ($LASTEXITCODE -ne 0) {
+            git commit -m "chore: update price history [skip ci]"
+          }
           git push
