@@ -23,11 +23,20 @@ jobs:
     runs-on: self-hosted
     env:
       PYTHON: C:\Program Files\Python312\python.exe
+      # Pinned explicitly, same reasoning as PYTHON above: the runner service
+      # account (NETWORK SERVICE) has its own profile, separate from the
+      # interactive user's %LOCALAPPDATA%\ms-playwright default cache, so the
+      # install step and the scrape step must agree on one fixed location
+      # rather than relying on whichever account's per-profile default wins.
+      PLAYWRIGHT_BROWSERS_PATH: C:\actions-runner\ms-playwright-cache
     steps:
       - uses: actions/checkout@v4
 
       - name: Install dependencies
         run: "& \"$env:PYTHON\" -m pip install -r requirements.txt"
+
+      - name: Install Playwright browser
+        run: "& \"$env:PYTHON\" -m playwright install chromium"
 
       - name: Scrape prices
         run: "& \"$env:PYTHON\" scripts/scrape.py"

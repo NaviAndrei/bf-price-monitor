@@ -11,7 +11,9 @@ from bs4 import BeautifulSoup
 
 HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
 REQUEST_TIMEOUT = 15
-HISTORY_LIMIT = 30  # keep last 30 daily price points per product, for the 30-day-low check
+HISTORY_LIMIT = (
+    30  # keep last 30 daily price points per product, for the 30-day-low check
+)
 
 WATCHLIST_FILE = Path("data/watchlist.json")
 HISTORY_FILE = Path("data/price_history.json")
@@ -20,7 +22,11 @@ ALERTS_FILE = Path("data/alerts.json")
 
 def is_challenge_page(html: str) -> bool:
     marker = html[:2000].lower()
-    return "just a moment" in marker or "cf-chl" in marker or "challenges.cloudflare.com" in marker
+    return (
+        "just a moment" in marker
+        or "cf-chl" in marker
+        or "challenges.cloudflare.com" in marker
+    )
 
 
 def parse_price(raw: str) -> float | None:
@@ -36,6 +42,43 @@ def parse_price(raw: str) -> float | None:
         return None
 
 
+def fetch_with_browser(url: str, site_name: str) -> str | None:
+    # For sites whose Cloudflare challenge blocks plain `requests` outright
+    # (403 on every attempt, even from a residential IP). A stealth-patched
+    # headless Chromium clears the JS-fingerprint half of the challenge;
+    # IP reputation is already covered since this runs on the self-hosted
+    # runner. Still only reads listing/search pages — same scope as fetch().
+    from playwright.sync_api import sync_playwright
+    from playwright_stealth import Stealth
+
+    try:
+        with Stealth().use_sync(sync_playwright()) as p:
+            browser = p.chromium.launch(headless=True)
+            page = browser.new_page(user_agent=HEADERS["User-Agent"])
+            page.goto(
+                url, timeout=REQUEST_TIMEOUT * 1000, wait_until="domcontentloaded"
+            )
+
+            deadline = time.time() + REQUEST_TIMEOUT
+            html = page.content()
+            while is_challenge_page(html) and time.time() < deadline:
+                time.sleep(1)
+                html = page.content()
+            browser.close()
+    except Exception as e:
+        print(
+            f"[{site_name}] playwright fetch failed ({e.__class__.__name__}), skipping this run"
+        )
+        return None
+
+    if is_challenge_page(html):
+        print(
+            f"[{site_name}] still blocked by bot-challenge after Playwright wait, skipping this run"
+        )
+        return None
+    return html
+
+
 def fetch(url: str, site_name: str) -> str | None:
     try:
         r = requests.get(url, headers=HEADERS, timeout=REQUEST_TIMEOUT)
@@ -43,7 +86,9 @@ def fetch(url: str, site_name: str) -> str | None:
         print(f"[{site_name}] unreachable ({e.__class__.__name__}), skipping this run")
         return None
     if r.status_code in (403, 503) or is_challenge_page(r.text):
-        print(f"[{site_name}] hit a bot-challenge page (status {r.status_code}), skipping this run")
+        print(
+            f"[{site_name}] hit a bot-challenge page (status {r.status_code}), skipping this run"
+        )
         return None
     if r.status_code != 200:
         print(f"[{site_name}] unexpected status {r.status_code}, skipping this run")
@@ -72,7 +117,13 @@ def scrape_emag_listing(query: str) -> list[dict]:
         price = parse_price(price_el.get_text(strip=True))
         if price is None:
             continue
-        results.append({"title": title_el.get_text(strip=True), "price": price, "url": title_el["href"]})
+        results.append(
+            {
+                "title": title_el.get_text(strip=True),
+                "price": price,
+                "url": title_el["href"],
+            }
+        )
     return results
 
 
@@ -84,7 +135,7 @@ def scrape_pcgarage_listing(query: str) -> list[dict]:
     #     <div class="product_box_name"><h2><a href="https://www.pcgarage.ro/...">Title</a></h2></div>
     #     <div class="product_box_price_container"><div class="pb-price"><p class="price">1.798,99 RON</p></div></div>
     url = f"https://www.pcgarage.ro/cauta/?q={query.replace(' ', '+')}"
-    html = fetch(url, "pcgarage")
+    html = fetch_with_browser(url, "pcgarage")
     if not html:
         return []
     soup = BeautifulSoup(html, "html.parser")
@@ -97,7 +148,13 @@ def scrape_pcgarage_listing(query: str) -> list[dict]:
         price = parse_price(price_el.get_text(strip=True))
         if price is None:
             continue
-        results.append({"title": title_el.get_text(strip=True), "price": price, "url": title_el["href"]})
+        results.append(
+            {
+                "title": title_el.get_text(strip=True),
+                "price": price,
+                "url": title_el["href"],
+            }
+        )
     return results
 
 
@@ -113,7 +170,7 @@ def scrape_flanco_listing(query: str) -> list[dict]:
     #     <div class="price-box price-final_price">
     #       <span class="special-price"><span class="price">2.398,<sup class="decimal">99</sup> lei</span></span>
     url = f"https://www.flanco.ro/catalogsearch/result/?q={query.replace(' ', '+')}"
-    html = fetch(url, "flanco")
+    html = fetch_with_browser(url, "flanco")
     if not html:
         return []
     soup = BeautifulSoup(html, "html.parser")
@@ -131,7 +188,11 @@ def scrape_flanco_listing(query: str) -> list[dict]:
         price = parse_price(price_el.get_text(strip=True))
         if price is None:
             continue
-        result = {"title": title_el.get_text(strip=True), "price": price, "url": title_el["href"]}
+        result = {
+            "title": title_el.get_text(strip=True),
+            "price": price,
+            "url": title_el["href"],
+        }
         if reference_el:
             reference_price = parse_price(reference_el.get_text(strip=True))
             if reference_price is not None:
@@ -150,7 +211,9 @@ def scrape_altex_listing(query: str) -> list[dict]:
     html = fetch(url, "altex")
     if not html:
         return []
-    print("[altex] page fetched successfully but no selectors are implemented yet, skipping")
+    print(
+        "[altex] page fetched successfully but no selectors are implemented yet, skipping"
+    )
     return []
 
 
@@ -164,7 +227,9 @@ SCRAPERS = {
 
 def main():
     watchlist = json.load(open(WATCHLIST_FILE, encoding="utf-8"))
-    history = json.load(open(HISTORY_FILE, encoding="utf-8")) if HISTORY_FILE.exists() else {}
+    history = (
+        json.load(open(HISTORY_FILE, encoding="utf-8")) if HISTORY_FILE.exists() else {}
+    )
     alerts = []
     today = date.today().isoformat()
 
@@ -179,7 +244,9 @@ def main():
 
         for r in results:
             key = r["url"]
-            entry = history.setdefault(key, {"title": r["title"], "site": item["site"], "history": []})
+            entry = history.setdefault(
+                key, {"title": r["title"], "site": item["site"], "history": []}
+            )
             entry["title"] = r["title"]
             if "reference_price" in r:
                 entry["reference_price"] = r["reference_price"]
@@ -208,9 +275,15 @@ def main():
                 )
 
     HISTORY_FILE.parent.mkdir(parents=True, exist_ok=True)
-    json.dump(history, open(HISTORY_FILE, "w", encoding="utf-8"), indent=2, ensure_ascii=False)
-    json.dump(alerts, open(ALERTS_FILE, "w", encoding="utf-8"), indent=2, ensure_ascii=False)
-    print(f"Checked {len(watchlist)} watchlist entries, {len(alerts)} price change(s) detected")
+    json.dump(
+        history, open(HISTORY_FILE, "w", encoding="utf-8"), indent=2, ensure_ascii=False
+    )
+    json.dump(
+        alerts, open(ALERTS_FILE, "w", encoding="utf-8"), indent=2, ensure_ascii=False
+    )
+    print(
+        f"Checked {len(watchlist)} watchlist entries, {len(alerts)} price change(s) detected"
+    )
 
 
 if __name__ == "__main__":
