@@ -202,11 +202,20 @@ def scrape_flanco_listing(query: str) -> list[dict]:
 
 
 def scrape_altex_listing(query: str) -> list[dict]:
-    # altex.ro is fronted by Akamai and stalled the TLS handshake for a
-    # plain `requests` client on every attempt during setup (confirmed
-    # unreachable from two independent networks) — fetch() below will log
-    # the timeout and return [] until this is revisited with curl_cffi's
-    # impersonate="chrome120". No selectors verified yet; none written.
+    # altex.ro is fronted by Akamai and stalls the TLS handshake for a plain
+    # `requests` client (confirmed unreachable from two independent
+    # networks). Tested 2026-09-07 with curl_cffi's impersonate="chrome120",
+    # which DOES clear the TLS-layer stall (200 OK in <1s) — but that only
+    # proves the block is a separate problem from what's actually missing:
+    # altex.ro's search results page is a Next.js app that renders its
+    # product list client-side via a post-load API call, not in the initial
+    # HTML or in __NEXT_DATA__. A plain HTTP client (curl_cffi or requests)
+    # never receives that JS-fetched listing at all, TLS fingerprint aside.
+    # Getting real data would mean either running a JS-executing browser
+    # here too (defeating the point of trying curl_cffi as a lighter
+    # alternative to Playwright) or reverse-engineering Altex's internal
+    # API — out of scope per the one-bounded-attempt rule. Altex stays
+    # stubbed; see README for the accepted-gap note.
     url = f"https://www.altex.ro/search/?q={query.replace(' ', '+')}"
     html = fetch(url, "altex")
     if not html:
