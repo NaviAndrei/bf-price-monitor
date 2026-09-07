@@ -62,6 +62,10 @@
       {
         "date": "2026-09-06",
         "price": 2399.99
+      },
+      {
+        "date": "2026-09-07",
+        "price": 2549.99
       }
     ]
   },
@@ -548,6 +552,10 @@
       {
         "date": "2026-09-06",
         "price": 7014.99
+      },
+      {
+        "date": "2026-09-07",
+        "price": 6499.99
       }
     ]
   },
@@ -782,6 +790,10 @@
       {
         "date": "2026-09-06",
         "price": 4598.0
+      },
+      {
+        "date": "2026-09-07",
+        "price": 4598.0
       }
     ]
   },
@@ -791,6 +803,10 @@
     "history": [
       {
         "date": "2026-09-06",
+        "price": 3568.48
+      },
+      {
+        "date": "2026-09-07",
         "price": 3568.48
       }
     ]
@@ -815,6 +831,10 @@
     "history": [
       {
         "date": "2026-09-06",
+        "price": 4719.0
+      },
+      {
+        "date": "2026-09-07",
         "price": 4719.0
       }
     ]
@@ -2008,6 +2028,46 @@
       {
         "date": "2026-09-07",
         "price": 2399.99
+      }
+    ]
+  },
+  "https://www.emag.ro/laptop-lenovo-v15-g4-iru-procesor-intelr-coretm-i3-1315u-15-6-fhd-ips-16-gb-ddr4-256-gb-ssd-gma-uhd-windows-11-pro-business-black-fb-487/pd/DPTSVLYBM/": {
+    "title": "Laptop Lenovo V15 G4 IRU, Procesor Intel® Core™ i3-1315U, 15.6\" FHD IPS, 16 GB DDR4, 256 GB SSD, GMA UHD, Windows 11 Pro, Business Black",
+    "site": "emag",
+    "history": [
+      {
+        "date": "2026-09-07",
+        "price": 2749.99
+      }
+    ]
+  },
+  "https://www.emag.ro/laptop-lenovo-v15-g4-iru-procesor-intelr-coretm-i3-1315u-15-6-fhd-ips-24-gb-ddr4-512-gb-ssd-gma-uhd-windows-11-pro-business-black-fb-804/pd/DLSSZ93BM/": {
+    "title": "Laptop Lenovo V15 G4 IRU, Procesor Intel® Core™ i3-1315U, 15.6\" FHD IPS, 24 GB DDR4, 512 GB SSD, GMA UHD, Windows 11 Pro, Business Black",
+    "site": "emag",
+    "history": [
+      {
+        "date": "2026-09-07",
+        "price": 3149.99
+      }
+    ]
+  },
+  "https://www.emag.ro/laptop-lenovo-v15-g5-intel-core-i5-13420h-8gb-ram-512gb-ssd-negru-15-6-act-6d9a-moblevnotmbup/pd/DFL2LB2BM/": {
+    "title": "Laptop, Lenovo V15 G5, Intel Core i5-13420H, 8GB RAM, 512GB SSD, negru, 15.6\"",
+    "site": "emag",
+    "history": [
+      {
+        "date": "2026-09-07",
+        "price": 2989.14
+      }
+    ]
+  },
+  "https://www.emag.ro/telefon-mobil-cubot-x100-android-15-16gb-ram-256gb-rom-camera-64mp-display-6-88-baterie-5100mah-dual-sim-5g-impermeabil-ip68-ip69k-auriu-yk-sj-x100-8-256-j-eu/pd/DJ82RG3BM/": {
+    "title": "Telefon mobil CUBOT X100, Android 15 16GB RAM + 256GB ROM, camera 64MP, display 6,88'', baterie 5100mAh, Dual SIM 5G, impermeabil IP68/IP69K, Auriu",
+    "site": "emag",
+    "history": [
+      {
+        "date": "2026-09-07",
+        "price": 1099.97
       }
     ]
   }
