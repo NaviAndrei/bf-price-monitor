@@ -15,6 +15,16 @@ HISTORY_LIMIT = (
     30  # keep last 30 daily price points per product, for the 30-day-low check
 )
 
+# 403/429 can mean a transient rate-limit spike rather than a hard block, so
+# it's worth a few spaced-out retries before giving up — unlike a persistent
+# Cloudflare challenge page, which no amount of retrying clears.
+# 1 initial fetch + 3 retries at 5s/10s/20s = worst case ~35s extra per site
+# (negligible against GitHub Actions' 360-minute default job timeout, even
+# with all 4 sites hitting this path in the same run).
+RETRY_STATUS_CODES = (403, 429)
+RETRY_BACKOFFS = [5, 10, 20]  # seconds before each retry
+MAX_FETCH_ATTEMPTS = 1 + len(RETRY_BACKOFFS)
+
 WATCHLIST_FILE = Path("data/watchlist.json")
 HISTORY_FILE = Path("data/price_history.json")
 ALERTS_FILE = Path("data/alerts.json")
@@ -73,25 +83,42 @@ def fetch_with_browser(url: str, site_name: str) -> str | None:
     from playwright.sync_api import sync_playwright
     from playwright_stealth import Stealth
 
-    try:
-        with Stealth().use_sync(sync_playwright()) as p:
-            browser = p.chromium.launch(headless=True)
-            page = browser.new_page(user_agent=HEADERS["User-Agent"])
-            page.goto(
-                url, timeout=REQUEST_TIMEOUT * 1000, wait_until="domcontentloaded"
-            )
+    html = None
+    for attempt in range(1, MAX_FETCH_ATTEMPTS + 1):
+        try:
+            with Stealth().use_sync(sync_playwright()) as p:
+                browser = p.chromium.launch(headless=True)
+                page = browser.new_page(user_agent=HEADERS["User-Agent"])
+                response = page.goto(
+                    url, timeout=REQUEST_TIMEOUT * 1000, wait_until="domcontentloaded"
+                )
+                status = response.status if response else None
 
-            deadline = time.time() + REQUEST_TIMEOUT
-            html = page.content()
-            while is_challenge_page(html) and time.time() < deadline:
-                time.sleep(1)
+                # Cloudflare-challenge polling loop — unrelated to the retry
+                # below, left exactly as before. This waits out a JS
+                # challenge within a single attempt; the retry loop instead
+                # re-attempts the whole fetch after a 403/429 status.
+                deadline = time.time() + REQUEST_TIMEOUT
                 html = page.content()
-            browser.close()
-    except Exception as e:
-        print(
-            f"[{site_name}] playwright fetch failed ({e.__class__.__name__}), skipping this run"
-        )
-        return None
+                while is_challenge_page(html) and time.time() < deadline:
+                    time.sleep(1)
+                    html = page.content()
+                browser.close()
+        except Exception as e:
+            print(
+                f"[{site_name}] playwright fetch failed ({e.__class__.__name__}), skipping this run"
+            )
+            return None
+
+        if status in RETRY_STATUS_CODES and attempt < MAX_FETCH_ATTEMPTS:
+            delay = RETRY_BACKOFFS[attempt - 1]
+            print(
+                f"[{site_name}] got {status}, retrying in {delay}s "
+                f"(attempt {attempt + 1}/{MAX_FETCH_ATTEMPTS})"
+            )
+            time.sleep(delay)
+            continue
+        break
 
     if is_challenge_page(html):
         print(
@@ -102,11 +129,24 @@ def fetch_with_browser(url: str, site_name: str) -> str | None:
 
 
 def fetch(url: str, site_name: str) -> str | None:
-    try:
-        r = requests.get(url, headers=HEADERS, timeout=REQUEST_TIMEOUT)
-    except requests.exceptions.RequestException as e:
-        print(f"[{site_name}] unreachable ({e.__class__.__name__}), skipping this run")
-        return None
+    r = None
+    for attempt in range(1, MAX_FETCH_ATTEMPTS + 1):
+        try:
+            r = requests.get(url, headers=HEADERS, timeout=REQUEST_TIMEOUT)
+        except requests.exceptions.RequestException as e:
+            print(f"[{site_name}] unreachable ({e.__class__.__name__}), skipping this run")
+            return None
+
+        if r.status_code in RETRY_STATUS_CODES and attempt < MAX_FETCH_ATTEMPTS:
+            delay = RETRY_BACKOFFS[attempt - 1]
+            print(
+                f"[{site_name}] got {r.status_code}, retrying in {delay}s "
+                f"(attempt {attempt + 1}/{MAX_FETCH_ATTEMPTS})"
+            )
+            time.sleep(delay)
+            continue
+        break
+
     if r.status_code in (403, 503) or is_challenge_page(r.text):
         print(
             f"[{site_name}] hit a bot-challenge page (status {r.status_code}), skipping this run"
