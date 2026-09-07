@@ -118,13 +118,31 @@ def fetch(url: str, site_name: str) -> str | None:
     return r.text
 
 
+def emag_stock_status(card) -> str:
+    # eMAG's search listing (verified live 2026-09-07 against "iphone 15" and
+    # "laptop lenovo v15", 60+54 real cards checked) only ever surfaces two
+    # data-availability-id values for matched cards: "3" ("în stoc") and "2"
+    # ("ultimul produs in stoc" - last unit). No out-of-stock marker text
+    # ("stoc epuizat", "indisponibil") appeared anywhere on either page, so
+    # eMAG appears to exclude sold-out offers from search results entirely.
+    # The text check below is kept as a defensive fallback in case that
+    # changes; "unknown" covers any card whose markup doesn't match either.
+    text = card.get_text(" ", strip=True).lower()
+    if "stoc epuizat" in text or "indisponibil" in text:
+        return "out_of_stock"
+    if card.get("data-availability-id") in ("2", "3") or "in stoc" in text:
+        return "in_stock"
+    return "unknown"
+
+
 def scrape_emag_listing(query: str) -> list[dict]:
     # Listing page only: /search/<query> redirects to a /<category>/c page.
     # robots.txt disallows /product/ — never requested here.
     # Card HTML (verified 2026-09-06):
-    #   <div class="card-item card-standard ...">
+    #   <div class="card-item card-standard ..." data-availability-id="3">
     #     <a class="card-v2-title ..." href="https://www.emag.ro/.../pd/...">Title</a>
     #     <p class="product-new-price">3&#46;999<sup><small class="mf-decimal">&#44;</small>99</sup> <span>Lei</span></p>
+    #     ... "în stoc" / "ultimul produs in stoc" text near the price ...
     url = f"https://www.emag.ro/search/{query.replace(' ', '+')}"
     html = fetch(url, "emag")
     if not html:
@@ -144,9 +162,29 @@ def scrape_emag_listing(query: str) -> list[dict]:
                 "title": title_el.get_text(strip=True),
                 "price": price,
                 "url": title_el["href"],
+                "stock_status": emag_stock_status(card),
             }
         )
     return results
+
+
+def pcgarage_stock_status(card) -> str:
+    # PC Garage marks every listed card with a `.product_box_availability`
+    # div whose second class is the actual state (verified live 2026-09-07
+    # against "placa video rtx 3050" and a discontinued-laptop query, which
+    # surfaced all three real values): "instock" ("Stoc magazin
+    # suficient/limitat"), "insupplierstock" ("In stoc furnizor" - still
+    # orderable, fulfilled by the supplier rather than PC Garage's own
+    # warehouse), and "outofstock" ("Nu este in stoc").
+    el = card.select_one(".product_box_availability")
+    if not el:
+        return "unknown"
+    classes = el.get("class") or []
+    if "outofstock" in classes:
+        return "out_of_stock"
+    if "instock" in classes or "insupplierstock" in classes:
+        return "in_stock"
+    return "unknown"
 
 
 def scrape_pcgarage_listing(query: str) -> list[dict]:
@@ -156,6 +194,7 @@ def scrape_pcgarage_listing(query: str) -> list[dict]:
     #   <div class="product_box">
     #     <div class="product_box_name"><h2><a href="https://www.pcgarage.ro/...">Title</a></h2></div>
     #     <div class="product_box_price_container"><div class="pb-price"><p class="price">1.798,99 RON</p></div></div>
+    #     <div class="product_box_availability instock">Stoc magazin suficient</div>
     url = f"https://www.pcgarage.ro/cauta/?q={query.replace(' ', '+')}"
     html = fetch_with_browser(url, "pcgarage")
     if not html:
@@ -175,9 +214,36 @@ def scrape_pcgarage_listing(query: str) -> list[dict]:
                 "title": title_el.get_text(strip=True),
                 "price": price,
                 "url": title_el["href"],
+                "stock_status": pcgarage_stock_status(card),
             }
         )
     return results
+
+
+def flanco_stock_status(card) -> str:
+    # Flanco marks every real listed card with a `.stocky-txt` span inside
+    # `.produs-status .stock` whose class is the actual state (verified live
+    # 2026-09-07 against "laptop asus vivobook" and "iphone 13 mini", 20+25
+    # real cards checked — every one of them had this marker present):
+    # "in-stock" ("In stoc"), "limited-stock" ("Stoc limitat"),
+    # "supplier-stock" ("Exclusiv online"), "bin-display" ("Expus in
+    # magazin") — all four are purchasable states, just different fulfilment
+    # channels. No out-of-stock class was observed on either query, so
+    # Flanco appears to exclude sold-out products from search results
+    # entirely; the "out-of-stock"/"sold-out" check below is a defensive
+    # fallback in case that changes.
+    el = card.select_one(".stocky-txt")
+    if not el:
+        return "unknown"
+    classes = el.get("class") or []
+    if any("out-of-stock" in c or "sold-out" in c for c in classes):
+        return "out_of_stock"
+    if any(
+        c in classes
+        for c in ("in-stock", "limited-stock", "supplier-stock", "bin-display")
+    ):
+        return "in_stock"
+    return "unknown"
 
 
 def scrape_flanco_listing(query: str) -> list[dict]:
@@ -191,6 +257,8 @@ def scrape_flanco_listing(query: str) -> list[dict]:
     #     <a class="product-item-link" href="https://www.flanco.ro/....html"><h2>Title</h2></a>
     #     <div class="price-box price-final_price">
     #       <span class="special-price"><span class="price">2.398,<sup class="decimal">99</sup> lei</span></span>
+    #     <div class="produs-status"><div class="stock">
+    #       <span class="stocky-txt in-stock">In stoc</span></div></div>
     url = f"https://www.flanco.ro/catalogsearch/result/?q={query.replace(' ', '+')}"
     html = fetch_with_browser(url, "flanco")
     if not html:
@@ -214,6 +282,7 @@ def scrape_flanco_listing(query: str) -> list[dict]:
             "title": title_el.get_text(strip=True),
             "price": price,
             "url": title_el["href"],
+            "stock_status": flanco_stock_status(card),
         }
         if reference_el:
             reference_price = parse_price(reference_el.get_text(strip=True))
@@ -285,8 +354,11 @@ def main():
 
             past_prices = [h["price"] for h in entry["history"]]
             prev_price = past_prices[-1] if past_prices else None
+            stock_status = r.get("stock_status", "unknown")
 
-            entry["history"].append({"date": today, "price": r["price"]})
+            entry["history"].append(
+                {"date": today, "price": r["price"], "stock_status": stock_status}
+            )
             entry["history"] = entry["history"][-HISTORY_LIMIT:]
 
             if prev_price is not None and prev_price != r["price"]:
@@ -300,6 +372,7 @@ def main():
                         "new_price": r["price"],
                         "thirty_day_low": min(past_prices) if past_prices else None,
                         "reference_price": r.get("reference_price"),
+                        "stock_status": stock_status,
                     }
                 )
 

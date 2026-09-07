@@ -24,11 +24,14 @@ def resolve_reference(alert: dict) -> tuple[float | None, str]:
 
 
 def build_prompt(alert: dict, reference_low: float | None, comparison_method: str) -> str:
+    stock_status = alert.get("stock_status", "unknown")
     return (
         f"Product: {alert['title']}. Old price: {alert['old_price']} RON. "
         f"New price: {alert['new_price']} RON. {comparison_method.capitalize()} 30-day low: "
-        f"{reference_low} RON. Is this a genuine Black Friday discount or a fake price hike? "
-        "One sentence."
+        f"{reference_low} RON. Current stock status: {stock_status}. "
+        "Is this a genuine Black Friday discount or a fake price hike? Consider that a price "
+        "drop on an out-of-stock item is more likely a stale or manipulated listing than a real "
+        "offer. One sentence."
     )
 
 

@@ -2655,6 +2655,61 @@
           "price": 1488.0
         }
       ]
+    },
+    "https://www.emag.ro/laptop-lenovo-thinkpad-x9-15-gen-1-aura-edition-cu-procesor-intelr-core-ultra-7-258v-pana-la-4-80-ghz-15-3-2-8k-oled-32gb-ram-1tb-ssd-intelr-arctm-graphics-140v-windowsr-11-pro-21q60023ri/pd/DCTXG33BM/": {
+      "title": "Laptop Lenovo ThinkPad X9-15 Gen 1 Aura Edition cu procesor Intel® Core Ultra 7 258V pana la 4.80 GHz, 15.3\" 2.8K OLED, 32GB RAM, 1TB SSD, Intel® Arc™ Graphics 140V, Windows® 11 Pro",
+      "site": "emag",
+      "history": [
+        {
+          "date": "2026-09-07",
+          "price": 9506.62,
+          "stock_status": "in_stock"
+        }
+      ]
+    },
+    "https://www.emag.ro/laptop-lenovo-v15-g5-irl-cu-procesor-intel-core-i5-13420h-pana-la-4-60-ghz-15-6-fhd-32gb-ddr5-ram-512gb-ssd-intel-uhd-graphics-windows-11-pro-83gw00alri3w/pd/DCYW3M2BM/": {
+      "title": "Laptop Lenovo V15 G5 IRL cu procesor Intel Core i5-13420H pana la 4.60 GHz, 15.6\" FHD, 32GB DDR5 RAM, 512GB SSD, Intel UHD Graphics, Windows 11 Pro",
+      "site": "emag",
+      "history": [
+        {
+          "date": "2026-09-07",
+          "price": 4990.0,
+          "stock_status": "in_stock"
+        }
+      ]
+    },
+    "https://www.emag.ro/laptop-lenovo-v15-g4-business-intel-core-i3-16gb-ssd-512gb-15-6-negru-83a1006xhv/pd/DLCNM1YBM/": {
+      "title": "Laptop Lenovo V15 G4 Business, Intel Core i3, 16GB, SSD 512GB, 15,6\", Negru",
+      "site": "emag",
+      "history": [
+        {
+          "date": "2026-09-07",
+          "price": 4719.0,
+          "stock_status": "in_stock"
+        }
+      ]
+    },
+    "https://www.emag.ro/laptop-lenovo-v15-g4-15-6-full-hd-intelr-coretm-i3-1315u-pana-la-4-5-ghz-8-gb-ram-ddr4-3200-256-gb-ssd-intelr-uhd-graphics-free-dos-business-black-256-gb-al-pkyal748535awmo/pd/DR3LQFYBM/": {
+      "title": "Laptop Lenovo V15 G4, 15.6\" Full HD, Intel® Core™ i3 1315U pana la 4.5 GHz, 8 GB RAM DDR4 3200, 256 GB SSD, Intel® UHD Graphics, Free Dos, Business Black 256 GB",
+      "site": "emag",
+      "history": [
+        {
+          "date": "2026-09-07",
+          "price": 5445.0,
+          "stock_status": "in_stock"
+        }
+      ]
+    },
+    "https://www.emag.ro/laptop-lenovo-v15-i3-1215u-intel-core-i3-1215u-8-gb-ram-512-gb-15-0198154989477/pd/DPRXJ8YBM/": {
+      "title": "Laptop Lenovo V15 I3 1215U Intel Core I3-1215U 8 GB RAM 512 GB 15",
+      "site": "emag",
+      "history": [
+        {
+          "date": "2026-09-07",
+          "price": 3872.0,
+          "stock_status": "in_stock"
+        }
+      ]
     }
   }
 }
