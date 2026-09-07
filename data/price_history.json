@@ -422,6 +422,10 @@
       {
         "date": "2026-09-06",
         "price": 4356.0
+      },
+      {
+        "date": "2026-09-07",
+        "price": 4356.0
       }
     ]
   },
@@ -459,6 +463,10 @@
     "history": [
       {
         "date": "2026-09-06",
+        "price": 3993.0
+      },
+      {
+        "date": "2026-09-07",
         "price": 3993.0
       }
     ]
@@ -564,6 +572,10 @@
       {
         "date": "2026-09-06",
         "price": 2431.01
+      },
+      {
+        "date": "2026-09-07",
+        "price": 2431.01
       }
     ]
   },
@@ -630,6 +642,10 @@
       {
         "date": "2026-09-06",
         "price": 3168.0
+      },
+      {
+        "date": "2026-09-07",
+        "price": 3168.0
       }
     ]
   },
@@ -639,6 +655,10 @@
     "history": [
       {
         "date": "2026-09-06",
+        "price": 6171.0
+      },
+      {
+        "date": "2026-09-07",
         "price": 6171.0
       }
     ]
@@ -678,6 +698,10 @@
       {
         "date": "2026-09-06",
         "price": 2441.99
+      },
+      {
+        "date": "2026-09-07",
+        "price": 2441.99
       }
     ]
   },
@@ -687,6 +711,10 @@
     "history": [
       {
         "date": "2026-09-06",
+        "price": 4114.0
+      },
+      {
+        "date": "2026-09-07",
         "price": 4114.0
       }
     ]
@@ -698,6 +726,10 @@
       {
         "date": "2026-09-06",
         "price": 5324.0
+      },
+      {
+        "date": "2026-09-07",
+        "price": 5324.0
       }
     ]
   },
@@ -707,6 +739,10 @@
     "history": [
       {
         "date": "2026-09-06",
+        "price": 3799.0
+      },
+      {
+        "date": "2026-09-07",
         "price": 3799.0
       }
     ]
@@ -718,6 +754,10 @@
       {
         "date": "2026-09-06",
         "price": 4598.0
+      },
+      {
+        "date": "2026-09-07",
+        "price": 4598.0
       }
     ]
   },
@@ -727,6 +767,10 @@
     "history": [
       {
         "date": "2026-09-06",
+        "price": 3679.01
+      },
+      {
+        "date": "2026-09-07",
         "price": 3679.01
       }
     ]
@@ -757,6 +801,10 @@
     "history": [
       {
         "date": "2026-09-06",
+        "price": 4890.0
+      },
+      {
+        "date": "2026-09-07",
         "price": 4890.0
       }
     ]
@@ -1826,6 +1874,10 @@
       {
         "date": "2026-09-06",
         "price": 2160.0
+      },
+      {
+        "date": "2026-09-07",
+        "price": 2160.0
       }
     ]
   },
@@ -1856,6 +1908,106 @@
       {
         "date": "2026-09-07",
         "price": 1999.0
+      }
+    ]
+  },
+  "https://www.emag.ro/laptop-lenovo-v15-g5-irl-cu-procesor-intel-core-i7-13620h-pana-la-4-90-ghz-15-6-fhd-16gb-ddr5-ram-512gb-ssd-intel-uhd-graphics-windows-11-pro-83gw007uriw/pd/D9RS983BM/": {
+    "title": "Laptop Lenovo V15 G5 IRL cu procesor Intel Core i7-13620H pana la 4.90 GHz, 15.6\" FHD, 16GB DDR5 RAM, 512GB SSD, Intel UHD Graphics, Windows 11 Pro",
+    "site": "emag",
+    "history": [
+      {
+        "date": "2026-09-07",
+        "price": 4690.0
+      }
+    ]
+  },
+  "https://www.emag.ro/laptop-lenovo-v15-g4-amn-15-6-fhd-ryzen-5-7520u-16gb-ssd-512gb-negru-kxg0431795/pd/D6QBV83BM/": {
+    "title": "Laptop Lenovo V15 G4 AMN, 15,6\" FHD, Ryzen 5 7520U, 16GB, SSD 512GB, negru",
+    "site": "emag",
+    "history": [
+      {
+        "date": "2026-09-07",
+        "price": 3294.77
+      }
+    ]
+  },
+  "https://www.emag.ro/laptop-lenovo-v15-g5-irl-cu-procesor-intel-core-i7-13620h-pana-la-4-90-ghz-15-6-fhd-32gb-ram-512gb-ssd-intelr-uhd-graphics-windows-11-pro-83gw007uri1w/pd/DFRS983BM/": {
+    "title": "Laptop Lenovo V15 G5 IRL cu procesor Intel Core i7-13620H pana la 4.90 GHz, 15.6\" FHD, 32GB RAM, 512GB SSD, Intel® UHD Graphics, Windows 11 Pro",
+    "site": "emag",
+    "history": [
+      {
+        "date": "2026-09-07",
+        "price": 5990.0
+      }
+    ]
+  },
+  "https://www.emag.ro/telefon-mobil-apple-iphone-15-256gb-5g-green-mtpa3rx-a/pd/DBCH93YBM/": {
+    "title": "Telefon mobil Apple iPhone 15, 256GB, 5G, Green",
+    "site": "emag",
+    "history": [
+      {
+        "date": "2026-09-07",
+        "price": 4899.99
+      }
+    ]
+  },
+  "https://www.emag.ro/telefon-mobil-apple-iphone-15-plus-512gb-5g-yellow-mu1m3rx-a/pd/DVCH93YBM/": {
+    "title": "Telefon mobil Apple iPhone 15 Plus, 512GB, 5G, Yellow",
+    "site": "emag",
+    "history": [
+      {
+        "date": "2026-09-07",
+        "price": 6499.99
+      }
+    ]
+  },
+  "https://www.emag.ro/telefon-mobil-xiaomi-redmi-note-15-pro-5g-12gb-ram-512gb-rom-negru-ro-redminote15pro-5g-12gb512gb-black/pd/DGBMFT2BM/": {
+    "title": "Telefon mobil Xiaomi REDMI Note 15 Pro+ 5G, 12GB RAM, 512GB ROM, Negru",
+    "site": "emag",
+    "history": [
+      {
+        "date": "2026-09-07",
+        "price": 2142.0
+      }
+    ]
+  },
+  "https://www.emag.ro/telefon-mobil-apple-iphone-15-plus-128gb-5g-yellow-mu123rx-a/pd/DKCH93YBM/": {
+    "title": "Telefon mobil Apple iPhone 15 Plus, 128GB, 5G, Yellow",
+    "site": "emag",
+    "history": [
+      {
+        "date": "2026-09-07",
+        "price": 4793.46
+      }
+    ]
+  },
+  "https://www.emag.ro/telefon-mobil-xiaomi-15t-pro-12gb-ram-256gb-5g-mocha-gold-xm-x15tpromch256/pd/DXL2RL3BM/": {
+    "title": "Telefon mobil Xiaomi 15T Pro, 12GB RAM, 256GB, 5G, Mocha Gold",
+    "site": "emag",
+    "history": [
+      {
+        "date": "2026-09-07",
+        "price": 3749.79
+      }
+    ]
+  },
+  "https://www.emag.ro/telefon-mobil-oneplus-15-dual-sim-16gb-ram-512gb-5g-sand-storm-5011116288/pd/DS0RK13BM/": {
+    "title": "Telefon mobil OnePlus 15, Dual SIM, 16GB RAM, 512GB, 5G, Sand Storm",
+    "site": "emag",
+    "history": [
+      {
+        "date": "2026-09-07",
+        "price": 7350.0
+      }
+    ]
+  },
+  "https://www.emag.ro/telefon-mobil-xiaomi-redmi-note-15-pro-8gb-ram-256gb-rom-5g-black-woven-strap-ring-stand-mzb0o5seu/pd/D0CBLW3BM/": {
+    "title": "Telefon Mobil Xiaomi REDMI Note 15 Pro+, 8GB RAM, 256GB ROM, 5G, Black + Woven Strap Ring Stand",
+    "site": "emag",
+    "history": [
+      {
+        "date": "2026-09-07",
+        "price": 2399.99
       }
     ]
   }
