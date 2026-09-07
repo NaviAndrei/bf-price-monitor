@@ -18,6 +18,28 @@ HISTORY_LIMIT = (
 WATCHLIST_FILE = Path("data/watchlist.json")
 HISTORY_FILE = Path("data/price_history.json")
 ALERTS_FILE = Path("data/alerts.json")
+HISTORY_SCHEMA_VERSION = 1
+
+
+def load_history() -> dict:
+    if not HISTORY_FILE.exists():
+        return {}
+    data = json.load(open(HISTORY_FILE, encoding="utf-8"))
+    if "schema_version" not in data:
+        # Pre-versioning file: bare {url: entry} dict. Wrap it so this run's
+        # save writes the versioned format without losing any prior history.
+        data = {"schema_version": HISTORY_SCHEMA_VERSION, "products": data}
+    return data["products"]
+
+
+def save_history(products: dict) -> None:
+    HISTORY_FILE.parent.mkdir(parents=True, exist_ok=True)
+    json.dump(
+        {"schema_version": HISTORY_SCHEMA_VERSION, "products": products},
+        open(HISTORY_FILE, "w", encoding="utf-8"),
+        indent=2,
+        ensure_ascii=False,
+    )
 
 
 def is_challenge_page(html: str) -> bool:
@@ -236,9 +258,7 @@ SCRAPERS = {
 
 def main():
     watchlist = json.load(open(WATCHLIST_FILE, encoding="utf-8"))
-    history = (
-        json.load(open(HISTORY_FILE, encoding="utf-8")) if HISTORY_FILE.exists() else {}
-    )
+    history = load_history()
     alerts = []
     today = date.today().isoformat()
 
@@ -283,10 +303,7 @@ def main():
                     }
                 )
 
-    HISTORY_FILE.parent.mkdir(parents=True, exist_ok=True)
-    json.dump(
-        history, open(HISTORY_FILE, "w", encoding="utf-8"), indent=2, ensure_ascii=False
-    )
+    save_history(history)
     json.dump(
         alerts, open(ALERTS_FILE, "w", encoding="utf-8"), indent=2, ensure_ascii=False
     )
