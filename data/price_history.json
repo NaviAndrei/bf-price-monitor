@@ -354,6 +354,11 @@
         {
           "date": "2026-09-07",
           "price": 6655.0
+        },
+        {
+          "date": "2026-09-08",
+          "price": 10769.0,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -2540,6 +2545,11 @@
         {
           "date": "2026-09-07",
           "price": 1999.0
+        },
+        {
+          "date": "2026-09-08",
+          "price": 1999.0,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -3864,6 +3874,28 @@
         {
           "date": "2026-09-08",
           "price": 749.0,
+          "stock_status": "in_stock"
+        }
+      ]
+    },
+    "https://www.emag.ro/telefon-mobil-apple-iphone-14-256gb-5g-yellow-mr3y3rx-a/pd/D3YTV6MBM/": {
+      "title": "Telefon mobil Apple iPhone 14, 256GB, 5G, Yellow",
+      "site": "emag",
+      "history": [
+        {
+          "date": "2026-09-08",
+          "price": 4465.07,
+          "stock_status": "in_stock"
+        }
+      ]
+    },
+    "https://www.emag.ro/telefon-mobil-nokia-105-2023-dual-sim-charcoal-1gf019cpa2l04/pd/D655WWMBM/": {
+      "title": "Telefon mobil Nokia 105 (2023), Dual SIM, Charcoal",
+      "site": "emag",
+      "history": [
+        {
+          "date": "2026-09-08",
+          "price": 78.65,
           "stock_status": "in_stock"
         }
       ]
