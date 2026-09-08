@@ -316,6 +316,11 @@
         {
           "date": "2026-09-07",
           "price": 6655.0
+        },
+        {
+          "date": "2026-09-08",
+          "price": 10769.0,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -1079,6 +1084,11 @@
         {
           "date": "2026-09-07",
           "price": 4890.0
+        },
+        {
+          "date": "2026-09-08",
+          "price": 10769.0,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -1938,6 +1948,11 @@
         {
           "date": "2026-09-07",
           "price": 1533.53
+        },
+        {
+          "date": "2026-09-08",
+          "price": 1463.81,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -1971,6 +1986,11 @@
         {
           "date": "2026-09-07",
           "price": 1828.19
+        },
+        {
+          "date": "2026-09-08",
+          "price": 1828.19,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -2530,6 +2550,11 @@
         {
           "date": "2026-09-07",
           "price": 3294.77
+        },
+        {
+          "date": "2026-09-08",
+          "price": 3392.31,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -2565,6 +2590,11 @@
         {
           "date": "2026-09-07",
           "price": 6499.99
+        },
+        {
+          "date": "2026-09-08",
+          "price": 6499.99,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -2575,6 +2605,11 @@
         {
           "date": "2026-09-07",
           "price": 2142.0
+        },
+        {
+          "date": "2026-09-08",
+          "price": 2142.0,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -2595,6 +2630,11 @@
         {
           "date": "2026-09-07",
           "price": 3749.79
+        },
+        {
+          "date": "2026-09-08",
+          "price": 3749.79,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -3498,6 +3538,11 @@
         {
           "date": "2026-09-07",
           "price": 3250.0
+        },
+        {
+          "date": "2026-09-08",
+          "price": 3250.0,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -3508,6 +3553,11 @@
         {
           "date": "2026-09-07",
           "price": 1488.0
+        },
+        {
+          "date": "2026-09-08",
+          "price": 1488.0,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -3693,6 +3743,51 @@
         {
           "date": "2026-09-08",
           "price": 5445.0,
+          "stock_status": "in_stock"
+        }
+      ]
+    },
+    "https://www.emag.ro/laptop-lenovo-v15-g4-intel-core-i3-8gb-ram-512gb-ssd-negru-15-6-s9917531/pd/DMQKG03BM/": {
+      "title": "Laptop Lenovo V15 G4, Intel Core i3, 8GB RAM, 512GB SSD, negru, 15.6\"",
+      "site": "emag",
+      "history": [
+        {
+          "date": "2026-09-08",
+          "price": 5808.0,
+          "stock_status": "in_stock"
+        }
+      ]
+    },
+    "https://www.emag.ro/laptop-lenovo-v15-g4-business-amd-ryzen-3-8gb-ssd-256gb-15-6-negru-82yu00ywhv/pd/DXSNM1YBM/": {
+      "title": "Laptop Lenovo V15 G4 Business, AMD Ryzen 3, 8GB, SSD 256GB, 15,6\", Negru",
+      "site": "emag",
+      "history": [
+        {
+          "date": "2026-09-08",
+          "price": 3137.4,
+          "stock_status": "in_stock"
+        }
+      ]
+    },
+    "https://www.flanco.ro/laptop-asus-15-6-vivobook-15-x1504va-fhd-60-hz-intel-core-i7-1355u-16gb-ddr4-1tb-ssd-no-os-quiet-blue.html": {
+      "title": "Laptop Asus 15.6'' Vivobook 15 X1504VA, FHD, 60 Hz, Intel Core i7-1355U, 16GB DDR4, 1TB SSD, No OS, Quiet Blue",
+      "site": "flanco",
+      "history": [
+        {
+          "date": "2026-09-08",
+          "price": 3199.99,
+          "stock_status": "in_stock"
+        }
+      ],
+      "reference_price": 3599.99
+    },
+    "https://www.emag.ro/telefon-mobil-xiaomi-redmi-note-15-pro-12gb-ram-512gb-5g-titanium-srm2319/pd/DWXN683BM/": {
+      "title": "Telefon mobil Xiaomi Redmi Note 15 Pro, 12GB RAM, 512GB, 5G, Titanium",
+      "site": "emag",
+      "history": [
+        {
+          "date": "2026-09-08",
+          "price": 2040.0,
           "stock_status": "in_stock"
         }
       ]
