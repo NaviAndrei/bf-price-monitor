@@ -861,6 +861,11 @@
         {
           "date": "2026-09-07",
           "price": 3168.0
+        },
+        {
+          "date": "2026-09-08",
+          "price": 3168.0,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -2046,6 +2051,11 @@
         {
           "date": "2026-09-07",
           "price": 5612.49
+        },
+        {
+          "date": "2026-09-08",
+          "price": 5864.49,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -2665,6 +2675,11 @@
         {
           "date": "2026-09-07",
           "price": 3802.98
+        },
+        {
+          "date": "2026-09-08",
+          "price": 3802.98,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -3423,6 +3438,11 @@
         {
           "date": "2026-09-07",
           "price": 3590.0
+        },
+        {
+          "date": "2026-09-08",
+          "price": 3590.0,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -3452,6 +3472,11 @@
       "history": [
         {
           "date": "2026-09-07",
+          "price": 9506.62,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-08",
           "price": 9506.62,
           "stock_status": "in_stock"
         }
@@ -3546,6 +3571,28 @@
         {
           "date": "2026-09-08",
           "price": 199.99,
+          "stock_status": "in_stock"
+        }
+      ]
+    },
+    "https://www.emag.ro/laptop-lenovo-v15-g4-abp-cu-procesor-amd-ryzentm-7-7730u-pana-la-4-5ghz-15-6-full-hd-ips-16gb-ddr4-512gb-ssd-video-integrated-amd-radeontm-graphic-windowsr-11-pro-business-black-82yy001frm/pd/DZN69M2BM/": {
+      "title": "Laptop Lenovo V15 G4 ABP cu procesor AMD Ryzen™ 7 7730U pana la 4.5GHz, 15.6\" Full HD, IPS, 16GB DDR4, 512GB SSD, Video Integrated AMD Radeon™ Graphic, Windows® 11 Pro, Business Black",
+      "site": "emag",
+      "history": [
+        {
+          "date": "2026-09-08",
+          "price": 3499.01,
+          "stock_status": "in_stock"
+        }
+      ]
+    },
+    "https://www.emag.ro/laptop-lenovo-v15-g5-irl-15-6-full-hd-intelr-coretm-i3-1315u-pana-la-4-5-ghz-8-gb-ram-ddr5-5200-512-gb-ssd-intelr-uhd-graphics-free-dos-business-black-512-gb-pky360742drmo/pd/DR2GX82BM/": {
+      "title": "Laptop Lenovo V15 G5 IRL, 15.6\" Full HD, Intel® Core™ i3 1315U pana la 4.5 GHz, 8 GB RAM DDR5 5200, 512 GB SSD, Intel® UHD Graphics, Free Dos, Business Black 512 GB",
+      "site": "emag",
+      "history": [
+        {
+          "date": "2026-09-08",
+          "price": 2807.4,
           "stock_status": "in_stock"
         }
       ]
