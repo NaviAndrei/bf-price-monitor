@@ -22,6 +22,11 @@
           "date": "2026-09-09",
           "price": 3099.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 3099.99,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -44,6 +49,11 @@
         },
         {
           "date": "2026-09-09",
+          "price": 3479.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
           "price": 3479.99,
           "stock_status": "in_stock"
         }
@@ -70,6 +80,11 @@
           "date": "2026-09-09",
           "price": 3699.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 3699.99,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -92,6 +107,11 @@
         },
         {
           "date": "2026-09-09",
+          "price": 3499.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
           "price": 3499.99,
           "stock_status": "in_stock"
         }
@@ -118,6 +138,11 @@
           "date": "2026-09-09",
           "price": 2509.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 2509.99,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -140,6 +165,11 @@
         },
         {
           "date": "2026-09-09",
+          "price": 3199.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
           "price": 3199.99,
           "stock_status": "in_stock"
         }
@@ -166,6 +196,11 @@
           "date": "2026-09-09",
           "price": 3605.8,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 3605.8,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -188,6 +223,11 @@
         },
         {
           "date": "2026-09-09",
+          "price": 10890.0,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
           "price": 10890.0,
           "stock_status": "in_stock"
         }
@@ -214,6 +254,11 @@
           "date": "2026-09-09",
           "price": 4139.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 4139.99,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -236,6 +281,11 @@
         },
         {
           "date": "2026-09-09",
+          "price": 2099.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
           "price": 2099.99,
           "stock_status": "in_stock"
         }
@@ -262,6 +312,11 @@
           "date": "2026-09-09",
           "price": 2699.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 2699.99,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -284,6 +339,11 @@
         },
         {
           "date": "2026-09-09",
+          "price": 3299.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
           "price": 3299.99,
           "stock_status": "in_stock"
         }
@@ -310,6 +370,11 @@
           "date": "2026-09-09",
           "price": 3590.0,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 3590.0,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -332,6 +397,11 @@
         },
         {
           "date": "2026-09-09",
+          "price": 2174.37,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
           "price": 2174.37,
           "stock_status": "in_stock"
         }
@@ -358,6 +428,11 @@
           "date": "2026-09-09",
           "price": 4199.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 4199.99,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -380,6 +455,11 @@
         },
         {
           "date": "2026-09-09",
+          "price": 3099.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
           "price": 3099.99,
           "stock_status": "in_stock"
         }
@@ -425,6 +505,11 @@
           "date": "2026-09-09",
           "price": 2299.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 2299.99,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -447,6 +532,11 @@
         },
         {
           "date": "2026-09-09",
+          "price": 10769.0,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
           "price": 10769.0,
           "stock_status": "in_stock"
         }
@@ -473,6 +563,11 @@
           "date": "2026-09-09",
           "price": 2069.1,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 2069.1,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -495,6 +590,11 @@
         },
         {
           "date": "2026-09-09",
+          "price": 3199.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
           "price": 3199.99,
           "stock_status": "in_stock"
         }
@@ -521,6 +621,11 @@
           "date": "2026-09-09",
           "price": 2820.47,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 2820.47,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -543,6 +648,11 @@
         },
         {
           "date": "2026-09-09",
+          "price": 2099.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
           "price": 2099.99,
           "stock_status": "in_stock"
         }
@@ -569,6 +679,11 @@
           "date": "2026-09-09",
           "price": 2204.0,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 2204.0,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -591,6 +706,11 @@
         },
         {
           "date": "2026-09-09",
+          "price": 3509.0,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
           "price": 3509.0,
           "stock_status": "in_stock"
         }
@@ -617,6 +737,11 @@
           "date": "2026-09-09",
           "price": 2954.61,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 2955.67,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -639,6 +764,11 @@
         },
         {
           "date": "2026-09-09",
+          "price": 2685.12,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
           "price": 2685.12,
           "stock_status": "in_stock"
         }
@@ -665,6 +795,11 @@
           "date": "2026-09-09",
           "price": 2982.64,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 2982.64,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -689,6 +824,11 @@
           "date": "2026-09-09",
           "price": 2299.0,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 2299.0,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -706,6 +846,11 @@
         },
         {
           "date": "2026-09-09",
+          "price": 3208.93,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
           "price": 3208.93,
           "stock_status": "in_stock"
         }
@@ -756,6 +901,11 @@
           "date": "2026-09-09",
           "price": 2388.04,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 2388.04,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -778,6 +928,11 @@
         },
         {
           "date": "2026-09-09",
+          "price": 3257.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
           "price": 3257.99,
           "stock_status": "in_stock"
         }
@@ -818,6 +973,11 @@
           "date": "2026-09-09",
           "price": 2595.27,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 2595.27,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -840,6 +1000,11 @@
         },
         {
           "date": "2026-09-09",
+          "price": 4235.0,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
           "price": 4235.0,
           "stock_status": "in_stock"
         }
@@ -866,6 +1031,11 @@
           "date": "2026-09-09",
           "price": 3706.44,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 3706.44,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -888,6 +1058,11 @@
         },
         {
           "date": "2026-09-09",
+          "price": 1931.92,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
           "price": 1931.92,
           "stock_status": "in_stock"
         }
@@ -933,6 +1108,11 @@
           "date": "2026-09-09",
           "price": 6499.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 6499.99,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -955,6 +1135,11 @@
         },
         {
           "date": "2026-09-09",
+          "price": 2543.42,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
           "price": 2543.42,
           "stock_status": "in_stock"
         }
@@ -981,6 +1166,11 @@
           "date": "2026-09-09",
           "price": 2431.01,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 2431.01,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -1003,6 +1193,11 @@
         },
         {
           "date": "2026-09-09",
+          "price": 3164.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
           "price": 3164.99,
           "stock_status": "in_stock"
         }
@@ -1029,6 +1224,11 @@
           "date": "2026-09-09",
           "price": 10769.0,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 10769.0,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -1052,6 +1252,11 @@
         {
           "date": "2026-09-09",
           "price": 3831.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 3511.98,
           "stock_status": "in_stock"
         }
       ]
@@ -1096,6 +1301,11 @@
           "date": "2026-09-09",
           "price": 3168.0,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 3168.0,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -1134,6 +1344,11 @@
           "date": "2026-09-09",
           "price": 3842.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 3842.99,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -1156,6 +1371,11 @@
         },
         {
           "date": "2026-09-09",
+          "price": 2899.97,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
           "price": 2899.97,
           "stock_status": "in_stock"
         }
@@ -1215,6 +1435,11 @@
           "date": "2026-09-08",
           "price": 5324.0,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 6318.86,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -1237,6 +1462,11 @@
         },
         {
           "date": "2026-09-09",
+          "price": 3799.0,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
           "price": 3799.0,
           "stock_status": "in_stock"
         }
@@ -1296,6 +1526,11 @@
           "date": "2026-09-09",
           "price": 4961.0,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 4961.0,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -1314,6 +1549,11 @@
         {
           "date": "2026-09-08",
           "price": 3568.48,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 3709.24,
           "stock_status": "in_stock"
         }
       ]
@@ -1372,6 +1612,11 @@
           "date": "2026-09-09",
           "price": 3499.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 3499.99,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -1394,6 +1639,11 @@
         },
         {
           "date": "2026-09-09",
+          "price": 3499.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
           "price": 3499.99,
           "stock_status": "in_stock"
         }
@@ -1420,6 +1670,11 @@
           "date": "2026-09-09",
           "price": 6949.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 6949.99,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -1442,6 +1697,11 @@
         },
         {
           "date": "2026-09-09",
+          "price": 3999.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
           "price": 3999.99,
           "stock_status": "in_stock"
         }
@@ -1468,6 +1728,11 @@
           "date": "2026-09-09",
           "price": 4600.0,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 4600.0,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -1490,6 +1755,11 @@
         },
         {
           "date": "2026-09-09",
+          "price": 4299.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
           "price": 4299.99,
           "stock_status": "in_stock"
         }
@@ -1516,6 +1786,11 @@
           "date": "2026-09-09",
           "price": 2699.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 2699.99,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -1538,6 +1813,11 @@
         },
         {
           "date": "2026-09-09",
+          "price": 1599.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
           "price": 1599.99,
           "stock_status": "in_stock"
         }
@@ -1564,6 +1844,11 @@
           "date": "2026-09-09",
           "price": 2949.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 2949.99,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -1586,6 +1871,11 @@
         },
         {
           "date": "2026-09-09",
+          "price": 2399.0,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
           "price": 2399.0,
           "stock_status": "in_stock"
         }
@@ -1612,6 +1902,11 @@
           "date": "2026-09-09",
           "price": 2548.6,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 2548.6,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -1634,6 +1929,11 @@
         },
         {
           "date": "2026-09-09",
+          "price": 3941.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
           "price": 3941.99,
           "stock_status": "in_stock"
         }
@@ -1660,6 +1960,11 @@
           "date": "2026-09-09",
           "price": 2949.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 2949.99,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -1682,6 +1987,11 @@
         },
         {
           "date": "2026-09-09",
+          "price": 1723.19,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
           "price": 1723.19,
           "stock_status": "in_stock"
         }
@@ -1708,6 +2018,11 @@
           "date": "2026-09-09",
           "price": 1199.98,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 1199.98,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -1730,6 +2045,11 @@
         },
         {
           "date": "2026-09-09",
+          "price": 2899.0,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
           "price": 2899.0,
           "stock_status": "in_stock"
         }
@@ -1756,6 +2076,11 @@
           "date": "2026-09-09",
           "price": 599.0,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 599.0,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -1778,6 +2103,11 @@
         },
         {
           "date": "2026-09-09",
+          "price": 1999.0,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
           "price": 1999.0,
           "stock_status": "in_stock"
         }
@@ -1804,6 +2134,11 @@
           "date": "2026-09-09",
           "price": 2699.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 2699.99,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -1828,6 +2163,11 @@
           "date": "2026-09-09",
           "price": 7120.85,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 7120.85,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -1850,6 +2190,11 @@
         },
         {
           "date": "2026-09-09",
+          "price": 1799.0,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
           "price": 1799.0,
           "stock_status": "in_stock"
         }
@@ -1895,6 +2240,11 @@
           "date": "2026-09-09",
           "price": 2799.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 2799.99,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -1917,6 +2267,11 @@
         },
         {
           "date": "2026-09-09",
+          "price": 999.0,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
           "price": 999.0,
           "stock_status": "in_stock"
         }
@@ -1943,6 +2298,11 @@
           "date": "2026-09-09",
           "price": 3750.0,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 3750.0,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -1965,6 +2325,11 @@
         },
         {
           "date": "2026-09-09",
+          "price": 1099.97,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
           "price": 1099.97,
           "stock_status": "in_stock"
         }
@@ -1991,6 +2356,11 @@
           "date": "2026-09-09",
           "price": 8502.0,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 8502.0,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -2013,6 +2383,11 @@
         },
         {
           "date": "2026-09-09",
+          "price": 1599.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
           "price": 1599.99,
           "stock_status": "in_stock"
         }
@@ -2039,6 +2414,11 @@
           "date": "2026-09-09",
           "price": 1699.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 1699.99,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -2063,6 +2443,11 @@
           "date": "2026-09-09",
           "price": 5199.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 5199.99,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -2085,6 +2470,11 @@
         },
         {
           "date": "2026-09-09",
+          "price": 4499.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
           "price": 4499.99,
           "stock_status": "in_stock"
         }
@@ -2135,6 +2525,11 @@
           "date": "2026-09-09",
           "price": 3750.0,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 3750.0,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -2157,6 +2552,11 @@
         },
         {
           "date": "2026-09-09",
+          "price": 2248.8,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
           "price": 2248.8,
           "stock_status": "in_stock"
         }
@@ -2183,6 +2583,11 @@
           "date": "2026-09-09",
           "price": 5199.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 5199.99,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -2205,6 +2610,11 @@
         },
         {
           "date": "2026-09-09",
+          "price": 3999.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
           "price": 3999.99,
           "stock_status": "in_stock"
         }
@@ -2231,6 +2641,11 @@
           "date": "2026-09-09",
           "price": 599.0,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 599.0,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -2253,6 +2668,11 @@
         },
         {
           "date": "2026-09-09",
+          "price": 1099.97,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
           "price": 1099.97,
           "stock_status": "in_stock"
         }
@@ -2279,6 +2699,11 @@
           "date": "2026-09-09",
           "price": 4699.0,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 4699.0,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -2301,6 +2726,11 @@
         },
         {
           "date": "2026-09-09",
+          "price": 5199.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
           "price": 5199.99,
           "stock_status": "in_stock"
         }
@@ -2327,6 +2757,11 @@
           "date": "2026-09-09",
           "price": 1533.53,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 1533.53,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -2351,6 +2786,11 @@
           "date": "2026-09-09",
           "price": 2249.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 2249.99,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -2373,6 +2813,11 @@
         },
         {
           "date": "2026-09-09",
+          "price": 1488.0,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
           "price": 1488.0,
           "stock_status": "in_stock"
         }
@@ -2423,6 +2868,11 @@
           "date": "2026-09-09",
           "price": 1463.81,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 1463.81,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -2441,6 +2891,11 @@
         {
           "date": "2026-09-08",
           "price": 5999.01,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 7600.01,
           "stock_status": "in_stock"
         }
       ]
@@ -2466,6 +2921,11 @@
           "date": "2026-09-09",
           "price": 1828.19,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 1828.19,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -2488,6 +2948,11 @@
         },
         {
           "date": "2026-09-09",
+          "price": 2399.0,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
           "price": 2399.0,
           "stock_status": "in_stock"
         }
@@ -2536,6 +3001,11 @@
         },
         {
           "date": "2026-09-09",
+          "price": 5999.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
           "price": 5999.99,
           "stock_status": "in_stock"
         }
@@ -2605,6 +3075,11 @@
           "date": "2026-09-09",
           "price": 5999.01,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 5999.01,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -2627,6 +3102,11 @@
         },
         {
           "date": "2026-09-09",
+          "price": 4499.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
           "price": 4499.99,
           "stock_status": "in_stock"
         }
@@ -2672,6 +3152,11 @@
           "date": "2026-09-09",
           "price": 5399.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 5399.99,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -2694,6 +3179,11 @@
         },
         {
           "date": "2026-09-09",
+          "price": 1350.0,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
           "price": 1350.0,
           "stock_status": "in_stock"
         }
@@ -2744,6 +3234,11 @@
           "date": "2026-09-09",
           "price": 2399.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 2399.99,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -2790,6 +3285,11 @@
         },
         {
           "date": "2026-09-09",
+          "price": 3993.0,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
           "price": 3993.0,
           "stock_status": "in_stock"
         }
@@ -2857,6 +3357,11 @@
         },
         {
           "date": "2026-09-09",
+          "price": 2549.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
           "price": 2549.99,
           "stock_status": "in_stock"
         }
@@ -3055,6 +3560,11 @@
           "date": "2026-09-08",
           "price": 2160.0,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 2117.5,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -3093,6 +3603,11 @@
         },
         {
           "date": "2026-09-09",
+          "price": 1999.0,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
           "price": 1999.0,
           "stock_status": "in_stock"
         }
@@ -3150,6 +3665,11 @@
           "date": "2026-09-09",
           "price": 4899.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 4899.99,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -3205,6 +3725,11 @@
           "date": "2026-09-08",
           "price": 3749.79,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 3749.79,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -3235,6 +3760,11 @@
           "date": "2026-09-09",
           "price": 2399.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 2399.99,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -3253,6 +3783,11 @@
         },
         {
           "date": "2026-09-09",
+          "price": 2749.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
           "price": 2749.99,
           "stock_status": "in_stock"
         }
@@ -3300,6 +3835,11 @@
           "date": "2026-09-08",
           "price": 1099.97,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 1099.97,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -3318,6 +3858,11 @@
         },
         {
           "date": "2026-09-09",
+          "price": 2399.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
           "price": 2399.99,
           "stock_status": "in_stock"
         }
@@ -3410,6 +3955,11 @@
           "date": "2026-09-09",
           "price": 1798.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 1798.99,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -3428,6 +3978,11 @@
         },
         {
           "date": "2026-09-09",
+          "price": 1648.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
           "price": 1648.99,
           "stock_status": "in_stock"
         }
@@ -3450,6 +4005,11 @@
           "date": "2026-09-09",
           "price": 2048.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 2048.99,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -3468,6 +4028,11 @@
         },
         {
           "date": "2026-09-09",
+          "price": 1598.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
           "price": 1598.99,
           "stock_status": "in_stock"
         }
@@ -3505,6 +4070,11 @@
           "date": "2026-09-09",
           "price": 1399.0,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 1399.0,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -3523,6 +4093,11 @@
         },
         {
           "date": "2026-09-09",
+          "price": 4798.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
           "price": 4798.99,
           "stock_status": "in_stock"
         }
@@ -3545,6 +4120,11 @@
           "date": "2026-09-09",
           "price": 8598.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 8598.99,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -3563,6 +4143,11 @@
         },
         {
           "date": "2026-09-09",
+          "price": 2998.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
           "price": 2998.99,
           "stock_status": "in_stock"
         }
@@ -3585,6 +4170,11 @@
           "date": "2026-09-09",
           "price": 3298.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 3298.99,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -3603,6 +4193,11 @@
         },
         {
           "date": "2026-09-09",
+          "price": 1848.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
           "price": 1848.99,
           "stock_status": "in_stock"
         }
@@ -3625,6 +4220,11 @@
           "date": "2026-09-09",
           "price": 2398.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 2398.99,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -3645,6 +4245,11 @@
           "date": "2026-09-09",
           "price": 2998.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 2998.99,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -3663,6 +4268,11 @@
         },
         {
           "date": "2026-09-09",
+          "price": 2498.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
           "price": 2498.99,
           "stock_status": "in_stock"
         }
@@ -3700,6 +4310,11 @@
           "date": "2026-09-09",
           "price": 3998.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 3998.99,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -3718,6 +4333,11 @@
         },
         {
           "date": "2026-09-09",
+          "price": 1798.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
           "price": 1798.99,
           "stock_status": "in_stock"
         }
@@ -3740,6 +4360,11 @@
           "date": "2026-09-09",
           "price": 1848.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 1848.99,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -3758,6 +4383,11 @@
         },
         {
           "date": "2026-09-09",
+          "price": 1948.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
           "price": 1948.99,
           "stock_status": "in_stock"
         }
@@ -3780,6 +4410,11 @@
           "date": "2026-09-09",
           "price": 1948.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 1948.99,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -3798,6 +4433,11 @@
         },
         {
           "date": "2026-09-09",
+          "price": 2759.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
           "price": 2759.99,
           "stock_status": "in_stock"
         }
@@ -3842,6 +4482,11 @@
           "date": "2026-09-09",
           "price": 2400.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 2400.99,
+          "stock_status": "in_stock"
         }
       ],
       "reference_price": 2699.99
@@ -3861,6 +4506,11 @@
         },
         {
           "date": "2026-09-09",
+          "price": 2949.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
           "price": 2949.99,
           "stock_status": "in_stock"
         }
@@ -3884,6 +4534,11 @@
           "date": "2026-09-09",
           "price": 2999.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 2999.99,
+          "stock_status": "in_stock"
         }
       ],
       "reference_price": 3389.99
@@ -3903,6 +4558,11 @@
         },
         {
           "date": "2026-09-09",
+          "price": 2679.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
           "price": 2679.99,
           "stock_status": "in_stock"
         }
@@ -3926,6 +4586,11 @@
           "date": "2026-09-09",
           "price": 3099.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 3099.99,
+          "stock_status": "in_stock"
         }
       ],
       "reference_price": 4299.99
@@ -3945,6 +4610,11 @@
         },
         {
           "date": "2026-09-09",
+          "price": 2899.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
           "price": 2899.99,
           "stock_status": "in_stock"
         }
@@ -3968,6 +4638,11 @@
           "date": "2026-09-09",
           "price": 2559.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 2559.99,
+          "stock_status": "in_stock"
         }
       ],
       "reference_price": 2899.99
@@ -3987,6 +4662,11 @@
         },
         {
           "date": "2026-09-09",
+          "price": 2919.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
           "price": 2919.99,
           "stock_status": "in_stock"
         }
@@ -4010,6 +4690,11 @@
           "date": "2026-09-09",
           "price": 4213.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 4213.99,
+          "stock_status": "in_stock"
         }
       ],
       "reference_price": 5199.99
@@ -4029,6 +4714,11 @@
         },
         {
           "date": "2026-09-09",
+          "price": 3798.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
           "price": 3798.99,
           "stock_status": "in_stock"
         }
@@ -4298,6 +4988,11 @@
           "date": "2026-09-08",
           "price": 3250.0,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 3250.0,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -4355,6 +5050,11 @@
           "date": "2026-09-09",
           "price": 4990.0,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 4990.0,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -4402,6 +5102,11 @@
         },
         {
           "date": "2026-09-09",
+          "price": 3307.05,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
           "price": 3307.05,
           "stock_status": "in_stock"
         }
@@ -4458,6 +5163,11 @@
           "date": "2026-09-09",
           "price": 3499.01,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 3499.01,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -4501,6 +5211,11 @@
           "date": "2026-09-09",
           "price": 3699.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 3699.99,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -4521,6 +5236,11 @@
       "history": [
         {
           "date": "2026-09-08",
+          "price": 4899.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
           "price": 4899.99,
           "stock_status": "in_stock"
         }
@@ -4587,6 +5307,11 @@
         },
         {
           "date": "2026-09-09",
+          "price": 2040.0,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
           "price": 2040.0,
           "stock_status": "in_stock"
         }
@@ -4660,6 +5385,11 @@
           "date": "2026-09-08",
           "price": 749.0,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 749.0,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -4687,6 +5417,11 @@
           "date": "2026-09-09",
           "price": 78.65,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 78.65,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -4696,6 +5431,11 @@
       "history": [
         {
           "date": "2026-09-09",
+          "price": 4070.32,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
           "price": 4070.32,
           "stock_status": "in_stock"
         }
@@ -4720,6 +5460,11 @@
           "date": "2026-09-09",
           "price": 2148.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 2148.99,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -4729,6 +5474,11 @@
       "history": [
         {
           "date": "2026-09-09",
+          "price": 2398.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
           "price": 2398.99,
           "stock_status": "in_stock"
         }
@@ -4762,6 +5512,11 @@
       "history": [
         {
           "date": "2026-09-09",
+          "price": 10769.0,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
           "price": 10769.0,
           "stock_status": "in_stock"
         }
