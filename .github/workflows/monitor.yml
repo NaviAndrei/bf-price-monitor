@@ -60,5 +60,22 @@ jobs:
           git diff --staged --quiet
           if ($LASTEXITCODE -ne 0) {
             git commit -m "chore: update price history [skip ci]"
+
+            # Overlapping runs on this persistent self-hosted runner can each
+            # start from the same origin/master tip and race to push -- rebase
+            # onto the current remote tip immediately before pushing so a run
+            # that finishes second integrates the other run's commit instead
+            # of getting a non-fast-forward rejection.
+            git pull --rebase origin master
+            if ($LASTEXITCODE -ne 0) {
+              Write-Error "git pull --rebase failed -- likely a genuine content conflict in data/price_history.json between two runs' commits, not just the race this rebase is meant to absorb. Aborting the rebase so this persistent runner's checkout isn't left mid-rebase and blocking every subsequent scheduled run."
+              git rebase --abort
+              exit 1
+            }
+
+            git push
+            if ($LASTEXITCODE -ne 0) {
+              Write-Error "git push failed even after a successful rebase -- unexpected; needs manual investigation rather than a blind retry."
+              exit 1
+            }
           }
-          git push
