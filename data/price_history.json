@@ -2501,6 +2501,11 @@
           "date": "2026-09-09",
           "price": 4099.01,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 4099.01,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -2844,6 +2849,11 @@
           "date": "2026-09-09",
           "price": 4999.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 4999.99,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -2979,6 +2989,11 @@
           "date": "2026-09-09",
           "price": 5399.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 5399.99,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -3030,6 +3045,11 @@
         },
         {
           "date": "2026-09-09",
+          "price": 899.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
           "price": 899.99,
           "stock_status": "in_stock"
         }
@@ -3128,6 +3148,11 @@
           "date": "2026-09-09",
           "price": 1829.52,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 1829.52,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -3210,6 +3235,11 @@
           "date": "2026-09-09",
           "price": 5999.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 5999.99,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -3263,6 +3293,11 @@
           "date": "2026-09-09",
           "price": 4601.03,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 4601.03,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -3314,6 +3349,11 @@
         },
         {
           "date": "2026-09-09",
+          "price": 4598.0,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
           "price": 4598.0,
           "stock_status": "in_stock"
         }
@@ -3378,6 +3418,11 @@
         {
           "date": "2026-09-07",
           "price": 24407.38
+        },
+        {
+          "date": "2026-09-10",
+          "price": 23334.21,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -3878,6 +3923,11 @@
         },
         {
           "date": "2026-09-08",
+          "price": 2949.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
           "price": 2949.99,
           "stock_status": "in_stock"
         }
@@ -4461,6 +4511,11 @@
           "date": "2026-09-09",
           "price": 2398.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 2099.0,
+          "stock_status": "in_stock"
         }
       ],
       "reference_price": 3499.99
@@ -4918,6 +4973,11 @@
           "date": "2026-09-09",
           "price": 5581.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 5581.99,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -4971,6 +5031,11 @@
         },
         {
           "date": "2026-09-09",
+          "price": 3590.0,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
           "price": 3590.0,
           "stock_status": "in_stock"
         }
@@ -5027,6 +5092,11 @@
         },
         {
           "date": "2026-09-08",
+          "price": 9506.62,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
           "price": 9506.62,
           "stock_status": "in_stock"
         }
@@ -5145,6 +5215,11 @@
         },
         {
           "date": "2026-09-09",
+          "price": 199.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
           "price": 199.99,
           "stock_status": "in_stock"
         }
@@ -5328,6 +5403,11 @@
         },
         {
           "date": "2026-09-09",
+          "price": 5999.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
           "price": 5999.99,
           "stock_status": "in_stock"
         }
@@ -5529,6 +5609,28 @@
         {
           "date": "2026-09-09",
           "price": 2844.12,
+          "stock_status": "in_stock"
+        }
+      ]
+    },
+    "https://www.emag.ro/laptop-lenovo-v15-g5-irl-cu-procesor-intel-core-i5-13420h-pana-la-4-60-ghz-15-6-fhd-16gb-ddr5-ram-1tb-ssd-intel-uhd-graphics-windows-11-pro-83gw00alri2w/pd/D4YW3M2BM/": {
+      "title": "Laptop Lenovo V15 G5 IRL cu procesor Intel Core i5-13420H pana la 4.60 GHz, 15.6\" FHD, 16GB DDR5 RAM, 1TB SSD, Intel UHD Graphics, Windows 11 Pro",
+      "site": "emag",
+      "history": [
+        {
+          "date": "2026-09-10",
+          "price": 4390.0,
+          "stock_status": "in_stock"
+        }
+      ]
+    },
+    "https://www.emag.ro/telefon-mobil-honor-600-lite-8gb-ram-256gb-5g-sprout-green-b010593010we/pd/DFX5ZM2BM/": {
+      "title": "Telefon mobil Honor 600 Lite, 8GB RAM, 256GB, 5G, Sprout Green",
+      "site": "emag",
+      "history": [
+        {
+          "date": "2026-09-10",
+          "price": 1499.0,
           "stock_status": "in_stock"
         }
       ]
