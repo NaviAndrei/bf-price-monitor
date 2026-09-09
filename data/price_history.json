@@ -727,6 +727,11 @@
           "date": "2026-09-08",
           "price": 4356.0,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-09",
+          "price": 4719.0,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -831,6 +836,11 @@
         {
           "date": "2026-09-08",
           "price": 2637.8,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-09",
+          "price": 4235.0,
           "stock_status": "in_stock"
         }
       ]
@@ -1976,6 +1986,11 @@
           "date": "2026-09-08",
           "price": 8502.0,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-09",
+          "price": 8502.0,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -2585,6 +2600,11 @@
           "date": "2026-09-08",
           "price": 5999.01,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-09",
+          "price": 5999.01,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -2623,6 +2643,11 @@
         {
           "date": "2026-09-07",
           "price": 1815.0
+        },
+        {
+          "date": "2026-09-09",
+          "price": 1829.52,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -2714,6 +2739,11 @@
           "date": "2026-09-08",
           "price": 2399.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-09",
+          "price": 2399.99,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -2731,6 +2761,11 @@
         },
         {
           "date": "2026-09-08",
+          "price": 4601.03,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-09",
           "price": 4601.03,
           "stock_status": "in_stock"
         }
@@ -2775,6 +2810,11 @@
         {
           "date": "2026-09-08",
           "price": 3993.0,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-09",
+          "price": 4598.0,
           "stock_status": "in_stock"
         }
       ]
@@ -4203,6 +4243,11 @@
           "date": "2026-09-08",
           "price": 3749.98,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-09",
+          "price": 3749.98,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -4231,6 +4276,11 @@
         },
         {
           "date": "2026-09-08",
+          "price": 3590.0,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-09",
           "price": 3590.0,
           "stock_status": "in_stock"
         }
@@ -4385,6 +4435,11 @@
       "history": [
         {
           "date": "2026-09-08",
+          "price": 199.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-09",
           "price": 199.99,
           "stock_status": "in_stock"
         }
@@ -4545,6 +4600,11 @@
           "date": "2026-09-08",
           "price": 5999.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-09",
+          "price": 5999.99,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -4692,6 +4752,28 @@
         {
           "date": "2026-09-09",
           "price": 4499.99,
+          "stock_status": "in_stock"
+        }
+      ]
+    },
+    "https://www.emag.ro/laptop-lenovo-v15-g4-iru-cu-procesor-intelr-coretm-i5-13420h-pana-la-4-6-ghz-15-6-full-hd-ips-4gb-ddr4-3-75-tb-ssd-intelr-uhd-graphics-no-os-business-black-hjughywqqa12378uu/pd/DJWGJ53BM/": {
+      "title": "Laptop Lenovo V15 G4 IRU cu procesor Intel® Core™ i5-13420H pana la 4.6 GHz, 15.6\", Full HD, IPS, 4GB DDR4, 3.75 TB SSD, Intel® UHD Graphics, No OS, Business Black",
+      "site": "emag",
+      "history": [
+        {
+          "date": "2026-09-09",
+          "price": 10769.0,
+          "stock_status": "in_stock"
+        }
+      ]
+    },
+    "https://www.emag.ro/laptop-lenovo-v15-g5-irl-procesor-intelr-coretm-i3-1315u-10m-cache-up-to-4-50-ghz-with-ipu-15-6-fhd-8gb-512gb-ssd-intelr-uhd-graphics-negru-83hf00g2ri/pd/D375T02BM/": {
+      "title": "Laptop Lenovo V15 G5 IRL Procesor Intel® Core™ i3-1315U 10M Cache, up to 4.50 GHz, with IPU, 15.6\" FHD, 8GB, 512GB SSD, Intel® UHD Graphics, Negru",
+      "site": "emag",
+      "history": [
+        {
+          "date": "2026-09-09",
+          "price": 2844.12,
           "stock_status": "in_stock"
         }
       ]
