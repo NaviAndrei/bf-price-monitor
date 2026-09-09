@@ -5,5 +5,6 @@ data/alerts.json
 data/formatted_alerts.json
 .remember/
 .vscode/
-.claude/
+.claude/settings.local.json
+.claude/logs/
 .specstory/

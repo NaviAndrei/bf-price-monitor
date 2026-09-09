@@ -3,3 +3,4 @@ beautifulsoup4
 huggingface_hub
 playwright
 playwright-stealth
+pytest
