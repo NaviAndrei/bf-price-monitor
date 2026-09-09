@@ -9,7 +9,7 @@ from huggingface_hub import InferenceClient
 ALERTS_FILE = Path("data/alerts.json")
 FORMATTED_FILE = Path("data/formatted_alerts.json")
 
-HF_MODEL = os.getenv("HF_MODEL", "Qwen/Qwen3-30B-A3B-Instruct-2507")
+HF_MODEL = os.getenv("HF_MODEL", "Qwen/Qwen2.5-Coder-32B-Instruct")
 OLLAMA_URL = "http://localhost:11434/api/chat"
 OLLAMA_MODEL = "qwen3:8b"
 TELEGRAM_MESSAGE_LIMIT = 4096
