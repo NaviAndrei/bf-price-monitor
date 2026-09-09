@@ -9,7 +9,7 @@ from huggingface_hub import InferenceClient
 ALERTS_FILE = Path("data/alerts.json")
 FORMATTED_FILE = Path("data/formatted_alerts.json")
 
-HF_MODEL = "meta-llama/Llama-3.3-70B-Instruct"
+HF_MODEL = os.getenv("HF_MODEL", "Qwen/Qwen3-30B-A3B-Instruct-2507")
 OLLAMA_URL = "http://localhost:11434/api/chat"
 OLLAMA_MODEL = "qwen3:8b"
 TELEGRAM_MESSAGE_LIMIT = 4096
@@ -23,7 +23,9 @@ def resolve_reference(alert: dict) -> tuple[float | None, str]:
     return alert.get("thirty_day_low"), "observed"
 
 
-def build_prompt(alert: dict, reference_low: float | None, comparison_method: str) -> str:
+def build_prompt(
+    alert: dict, reference_low: float | None, comparison_method: str
+) -> str:
     stock_status = alert.get("stock_status", "unknown")
     return (
         f"Product: {alert['title']}. Old price: {alert['old_price']} RON. "
@@ -47,7 +49,11 @@ def ask_hf(client: InferenceClient, prompt: str) -> str:
 def ask_ollama(prompt: str) -> str:
     r = requests.post(
         OLLAMA_URL,
-        json={"model": OLLAMA_MODEL, "messages": [{"role": "user", "content": prompt}], "stream": False},
+        json={
+            "model": OLLAMA_MODEL,
+            "messages": [{"role": "user", "content": prompt}],
+            "stream": False,
+        },
         timeout=180,  # qwen3:8b is a "thinking" model; ~90s to reason before answering on this hardware
     )
     r.raise_for_status()
@@ -110,7 +116,12 @@ def main():
             )
         messages.extend(chunk_message(header, lines))
 
-    json.dump(messages, open(FORMATTED_FILE, "w", encoding="utf-8"), indent=2, ensure_ascii=False)
+    json.dump(
+        messages,
+        open(FORMATTED_FILE, "w", encoding="utf-8"),
+        indent=2,
+        ensure_ascii=False,
+    )
     print(f"Analyzed {len(alerts)} alert(s) into {len(messages)} message(s)")
 
 
