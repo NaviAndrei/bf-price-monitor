@@ -5676,6 +5676,17 @@
           "stock_status": "in_stock"
         }
       ]
+    },
+    "https://www.emag.ro/laptop-lenovo-v15-g5-15-6-fhd-intel-core-i5-16gb-ram-512gb-ssd-negru-83hfs03200/pd/DHQZZM2BM/": {
+      "title": "Laptop Lenovo V15 G5, 15.6\" FHD, Intel Core i5, 16GB RAM, 512GB SSD, Negru",
+      "site": "emag",
+      "history": [
+        {
+          "date": "2026-09-10",
+          "price": 3499.0,
+          "stock_status": "in_stock"
+        }
+      ]
     }
   }
 }
