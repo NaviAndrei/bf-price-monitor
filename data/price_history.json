@@ -28,7 +28,9 @@
           "price": 3099.99,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/laptop-lenovo-v15-g4-abp-cu-procesor-amd-ryzentm-7-7730u-pana-la-4-5ghz-15-6-full-hd-ips-16gb-ddr4-512gb-ssd-video-integrated-amd-radeontm-graphic-no-os-business-black-82yy001drm/pd/DF8YX5YBM/": {
       "title": "Laptop Lenovo V15 G4 ABP cu procesor AMD Ryzen™ 7 7730U pana la 4.5GHz, 15.6\" Full HD, IPS, 16GB DDR4, 512GB SSD, Video Integrated AMD Radeon™ Graphic, No OS, Business Black",
@@ -57,7 +59,9 @@
           "price": 3479.99,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/laptop-lenovo-v15-g5-irl-cu-procesor-intelr-core-i5-13420h-pana-la-4-60-ghz-15-6-fhd-32gb-ram-1tb-ssd-intelr-uhd-graphics-no-os-83gw00alri/pd/DBGRKZ3BM/": {
       "title": "Laptop Lenovo V15 G5 IRL cu procesor Intel® Core i5-13420H pana la 4.60 GHz, 15.6\" FHD, 32GB RAM, 1TB SSD, Intel® UHD Graphics, No OS",
@@ -86,7 +90,9 @@
           "price": 3699.99,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/laptop-lenovo-v15-g5-irl-cu-procesor-intelr-coretm-i5-13420h-pana-la-4-6ghz-15-6-full-hd-16gb-ddr5-ram-512gb-ssd-intelr-uhd-graphics-windowsr-11-pro-business-black-3y-83gw00acri/pd/D91TPW3BM/": {
       "title": "Laptop Lenovo V15 G5 IRL cu procesor Intel® Core™ i5-13420H pana la 4.6GHz, 15.6\" Full HD, 16GB DDR5 RAM, 512GB SSD, Intel® UHD Graphics, Windows® 11 Pro, Business Black, 3y",
@@ -115,7 +121,9 @@
           "price": 3499.99,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/laptop-lenovo-v15-g4-amn-cu-procesor-amd-ryzentm-3-7320u-pana-la-4-1-ghz-15-6-full-hd-16gb-512gb-ssd-amd-radeontm-610m-graphics-no-os-business-black-82yu0100rm/pd/DXWPCTYBM/": {
       "title": "Laptop Lenovo V15 G4 AMN cu procesor AMD Ryzen™ 3 7320U pana la 4.1 GHz, 15.6\", Full HD, 16GB, 512GB SSD, AMD Radeon™ 610M Graphics, No OS, Business Black",
@@ -144,7 +152,9 @@
           "price": 2509.99,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/laptop-lenovo-v15-g5-irl-cu-procesor-intel-coretm-i5-13420h-pana-la-4-60-ghz-15-6-fhd-ips-16gb-ram-1tb-ssd-intelr-uhd-graphics-no-os-83hf00gmri/pd/DNZG8P2BM/": {
       "title": "Laptop Lenovo V15 G5 IRL cu procesor Intel Core™ i5-13420H pana la 4.60 GHz, 15.6\" FHD IPS, 16GB RAM, 1TB SSD, Intel® UHD Graphics, No OS",
@@ -173,7 +183,9 @@
           "price": 3199.99,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/laptop-lenovo-v15-g4-iru-cu-procesor-lntelr-coretm-i5-13420h-pana-la-4-6ghz-15-6-full-hd-ips-16gb-ddr4-ram-1tb-ssd-intelr-uhd-graphics-no-os-business-black-83a100eyrm/pd/DFY4YJYBM/": {
       "title": "Laptop Lenovo V15 G4 IRU cu procesor lntel® Core™ i5-13420H pana la 4.6GHz, 15.6\", Full HD, IPS, 16GB DDR4 RAM, 1TB SSD, Intel® UHD Graphics, No OS, Business Black",
@@ -202,7 +214,9 @@
           "price": 3605.8,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/laptop-lenovo-v15-g5-irl-cu-procesor-intelr-core-i7-13620h-pana-la-4-9ghz-15-6-full-hd-ips-32gb-ddr5-ram-1tb-ssd-intelr-uhd-graphics-no-os-business-black-83gw00ajri/pd/DCFXR83BM/": {
       "title": "Laptop Lenovo V15 G5 IRL cu procesor Intel® Core i7-13620H pana la 4.9GHZ, 15.6\" Full HD, IPS, 32GB DDR5 RAM, 1TB SSD, Intel® UHD Graphics, No OS, Business Black",
@@ -231,7 +245,9 @@
           "price": 10890.0,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/laptop-lenovo-v15-g5-cu-procesor-intelr-coretm-i7-13620h-pana-la-4-90-ghz-15-6-full-hd-16gb-ddr5-ram-512gb-ssd-intelr-uhd-graphics-windowsr-11-pro-business-black-3y-on-site-premium-care-83gw00abri/pd/DS1TPW3BM/": {
       "title": "Laptop Lenovo V15 G5 cu procesor Intel® Core™ i7-13620H pana la 4.90 GHz, 15.6\" Full HD, 16GB DDR5 RAM, 512GB SSD, Intel® UHD Graphics, Windows® 11 Pro, Business Black, 3y on-site Premium Care",
@@ -260,7 +276,9 @@
           "price": 4139.99,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/laptop-lenovo-v15-g5-irl-cu-procesor-intel-coretm-i3-1315u-pana-la-4-50-ghz-15-6-fhd-ips-8gb-ram-256gb-ssd-intelr-uhd-graphics-no-os-83hf00g3ri/pd/D0ZG8P2BM/": {
       "title": "Laptop Lenovo V15 G5 IRL cu procesor Intel Core™ i3-1315U pana la 4.50 GHz, 15.6\" FHD IPS, 8GB RAM, 256GB SSD, Intel® UHD Graphics, No OS",
@@ -289,7 +307,9 @@
           "price": 2099.99,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/laptop-lenovo-v15-g5-irl-cu-procesor-intel-coretm-i3-1315u-pana-la-4-50-ghz-15-6-fhd-ips-16gb-ram-512gb-ssd-intelr-uhd-graphics-no-os-83hf00gcri/pd/DKZG8P2BM/": {
       "title": "Laptop Lenovo V15 G5 IRL cu procesor Intel Core™ i3-1315U pana la 4.50 GHz, 15.6\" FHD IPS, 16GB RAM, 512GB SSD, Intel® UHD Graphics, No OS",
@@ -318,7 +338,9 @@
           "price": 2699.99,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/laptop-lenovo-v15-g4-iru-cu-procesor-intelr-core-i7-13620h-pana-la-4-9ghz-15-6-full-hd-ips-16gb-ddr4-ram-512gb-ssd-intelr-uhd-graphics-no-os-business-black-3y-on-site-premium-care-83a100qnrm/pd/DX72K43BM/": {
       "title": "Laptop Lenovo V15 G4 IRU cu procesor Intel® Core i7-13620H pana la 4.9GHz, 15.6\" Full HD, IPS, 16GB DDR4 RAM, 512GB SSD,Intel® UHD Graphics, No OS, Business Black, 3y on-site Premium Care",
@@ -347,7 +369,9 @@
           "price": 3299.99,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/laptop-lenovo-v15-g5-irl-cu-procesor-intel-coretm-i5-13420h-pana-la-4-6ghz-15-6-full-hd-16gb-ddr5-ram-512gb-ssd-intelr-uhd-graphics-no-os-business-black-3y-courier-83gw008eri/pd/D372K43BM/": {
       "title": "Laptop Lenovo V15 G5 IRL cu procesor Intel Core™ i5-13420H pana la 4.6GHz, 15.6\" Full HD, 16GB DDR5 RAM, 512GB SSD, Intel® UHD Graphics, No OS, Business Black, 3Y Courier",
@@ -376,7 +400,9 @@
           "price": 3590.0,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/laptop-lenovo-v15-g4-iru-cu-procesor-intelr-coretm-i3-1315u-pana-la-4-5-ghz-15-6-full-hd-ips-8gb-ddr4-ram-256gb-ssd-intelr-uhd-graphics-no-os-business-black-3y-carry-in-83a1007crm/pd/D0SQ3TYBM/": {
       "title": "Laptop Lenovo V15 G4 IRU cu procesor Intel® Core™ i3-1315U pana la 4.5 GHz, 15.6\", Full HD, IPS, 8GB DDR4 RAM, 256GB SSD, Intel® UHD Graphics, No OS, Business Black, 3y Carry-in",
@@ -405,7 +431,9 @@
           "price": 2174.37,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/laptop-lenovo-v15-g5-irl-cu-procesor-intel-coretm-i5-13420h-pana-la-4-60-ghz-15-6-fhd-ips-32gb-ram-1tb-ssd-intelr-uhd-graphics-no-os-83hf00guri/pd/D9ZG8P2BM/": {
       "title": "Laptop Lenovo V15 G5 IRL cu procesor Intel Core™ i5-13420H pana la 4.60 GHz, 15.6\" FHD IPS, 32GB RAM, 1TB SSD, Intel® UHD Graphics, No OS",
@@ -434,7 +462,9 @@
           "price": 4199.99,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/laptop-lenovo-v15-g4-amn-cu-procesor-amd-ryzentm-5-7520u-pana-la-4-3ghz-15-6-full-hd-16gb-lpddr5-ram-512gb-ssd-amd-radeontm-610m-graphics-windowsr-11-pro-business-black-82yu00ymrm/pd/DQN69M2BM/": {
       "title": "Laptop Lenovo V15 G4 AMN cu procesor AMD Ryzen™ 5 7520U pana la 4.3GHz, 15.6\" Full HD, 16GB LPDDR5 RAM, 512GB SSD, AMD Radeon™ 610M Graphics, Windows® 11 Pro, Business Black",
@@ -463,7 +493,9 @@
           "price": 3099.99,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/laptop-lenovo-v15-g5-irl-cu-procesor-intelr-core-i7-13620h-pana-la-4-90-ghz-15-6-fhd-16gb-ram-512gb-ssd-intelr-uhd-graphics-no-os-83gw007uri/pd/DYGRKZ3BM/": {
       "title": "Laptop Lenovo V15 G5 IRL cu procesor Intel® Core i7-13620H pana la 4.90 GHz, 15.6\" FHD, 16GB RAM, 512GB SSD, Intel® UHD Graphics, No OS",
@@ -481,8 +513,15 @@
           "date": "2026-09-08",
           "price": 10769.0,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 3630.0,
+          "stock_status": "limited_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/laptop-lenovo-v15-g5-irl-cu-procesor-intel-coretm-i3-1315u-pana-la-4-50-ghz-15-6-fhd-ips-8gb-ram-512gb-ssd-intelr-uhd-graphics-no-os-83hf00g2ri/pd/DDZG8P2BM/": {
       "title": "Laptop Lenovo V15 G5 IRL cu procesor Intel Core™ i3-1315U pana la 4.50 GHz, 15.6\" FHD IPS, 8GB RAM, 512GB SSD, Intel® UHD Graphics, No OS",
@@ -511,7 +550,9 @@
           "price": 2299.99,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/laptop-lenovo-v15-g5-intel-core-i7-13620h-16-gb-ram-1-tb-ssd-15-6-fhd-negru-fb-0122/pd/D18VNW3BM/": {
       "title": "Laptop Lenovo V15 G5, Intel Core i7-13620H, 16 GB RAM, 1 TB SSD, 15.6\" FHD, Negru",
@@ -540,7 +581,9 @@
           "price": 10769.0,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/laptop-lenovo-v15-g5-irl-cu-procesor-intelr-core-i3-1315u-pana-la-4-50-ghz-15-6-fhd-8gb-ram-512gb-ssd-intelr-uhd-graphics-no-os-83gw007wri/pd/DG8RKZ3BM/": {
       "title": "Laptop Lenovo V15 G5 IRL cu procesor Intel® Core i3-1315U pana la 4.50 GHz, 15.6\" FHD, 8GB RAM, 512GB SSD, Intel® UHD Graphics, No OS",
@@ -569,7 +612,9 @@
           "price": 2069.1,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/laptop-lenovo-v15-g4-amn-cu-procesor-amd-ryzentm-5-7520u-pana-la-4-3ghz-15-6-full-hd-16gb-lpddr5-512gb-ssd-amd-radeontm-610m-graphics-no-os-business-black-3y-courier-or-carry-in-82yu00yqrm/pd/DGJG3FYBM/": {
       "title": "Laptop Lenovo V15 G4 AMN cu procesor AMD Ryzen™ 5 7520U pana la 4.3GHz, 15.6\" Full HD, 16GB LPDDR5, 512GB SSD, AMD Radeon™ 610M Graphics, No OS, Business Black, 3y Courier or Carry-in",
@@ -598,7 +643,9 @@
           "price": 3199.99,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/laptop-lenovo-v15-g4-amn-cu-procesor-amd-ryzen-5-7520u-pana-la-4-3-ghz-15-6-full-hd-8gb-512gb-ssd-amd-radeontm-610m-graphics-no-os-business-black-3y-courier-carry-in-upgrade-82yu00yyrm/pd/DN72MNYBM/": {
       "title": "Laptop Lenovo V15 G4 AMN cu procesor AMD Ryzen 5 7520U pana la 4.3 GHz, 15.6\", Full HD, 8GB, 512GB SSD, AMD Radeon™ 610M Graphics, No OS, Business Black, 3Y Courier/Carry-in upgrade",
@@ -656,7 +703,9 @@
           "price": 2099.99,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/laptop-lenovo-v15-ada-cu-procesor-amd-ryzen-3-3250u-pana-la-3-50-ghz-15-6-full-hd-8gb-256gb-ssd-radeon-vega-graphics-free-dos-iron-grey-82c7001krm/pd/DKNF72MBM/": {
       "title": "Laptop Lenovo V15 ADA cu procesor AMD Ryzen 3 3250U pana la 3.50 Ghz, 15.6\", Full HD, 8GB, 256GB SSD, Radeon Vega Graphics, Free DOS, Iron Grey",
@@ -685,7 +734,9 @@
           "price": 2204.0,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/laptop-lenovo-v15-g4-amn-cu-procesor-amd-ryzentm-5-7520u-pana-la-4-3ghz-15-6-full-hd-16gb-lpddr5-512gb-ssd-amd-radeontm-610m-graphics-windows-11-pro-business-black-3-ani-garantie-82yu00yqrm-win11pro/pd/DTMPTR2BM/": {
       "title": "Laptop Lenovo V15 G4 AMN cu procesor AMD Ryzen™ 5 7520U pana la 4.3GHz, 15.6\" Full HD, 16GB LPDDR5, 512GB SSD, AMD Radeon™ 610M Graphics, Windows 11 Pro, Business Black, 3 ani Garantie",
@@ -714,7 +765,9 @@
           "price": 3509.0,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/laptop-lenovo-v15-g5-irl-procesor-intelr-coretm-i5-13420h-12m-cache-up-to-4-60-ghz-15-6-fhd-ips-8gb-ddr5-256gb-ssd-intelr-uhd-graphics-negru-83hf00gbri/pd/DCM0N42BM/": {
       "title": "Laptop Lenovo V15 G5 IRL Procesor Intel® Core™ i5-13420H 12M Cache, up to 4.60 GHz, 15.6\" FHD IPS, 8GB DDR5, 256GB SSD, Intel® UHD Graphics, Negru",
@@ -743,7 +796,9 @@
           "price": 2955.67,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/laptop-lenovo-v15-g4-r3-7320u-16gb-512gb-dos-black-act-7c4a-wlononwcrp229/pd/D44C622BM/": {
       "title": "Laptop Lenovo V15 G4 R3-7320U 16GB 512GB DOS Black",
@@ -772,7 +827,9 @@
           "price": 2685.12,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/laptop-lenovo-15-6-v15-g4-abp-fhd-procesor-amd-ryzentm-5-5625u-16m-cache-up-to-4-3-ghz-8gb-ddr4-512gb-ssd-amd-radeon-no-os-business-black-82yy0068rm/pd/D6BPTR2BM/": {
       "title": "Laptop Lenovo 15.6'' V15 G4 ABP, FHD, Procesor AMD Ryzen™ 5 5625U (16M Cache, up to 4.3 GHz), 8GB DDR4, 512GB SSD, AMD Radeon, No OS, Business Black",
@@ -801,7 +858,9 @@
           "price": 2982.64,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/laptop-lenovo-v15-g4-amn-15-6-inch-1920x1080-amd-7520u-4-c-8-t-2-8-ghz-4-3-ghz-4-mb-cache-15-w-8-gb-lpddr5-256-gb-ssd-amd-610m-free-dos-tastatura-english-business-black-82yu0103rm/pd/DFG0DF2BM/": {
       "title": "Laptop Lenovo V15 G4 AMN 82YU0103RM, 15.6 inch 1920x1080, AMD 7520U 4 C / 8 T, 2.8 GHz - 4.3 GHz, 4 MB cache, 15 W, 8 GB LPDDR5, 256 GB SSD, AMD 610M, Free DOS, Tastatura English, Business Black",
@@ -830,7 +889,9 @@
           "price": 2299.0,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/laptop-15-6-lenovo-v15-g5-intel-i5-13420h-12mb-4-6ghz-8gb-ddr5-512gb-ssd-uhd-graphics-irl-fhd-ips-no-os-black-83hf00geri/pd/D3MPTR2BM/": {
       "title": "Laptop 15.6\" Lenovo V15 G5 Intel i5-13420H (12MB 4.6GHz) 8GB DDR5 512GB SSD UHD graphics IRL FHD IPS No OS Black",
@@ -854,7 +915,9 @@
           "price": 3208.93,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/laptop-lenovo-lenovo-v15-g4-abp-15-6-inch-1920-x-1080-amd-ryzen-7-7730u-8-c-16-t-2-0-ghz-4-5-ghz-20-mb-cache-28-w-16-gb-ddr4-512-gb-ssd-amd-amd-radeon-graphics-windows-11-home-82yy001drm-1773938758/pd/DPFLPY2BM/": {
       "title": "Laptop Lenovo Lenovo V15 G4 ABP, 15.6 inch 1920 x 1080, AMD Ryzen 7 7730U 8 C / 16 T, 2.0 GHz - 4.5 GHz, 20 MB cache, 28 W, 16 GB DDR4, 512 GB SSD, AMD AMD Radeon Graphics, Windows 11 Home",
@@ -907,7 +970,9 @@
           "price": 2388.04,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/laptop-lenovo-v15-g5-16gb-ram-512gb-fhd-83hf00h5ri/pd/DVSKTJ2BM/": {
       "title": "Laptop Lenovo V15 G5, 16GB RAM, 512GB, FHD",
@@ -936,7 +1001,9 @@
           "price": 3257.99,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/laptop-lenovo-v15-intel-core-i5-13420h-8-gb-ram-512-gb-ssd-15-6-negru-0197531836137/pd/D9GXJ8YBM/": {
       "title": "Laptop Lenovo V15, Intel Core i5-13420H, 8 GB RAM, 512 GB SSD, 15,6\", Negru",
@@ -979,7 +1046,9 @@
           "price": 2595.27,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/laptop-lenovo-v15-g5-irl-cu-procesor-intelr-core-i3-1315u-pana-la-4-5ghz-15-6-full-hd-16gb-ddr5-ram-512gb-ssd-intelr-uhd-graphics-no-os-business-black-83gw0086ri/pd/D4FXR83BM/": {
       "title": "Laptop Lenovo V15 G5 IRL cu procesor Intel® Core i3-1315U pana la 4.5GHZ, 15.6\" Full HD, 16GB DDR5 RAM, 512GB SSD, Intel® UHD Graphics, No OS, Business Black",
@@ -1037,7 +1106,9 @@
           "price": 3706.44,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/laptop-lenovo-v15-iil-cu-procesor-intel-core-i3-1005g1-pana-la-3-40-ghz-15-6-hd-4gb-256gb-ssd-intel-uhd-graphics-free-dos-grey-82c5a008eu/pd/DXFFMDMBM/": {
       "title": "Laptop Lenovo V15-IIL cu procesor Intel Core i3-1005G1 pana la 3.40 GHz, 15.6\", HD, 4GB, 256GB SSD, Intel UHD Graphics, Free DOS, Grey",
@@ -1066,7 +1137,9 @@
           "price": 1931.92,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/laptop-lenovo-v15-g5-irl-cu-procesor-intel-core-i7-13620h-pana-la-4-90-ghz-15-6-fhd-32gb-ram-512gb-ssd-intelr-uhd-graphics-no-os-83gw007uri1/pd/DHRS983BM/": {
       "title": "Laptop Lenovo V15 G5 IRL cu procesor Intel Core i7-13620H pana la 4.90 GHz, 15.6\" FHD, 32GB RAM, 512GB SSD, Intel® UHD Graphics, No OS",
@@ -1119,7 +1192,9 @@
           "price": 6499.99,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/laptop-lenovo-v15-procesor-intel-core-i5-1035g1-1ghz-4gb-ram-4gb-cadou-500gb-hdd-intel-uhd-graphics-15-6-win10pro-iron-grey-82c500l3us/pd/DCLXRJMBM/": {
       "title": "Laptop LENOVO V15, Procesor Intel Core i5-1035G1 1GHz, 4GB RAM+ 4GB CADOU,500GB HDD, Intel UHD Graphics, 15.6\", Win10Pro, Iron Grey",
@@ -1148,7 +1223,9 @@
           "price": 2543.42,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/laptop-lenovo-v15-g5-irl-83gw007wri-15-6-inch-1920-x-1080-intel-i3-1315u-6-c-8-t-3-3-ghz-4-5-ghz-8-gb-ddr5-512-gb-ssd-intel-graphics-windows-11-pro-83gw007wri-1774272929/pd/DWFMY32BM/": {
       "title": "Laptop Lenovo V15 G5 IRL 83GW007WRI, 15.6 inch 1920 x 1080, Intel i3-1315U 6 C / 8 T, 3.3 GHZ - 4.5 GHz, 8 GB DDR5, 512 GB SSD, Intel Graphics, Windows 11 Pro",
@@ -1235,7 +1312,9 @@
           "price": 10769.0,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/laptop-lenovo-15-6-v15-g5-irl-fhd-ips-procesor-intel-core-i5-13420h-12m-cache-up-to-4-60-ghz-16gb-ddr5-512gb-ssd-intel-uhd-no-os-83hf00cjri/pd/DDMPTR2BM/": {
       "title": "Laptop Lenovo 15.6'' V15 G5 IRL FHD IPS Procesor Intel Core i5-13420H (12M Cache up to 4.60 GHz) 16GB DDR5 512GB SSD Intel UHD No OS",
@@ -1264,7 +1343,9 @@
           "price": 3511.98,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/laptop-lenovo-v15-g5-irl-cu-procesor-intel-core-i7-13620h-pana-la-4-90-ghz-15-6-fhd-32gb-ddr5-ram-1tb-ssd-intel-uhd-graphics-windows-11-pro-83gw007uri3w/pd/DSRS983BM/": {
       "title": "Laptop Lenovo V15 G5 IRL cu procesor Intel Core i7-13620H pana la 4.90 GHz, 15.6\" FHD, 32GB DDR5 RAM, 1TB SSD, Intel UHD Graphics, Windows 11 Pro",
@@ -1312,7 +1393,9 @@
           "price": 3168.0,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/laptop-lenovo-v15-g5-irl-cu-procesor-intelr-core-i7-13620h-pana-la-4-90-ghz-15-6-fhd-8-gb-ram-ddr5-512-gb-ssd-intelr-uhd-graphics-windows-11-pro-business-black-fb-0182/pd/DFQG0W3BM/": {
       "title": "Laptop Lenovo V15 G5 IRL cu procesor Intel® Core i7-13620H pana la 4.90 GHz, 15.6\" FHD, 8 GB RAM DDR5, 512 GB SSD, Intel® UHD Graphics, Windows 11 Pro, Business Black",
@@ -1331,7 +1414,9 @@
           "price": 3499.99,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/laptop-lenovo-v15-g4-abp-fhd-15-6-inch-amd-ryzen-7-5825u-8gb-256gb-ssd-windows-11-home-business-black-83cr005jmh/pd/DNBZTX2BM/": {
       "title": "Laptop Lenovo V15 G4 ABP FHD 15.6 inch AMD Ryzen 7 5825U 8GB 256GB SSD Windows 11 Home Business Black",
@@ -1389,7 +1474,9 @@
           "price": 2899.97,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/laptop-lenovo-v15-g5-fhd-15-6-inch-intel-core-i3-1315u-8gb-256gb-ssd-free-dos-business-black-83hf00g3ri/pd/DQFS8N2BM/": {
       "title": "Laptop Lenovo V15 G5 FHD 15.6 inch Intel Core i3-1315U 8GB 256GB SSD Free Dos Business Black",
@@ -1480,7 +1567,9 @@
           "price": 3799.0,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/laptop-lenovo-v15-15-6-8-gb-ram-intel-core-i3-1215u-256-gb-ssd-gri-0197528652900/pd/D71XJ8YBM/": {
       "title": "Laptop Lenovo V15, 15.6\", 8 GB RAM, Intel Core I3-1215U, 256 GB SSD, gri",
@@ -1512,8 +1601,15 @@
           "date": "2026-09-08",
           "price": 3679.01,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 3679.01,
+          "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/laptop-lenovo-v15-g4-amn-cu-procesor-amd-ryzentm-3-7320u-pana-la-4-10-ghz-15-6-full-hd-8gb-ddr5-256gb-ssd-amd-radeontm-610m-no-os-business-black-82yu00p0rm/pd/DNRKYBYBM/": {
       "title": "Laptop Lenovo V15 G4 AMN cu procesor AMD Ryzen™ 3 7320U pana la 4.10 GHz, 15.6\", Full HD, 8GB DDR5, 256GB SSD, AMD Radeon™ 610M, No OS, Business Black",
@@ -1542,7 +1638,9 @@
           "price": 4961.0,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/laptop-lenovo-v15-g4-15-6-fhd-r3-7320u-16gb-512gb-ssd-win-11-pro-41327/pd/DRTRT83BM/": {
       "title": "Laptop Lenovo V15 G4, 15.6'' FHD, R3-7320U, 16GB, 512GB SSD, Win 11 Pro",
@@ -1628,7 +1726,9 @@
           "price": 3499.99,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/telefon-mobil-apple-iphone-15-128gb-5g-black-mtp03rx-a/pd/DZ4H93YBM/": {
       "title": "Telefon mobil Apple iPhone 15, 128GB, 5G, Black",
@@ -1657,7 +1757,9 @@
           "price": 3499.99,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/telefon-mobil-apple-iphone-17-pro-max-256gb-5g-cosmic-orange-mfyn4zd-a/pd/DC99FV3BM/": {
       "title": "Telefon mobil Apple iPhone 17 Pro Max, 256GB, 5G, Cosmic Orange",
@@ -1686,7 +1788,9 @@
           "price": 6949.99,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/telefon-mobil-apple-iphone-15-256gb-5g-black-mtp63rx-a/pd/D64H93YBM/": {
       "title": "Telefon mobil Apple iPhone 15, 256GB, 5G, Black",
@@ -1715,7 +1819,9 @@
           "price": 3999.99,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/telefon-mobil-apple-iphone-15-256gb-5g-blue-mtp93rx-a/pd/DW4H93YBM/": {
       "title": "Telefon mobil Apple iPhone 15, 256GB, 5G, Blue",
@@ -1744,7 +1850,9 @@
           "price": 4600.0,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/telefon-mobil-apple-iphone-16-128gb-5g-teal-myed3zd-a/pd/DFY67LYBM/": {
       "title": "Telefon mobil Apple iPhone 16, 128GB, 5G, Teal",
@@ -1773,7 +1881,9 @@
           "price": 4299.99,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/telefon-mobil-xiaomi-redmi-note-15-pro-12gb-ram-512gb-5g-black-woven-strap-ring-stand-mzb0o5ueu/pd/DCTWL83BM/": {
       "title": "Telefon Mobil Xiaomi REDMI Note 15 Pro+, 12GB RAM, 512GB, 5G, Black + Woven Strap Ring Stand",
@@ -1802,7 +1912,9 @@
           "price": 2699.99,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/telefon-mobil-xiaomi-redmi-note-15-pro-8gb-ram-256gb-titanium-woven-strap-ring-stand-mzb0o4zeu/pd/DFTWL83BM/": {
       "title": "Telefon Mobil Xiaomi REDMI Note 15 Pro, 8GB RAM, 256GB, Titanium + Woven Strap Ring Stand",
@@ -1831,7 +1943,9 @@
           "price": 1599.99,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/telefon-mobil-apple-iphone-13-128gb-5g-midnight-mlpf3rm-a/pd/DQFCMXMBM/": {
       "title": "Telefon mobil Apple iPhone 13, 128GB, 5G, Midnight",
@@ -1889,7 +2003,9 @@
           "price": 2399.0,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/telefon-mobil-google-pixel-10a-128gb-8gb-ram-5g-obsidian-ga09561-gb/pd/D4SMLW3BM/": {
       "title": "Telefon mobil Google Pixel 10a, 128GB, 8GB RAM, 5G, Obsidian",
@@ -1918,7 +2034,9 @@
           "price": 2548.6,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/telefon-mobil-apple-iphone-14-plus-256gb-5g-purple-mq563rx-a/pd/DJ7Y4LMBM/": {
       "title": "Telefon mobil Apple iPhone 14 Plus, 256GB, 5G, Purple",
@@ -1947,7 +2065,9 @@
           "price": 3941.99,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/telefon-mobil-apple-iphone-13-128gb-5g-blue-mlpk3rm-a/pd/DCFCMXMBM/": {
       "title": "Telefon mobil Apple iPhone 13, 128GB, 5G, Blue",
@@ -1976,7 +2096,9 @@
           "price": 2949.99,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/telefon-mobil-xiaomi-redmi-note-15-pro-8gb-ram-256gb-black-kxg0405029/pd/DFPN683BM/": {
       "title": "Telefon mobil Xiaomi Redmi Note 15 Pro, 8GB RAM, 256GB, Black",
@@ -2005,7 +2127,9 @@
           "price": 1723.19,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/telefon-mobil-cubot-p90-android-15-24gb-ram-256gb-rom-camera-64mp-display-6-88-baterie-5100mah-dual-sim-4g-impermeabil-ip68-ip69k-negru-yk-sj-p90-12-256-b-eu/pd/D982RG3BM/": {
       "title": "Telefon mobil CUBOT P90, Android 15 24GB RAM + 256GB ROM, camera 64MP, display 6,88'', baterie 5100mAh, Dual SIM 4G, impermeabil IP68/IP69K, Negru",
@@ -2034,7 +2158,9 @@
           "price": 1199.98,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/telefon-mobil-oneplus-15r-12gb-ram-256gb-5g-charcoal-black-6921815630944/pd/DV4PVG3BM/": {
       "title": "Telefon mobil OnePlus 15R, 12GB RAM, 256GB, 5G, Charcoal Black",
@@ -2063,7 +2189,9 @@
           "price": 2899.0,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/telefon-mobil-xiaomi-redmi-15c-4gb-ram-128gb-mint-green-srm2099-69226/pd/DXZ05J3BM/": {
       "title": "Telefon mobil Xiaomi Redmi 15C, 4GB RAM, 128GB, Mint Green",
@@ -2092,7 +2220,9 @@
           "price": 599.0,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/telefon-mobil-apple-iphone-se-3-128gb-5g-red-mmxl3rm-a/pd/DMPRWJMBM/": {
       "title": "Telefon mobil Apple iPhone SE 3, 128GB, 5G, Red",
@@ -2121,7 +2251,9 @@
           "price": 1999.0,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/telefon-mobil-xiaomi-redmi-note-15-pro-12gb-ram-512gb-5g-blue-woven-strap-ring-stand-mzb0o5weu/pd/DZTWL83BM/": {
       "title": "Telefon Mobil Xiaomi REDMI Note 15 Pro+, 12GB RAM, 512GB, 5G, Blue + Woven Strap Ring Stand",
@@ -2150,7 +2282,9 @@
           "price": 2699.99,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/telefon-mobil-apple-iphone-15-plus-independent-de-card-6-gb-ram-256-gb-5g-roz-mu193sx-a/pd/DWFZX3YBM/": {
       "title": "Telefon mobil, Apple iPhone 15 Plus, independent de card, 6 GB RAM, 256 GB, 5G, Roz",
@@ -2179,7 +2313,9 @@
           "price": 7120.85,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/telefon-mobil-apple-iphone-se-3-64gb-5g-midnight-mmxf3rm-a/pd/DYPRWJMBM/": {
       "title": "Telefon mobil Apple iPhone SE 3, 64GB, 5G, Midnight",
@@ -2208,7 +2344,9 @@
           "price": 1799.0,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/telefon-mobil-google-pixel-10-pro-xl-256gb-16gb-ram-5g-obsidian-ga09602-gb/pd/DDNG0J3BM/": {
       "title": "Telefon mobil Google Pixel 10 Pro XL, 256GB, 16GB RAM, 5G,Obsidian",
@@ -2232,7 +2370,9 @@
           "price": 5640.0,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/telefon-mobil-honor-600-dual-sim-8gb-ram-256gb-rom-orange-casti-honor-choice-earbuds-x7e-active-incluse-5109chcs-5504adcy/pd/DXDZST2BM/": {
       "title": "Telefon mobil HONOR 600, Dual SIM, 8GB RAM, 256GB ROM Orange - Casti Honor Choice Earbuds X7e Active incluse",
@@ -2261,7 +2401,9 @@
           "price": 2799.99,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/telefon-mobil-xiaomi-redmi-note-15-6gb-ram-128gb-purple-woven-strap-ring-stand-mzb0o59eu/pd/DXTWL83BM/": {
       "title": "Telefon Mobil Xiaomi REDMI Note 15, 6Gb RAM, 128GB, Purple + Woven Strap Ring Stand",
@@ -2290,7 +2432,9 @@
           "price": 999.0,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/telefon-mobil-apple-iphone-14-256gb-5g-starlight-mpw43rx-a/pd/DB7Y4LMBM/": {
       "title": "Telefon mobil Apple iPhone 14, 256GB, 5G, Starlight",
@@ -2319,7 +2463,9 @@
           "price": 3750.0,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/telefon-mobil-cubot-x100-android-15-16gb-ram-256gb-rom-camera-64mp-display-6-88-baterie-5100mah-dual-sim-5g-impermeabil-ip68-ip69k-negru-yk-sj-x100-8-256-b-eu/pd/DS82RG3BM/": {
       "title": "Telefon mobil CUBOT X100, Android 15 16GB RAM + 256GB ROM, camera 64MP, display 6,88'', baterie 5100mAh, Dual SIM 5G, impermeabil IP68/IP69K, Negru",
@@ -2348,7 +2494,9 @@
           "price": 1099.97,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/telefon-mobil-apple-iphone-15-pro-max-1tb-5g-natural-titanium-mu7j3rx-a/pd/DVLH93YBM/": {
       "title": "Telefon mobil Apple iPhone 15 Pro Max, 1TB, 5G, Natural Titanium",
@@ -2377,7 +2525,9 @@
           "price": 8502.0,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/telefon-mobil-xiaomi-redmi-note-15-pro-8gb-ram-256gb-blue-woven-strap-ring-stand-mzb0o4yeu/pd/DJTWL83BM/": {
       "title": "Telefon Mobil Xiaomi REDMI Note 15 Pro, 8GB RAM, 256GB, Blue + Woven Strap Ring Stand",
@@ -2406,7 +2556,9 @@
           "price": 1599.99,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/telefon-mobil-apple-iphone-se-3-128gb-5g-midnight-mmxj3rm-a/pd/D7PRWJMBM/": {
       "title": "Telefon mobil Apple iPhone SE 3, 128GB, 5G, Midnight",
@@ -2464,7 +2616,9 @@
           "price": 5199.99,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/telefon-mobil-apple-iphone-16-plus-128gb-5g-pink-mxvw3zd-a/pd/DGY67LYBM/": {
       "title": "Telefon mobil Apple iPhone 16 Plus, 128GB, 5G, Pink",
@@ -2493,7 +2647,9 @@
           "price": 4499.99,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/telefon-mobil-google-pixel-10-pro-128gb-16gb-ram-5g-obsidian-ga09601-gb/pd/D5KG0J3BM/": {
       "title": "Telefon mobil Google Pixel 10 Pro, 128GB, 16GB RAM, 5G, Obsidian",
@@ -2522,7 +2678,9 @@
           "price": 4099.01,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/telefon-mobil-apple-iphone-14-256gb-5g-midnight-mpvx3rx-a/pd/DW2Y4LMBM/": {
       "title": "Telefon mobil Apple iPhone 14, 256GB, 5G, Midnight",
@@ -2551,7 +2709,9 @@
           "price": 3750.0,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/telefon-mobil-xiaomi-redmi-note-15-pro-plus-12gb-ram-512gb-5g-black-xa-rn15ppsbc512/pd/DH9N683BM/": {
       "title": "Telefon mobil Xiaomi Redmi Note 15 Pro Plus, 12GB RAM, 512GB, 5G, Black",
@@ -2580,7 +2740,9 @@
           "price": 2248.8,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/telefon-mobil-apple-iphone-16-plus-256gb-5g-black-mxwn3zd-a/pd/D9F67LYBM/": {
       "title": "Telefon mobil Apple iPhone 16 Plus, 256GB, 5G, Black",
@@ -2609,7 +2771,9 @@
           "price": 5199.99,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/telefon-mobil-oneplus-15r-12gb-ram-512gb-5g-charcoal-black-set-cu-oneplus-nord-buds-2-op15r-b/pd/DG6JRN2BM/": {
       "title": "Telefon mobil OnePlus 15R, 12GB RAM, 512GB, 5G, Charcoal Black, set cu OnePlus Nord Buds 2",
@@ -2638,7 +2802,9 @@
           "price": 3999.99,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/telefon-mobil-redmi-15c-128gb-4gb-ram-dual-sim-midnight-black-woven-strap-ring-272536/pd/DLRT9C3BM/": {
       "title": "Telefon mobil Redmi 15C, 128GB, 4GB RAM, Dual SIM, Midnight Black & Woven Strap Ring",
@@ -2667,7 +2833,9 @@
           "price": 599.0,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/telefon-mobil-cubot-p90-android-15-24gb-ram-256gb-rom-camera-64mp-display-6-88-baterie-5100mah-dual-sim-4g-impermeabil-ip68-ip69k-mov-yk-sj-p90-12-256-z-eu/pd/D082RG3BM/": {
       "title": "Telefon mobil CUBOT P90, Android 15 24GB RAM + 256GB ROM, camera 64MP, display 6,88'', baterie 5100mAh, Dual SIM 4G, impermeabil IP68/IP69K, Mov",
@@ -2696,7 +2864,9 @@
           "price": 1099.97,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/telefon-mobil-oneplus-15-dual-sim-12gb-ram-256gb-5g-infinite-black-5011116287/pd/DVGHK83BM/": {
       "title": "Telefon mobil OnePlus 15, Dual SIM, 12GB RAM, 256GB, 5G, Infinite Black",
@@ -2725,7 +2895,9 @@
           "price": 4699.0,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/telefon-mobil-apple-iphone-16-plus-256gb-5g-ultramarine-mxy23zd-a/pd/D3367LYBM/": {
       "title": "Telefon mobil Apple iPhone 16 Plus, 256GB, 5G, Ultramarine",
@@ -2754,7 +2926,9 @@
           "price": 5199.99,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/telefon-mobil-xiaomi-redmi-note-15-pro-8gb-ram-256gb-titanium-kxg0405031/pd/D1PN683BM/": {
       "title": "Telefon mobil Xiaomi Redmi Note 15 Pro, 8GB RAM, 256GB, Titanium",
@@ -2812,7 +2986,9 @@
           "price": 2249.99,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/telefon-mobil-xiaomi-redmi-note-15-pro-8gb-ram-256gb-5g-black-kxg0405032/pd/DNXN683BM/": {
       "title": "Telefon mobil Xiaomi Redmi Note 15 Pro, 8GB RAM, 256GB, 5G, Black",
@@ -2841,7 +3017,9 @@
           "price": 1488.0,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/telefon-mobil-apple-iphone-air-256gb-5g-cloud-white-mg2m4zd-a/pd/D7F9FV3BM/": {
       "title": "Telefon mobil Apple iPhone Air, 256GB, 5G, Cloud White",
@@ -2870,7 +3048,9 @@
           "price": 4999.99,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/telefon-mobil-xiaomi-redmi-note-15-pro-8gb-ram-256gb-blue-mzb0mgxeu/pd/DVPN683BM/": {
       "title": "Telefon mobil Xiaomi Redmi Note 15 Pro, 8GB RAM, 256GB, Blue",
@@ -2899,7 +3079,9 @@
           "price": 1463.81,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/telefon-mobil-oneplus-15-dual-sim-16gb-ram-512gb-5g-infinite-black-5011116286/pd/DJ0RK13BM/": {
       "title": "Telefon mobil OnePlus 15, Dual SIM, 16GB RAM, 512GB, 5G, Infinite Black",
@@ -2952,7 +3134,9 @@
           "price": 1828.19,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/telefon-mobil-xiaomi-15t-12gb-ram-256gb-rom-5g-black-woven-strap-ring-stand-mzb0n3leu/pd/DL9M943BM/": {
       "title": "Telefon mobil Xiaomi 15T, 12GB RAM, 256GB ROM, 5G Black + Woven Strap Ring Stand",
@@ -2981,7 +3165,9 @@
           "price": 2399.0,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/telefon-mobil-apple-iphone-16-plus-256gb-5g-pink-mxy13zd-a/pd/DY367LYBM/": {
       "title": "Telefon mobil Apple iPhone 16 Plus, 256GB, 5G, Pink",
@@ -3010,7 +3196,9 @@
           "price": 5399.99,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/telefon-mobil-apple-iphone-air-512gb-5g-cloud-white-mg2t4zd-a/pd/DNF9FV3BM/": {
       "title": "Telefon mobil Apple iPhone Air, 512GB, 5G, Cloud White",
@@ -3039,7 +3227,9 @@
           "price": 5999.99,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/telefon-mobil-infinix-hot-50-pro-256gb-4g-titanium-grey-10068196/pd/DNTBV23BM/": {
       "title": "Telefon mobil Infinix HOT 50 Pro+, 256GB, 4G, Titanium Grey",
@@ -3068,7 +3258,9 @@
           "price": 899.99,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/telefon-mobil-apple-iphone-16-plus-512gb-5g-white-my1x3zd-a/pd/D7367LYBM/": {
       "title": "Telefon mobil Apple iPhone 16 Plus, 512GB, 5G, White",
@@ -3145,7 +3337,9 @@
           "price": 4499.99,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/telefon-mobil-honor-600-lite-dual-sim-8gb-ram-256gb-rom-velvet-grey-casti-honor-choice-earbuds-x7e-active-incluse-5109cehb-5504adcy/pd/DMB2LM2BM/": {
       "title": "Telefon mobil HONOR 600 Lite, Dual SIM, 8GB RAM, 256GB ROM, Velvet Grey - Casti Honor Choice Earbuds X7e Active incluse",
@@ -3198,7 +3392,9 @@
           "price": 5399.99,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/telefon-mobil-xiaomi-redmi-note-15-pro-4g-12gb-ram-256gb-blue-baterie-6500mah-srm2651-72708/pd/DRS38V2BM/": {
       "title": "Telefon mobil Xiaomi Redmi Note 15 Pro, 4G, 12GB RAM, 256GB, Blue, baterie 6500mAh",
@@ -3227,7 +3423,9 @@
           "price": 1350.0,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/telefon-mobil-apple-iphone-air-512gb-5g-space-black-mg2q4zd-a/pd/DKF9FV3BM/": {
       "title": "Telefon mobil Apple iPhone Air, 512GB, 5G, Space Black",
@@ -3256,7 +3454,9 @@
           "price": 5999.99,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/telefon-mobil-xiaomi-redmi-note-15-pro-8gb-ram-256gb-rom-5g-brown-woven-strap-ring-stand-mzb0o5reu/pd/DNCBLW3BM/": {
       "title": "Telefon Mobil Xiaomi REDMI Note 15 Pro+, 8GB RAM, 256GB ROM, 5G, Brown + Woven Strap Ring Stand",
@@ -3314,7 +3514,9 @@
           "price": 4601.03,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/laptop-lenovo-v15-g3-iap-cu-procesor-intelr-coretm-i3-1215u-pana-la-4-4-ghz-15-6-full-hd-8gb-256gb-ssd-intelr-uhd-graphics-no-os-business-black-3y-courier-or-carry-in-82tt00m3rm/pd/DFSQ3TYBM/": {
       "title": "Laptop Lenovo V15 G3 IAP cu procesor Intel® Core™ i3-1215U pana la 4.4 GHz, 15.6\", Full HD, 8GB, 256GB SSD, Intel® UHD Graphics, No OS, Business Black, 3y Courier or Carry-in",
@@ -3343,7 +3545,9 @@
           "price": 3993.0,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/laptop-lenovo-v15-g3-iap-cu-procesor-intelr-coretm-i3-1215u-pana-la-4-40-ghz-15-6-full-hd-8gb-ddr4-512gb-ssd-intelr-uhd-graphics-no-os-business-black-82tt00a0rm/pd/DS8RTWMBM/": {
       "title": "Laptop Lenovo V15 G3 IAP cu procesor Intel® Core™ i3-1215U pana la 4.40 GHz, 15.6\", Full HD, 8GB DDR4, 512GB SSD, Intel® UHD Graphics, No OS, Business Black",
@@ -3420,7 +3624,9 @@
           "price": 2549.99,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/laptop-lenovo-legion-5-64gb-1tb-ssd-intel-core-i9-14900hx-16-3-2k-3200x2000-miniled-nvidia-geforce-rtx-4090-16gb-windows-11-home-3120-64gb-1tb/pd/D0ZSF52BM/": {
       "title": "Pachet promo:Laptop Lenovo Legion 5, 64GB 1TB SSD, Intel Core i9-14900HX, 16\" 3.2K 3200x2000 MiniLED, NVIDIA GeForce RTX 4090 16GB, Windows 11 Home + ET103 notebook case 43.2 cm (17\") Messenger case Black",
@@ -3671,7 +3877,9 @@
           "price": 1999.0,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/laptop-lenovo-v15-g5-irl-cu-procesor-intel-core-i7-13620h-pana-la-4-90-ghz-15-6-fhd-16gb-ddr5-ram-512gb-ssd-intel-uhd-graphics-windows-11-pro-83gw007uriw/pd/D9RS983BM/": {
       "title": "Laptop Lenovo V15 G5 IRL cu procesor Intel Core i7-13620H pana la 4.90 GHz, 15.6\" FHD, 16GB DDR5 RAM, 512GB SSD, Intel UHD Graphics, Windows 11 Pro",
@@ -3686,7 +3894,9 @@
           "price": 3799.76,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/laptop-lenovo-v15-g4-amn-15-6-fhd-ryzen-5-7520u-16gb-ssd-512gb-negru-kxg0431795/pd/D6QBV83BM/": {
       "title": "Laptop Lenovo V15 G4 AMN, 15,6\" FHD, Ryzen 5 7520U, 16GB, SSD 512GB, negru",
@@ -3736,7 +3946,9 @@
           "price": 4899.99,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/telefon-mobil-apple-iphone-15-plus-512gb-5g-yellow-mu1m3rx-a/pd/DVCH93YBM/": {
       "title": "Telefon mobil Apple iPhone 15 Plus, 512GB, 5G, Yellow",
@@ -3841,7 +4053,9 @@
           "price": 2399.99,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/laptop-lenovo-v15-g4-iru-procesor-intelr-coretm-i3-1315u-15-6-fhd-ips-16-gb-ddr4-256-gb-ssd-gma-uhd-windows-11-pro-business-black-fb-487/pd/DPTSVLYBM/": {
       "title": "Laptop Lenovo V15 G4 IRU, Procesor Intel® Core™ i3-1315U, 15.6\" FHD IPS, 16 GB DDR4, 256 GB SSD, GMA UHD, Windows 11 Pro, Business Black",
@@ -3866,7 +4080,9 @@
           "price": 2749.99,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/laptop-lenovo-v15-g4-iru-procesor-intelr-coretm-i3-1315u-15-6-fhd-ips-24-gb-ddr4-512-gb-ssd-gma-uhd-windows-11-pro-business-black-fb-804/pd/DLSSZ93BM/": {
       "title": "Laptop Lenovo V15 G4 IRU, Procesor Intel® Core™ i3-1315U, 15.6\" FHD IPS, 24 GB DDR4, 512 GB SSD, GMA UHD, Windows 11 Pro, Business Black",
@@ -3941,7 +4157,9 @@
           "price": 2399.99,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/laptop-lenovo-v15-g4-iru-procesor-intelr-coretm-i3-1315u-15-6-fhd-ips-8-gb-ddr4-1-tb-ssd-gma-uhd-windows-11-pro-business-black-fb-485/pd/DWMCXLYBM/": {
       "title": "Laptop Lenovo V15 G4 IRU, Procesor Intel® Core™ i3-1315U, 15.6\" FHD IPS, 8 GB DDR4, 1 TB SSD, GMA UHD, Windows 11 Pro, Business Black",
@@ -4041,7 +4259,9 @@
           "price": 1798.99,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": "PC Garage",
+      "is_marketplace": false
     },
     "https://www.pcgarage.ro/notebook-laptop/asus/156-vivobook-go-15-e1504fa-fhd-procesor-amd-ryzen-3-30-4m-cache-up-to-41-ghz-8gb-lpddr5-512gb-ssd-amd-radeon-610m-no-os-mixed-black/": {
       "title": "Laptop ASUS 15.6'' Vivobook Go 15 E1504FA, FHD, Procesor AMD Ryzen™ 3 30 (4M Cache, up to 4.1 GHz), 8GB LPDDR5, 512GB SSD, AMD Radeon 610M, No OS, Mixed Black",
@@ -4066,7 +4286,9 @@
           "price": 1648.99,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": "PC Garage",
+      "is_marketplace": false
     },
     "https://www.pcgarage.ro/notebook-laptop/asus/156-vivobook-15-r1504va-fhd-procesor-intel-core-i3-1315u-10m-cache-up-to-450-ghz-with-ipu-8gb-ddr4-512gb-ssd-intel-uhd-win-11-home-quiet-blue/": {
       "title": "Laptop ASUS 15.6'' Vivobook 15 R1504VA, FHD, Procesor Intel® Core™ i3-1315U (10M Cache, up to 4.50 GHz, with IPU), 8GB DDR4, 512GB SSD, Intel UHD, Win 11 Home, Quiet Blue",
@@ -4091,7 +4313,9 @@
           "price": 2048.99,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": "PC Garage",
+      "is_marketplace": false
     },
     "https://www.pcgarage.ro/notebook-laptop/asus/156-vivobook-go-15-e1504ta-fhd-procesor-intel-n150-6m-cache-up-to-360-ghz-8gb-lpddr5-256gb-ufs-intel-graphics-no-os-cool-silver/": {
       "title": "Laptop ASUS 15.6'' Vivobook Go 15 E1504TA, FHD, Procesor Intel® N150 (6M Cache, up to 3.60 GHz), 8GB LPDDR5, 256GB UFS, Intel Graphics, No OS, Cool Silver",
@@ -4116,7 +4340,9 @@
           "price": 1598.99,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": "PC Garage",
+      "is_marketplace": false
     },
     "https://www.pcgarage.ro/notebook-laptop/asus/16-vivobook-s16-m3607ha-wuxga-144hz-procesor-amd-ryzen-5-220-16m-cache-up-to-490-ghz-16gb-ddr5-1tb-ssd-amd-radeon-740m-no-os-matte-gray/": {
       "title": "Laptop ASUS 16'' Vivobook S16 M3607HA, WUXGA 144Hz, Procesor AMD Ryzen™ 5 220 (16M Cache, up to 4.90 GHz), 16GB DDR5, 1TB SSD, AMD Radeon 740M, No OS, Matte Gray",
@@ -4156,7 +4382,9 @@
           "price": 1399.0,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": "PC Garage",
+      "is_marketplace": false
     },
     "https://www.pcgarage.ro/notebook-laptop/asus/16-vivobook-16-flip-tp3607sa-3k-oled-120hz-touch-procesor-intel-core-ultra-5-226v-8m-cache-up-to-450-ghz-16gb-lpddr5x-1tb-ssd-intel-arc-130v-win-11-pro-matte-gray/": {
       "title": "Laptop ASUS 16'' Vivobook 16 Flip TP3607SA, 3K OLED 120Hz Touch, Procesor Intel® Core™ Ultra 5 226V (8M Cache, up to 4.50 GHz), 16GB LPDDR5X, 1TB SSD, Intel Arc 130V, Win 11 Pro, Matte Gray",
@@ -4181,7 +4409,9 @@
           "price": 4798.99,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": "PC Garage",
+      "is_marketplace": false
     },
     "https://www.pcgarage.ro/notebook-laptop/asus/156-vivobook-pro-15-oled-n6506cu-3k-120hz-procesor-intel-core-ultra-9-285h-24m-cache-up-to-540-ghz-24gb-ddr5-2tb-ssd-geforce-rtx-4050-6gb-win-11-pro-earl-gray/": {
       "title": "Laptop ASUS 15.6'' Vivobook Pro 15 OLED N6506CU, 3K 120Hz, Procesor Intel® Core™ Ultra 9 285H (24M Cache, up to 5.40 GHz), 24GB DDR5, 2TB SSD, GeForce RTX 4050 6GB, Win 11 Pro, Earl Gray",
@@ -4206,7 +4436,9 @@
           "price": 8598.99,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": "PC Garage",
+      "is_marketplace": false
     },
     "https://www.pcgarage.ro/notebook-laptop/asus/14-vivobook-s14-s3407va-wuxga-procesor-intel-core-i5-13420h-12m-cache-up-to-460-ghz-16gb-ddr5-1tb-ssd-intel-uhd-no-os-matte-gray/": {
       "title": "Laptop ASUS 14'' Vivobook S14 S3407VA, WUXGA, Procesor Intel® Core™ i5-13420H (12M Cache, up to 4.60 GHz), 16GB DDR5, 1TB SSD, Intel UHD, No OS, Matte Gray",
@@ -4231,7 +4463,9 @@
           "price": 2998.99,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": "PC Garage",
+      "is_marketplace": false
     },
     "https://www.pcgarage.ro/notebook-laptop/asus/14-vivobook-s14-s3407va-wuxga-procesor-intel-core-i7-13620h-24m-cache-up-to-490-ghz-16gb-ddr5-1tb-ssd-intel-uhd-no-os-cool-silver/": {
       "title": "Laptop ASUS 14'' Vivobook S14 S3407VA, WUXGA, Procesor Intel® Core™ i7-13620H (24M Cache, up to 4.90 GHz), 16GB DDR5, 1TB SSD, Intel UHD, No OS, Cool Silver",
@@ -4256,7 +4490,9 @@
           "price": 3298.99,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": "PC Garage",
+      "is_marketplace": false
     },
     "https://www.pcgarage.ro/notebook-laptop/asus/156-vivobook-go-15-e1504fa-fhd-procesor-amd-ryzen-5-40-4m-cache-up-to-43-ghz-8gb-lpddr5-512gb-ssd-amd-radeon-610m-no-os-mixed-black/": {
       "title": "Laptop ASUS 15.6'' Vivobook Go 15 E1504FA, FHD, Procesor AMD Ryzen™ 5 40 (4M Cache, up to 4.3 GHz), 8GB LPDDR5, 512GB SSD, AMD Radeon 610M, No OS, Mixed Black",
@@ -4281,7 +4517,9 @@
           "price": 1848.99,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": "PC Garage",
+      "is_marketplace": false
     },
     "https://www.pcgarage.ro/notebook-laptop/asus/156-vivobook-15-m1502ya-fhd-procesor-amd-ryzen-7-7730u-16m-cache-up-to-453-ghz-8gb-ddr4-512gb-ssd-amd-radeon-no-os-cool-silver/": {
       "title": "Laptop ASUS 15.6'' Vivobook 15 M1502YA, FHD, Procesor AMD Ryzen™ 7 7730U (16M cache, up to 4.53 GHz), 8GB DDR4, 512GB SSD, AMD Radeon, No OS, Cool Silver",
@@ -4306,7 +4544,9 @@
           "price": 2398.99,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": "PC Garage",
+      "is_marketplace": false
     },
     "https://www.pcgarage.ro/notebook-laptop/asus/14-vivobook-s14-s3407va-wuxga-procesor-intel-core-5-210h-12m-cache-up-to-480-ghz-16gb-ddr5-1tb-ssd-intel-graphics-no-os-matte-gray-1/": {
       "title": "Laptop ASUS 14'' Vivobook S14 S3407VA, WUXGA, Procesor Intel® Core™ 5 210H (12M Cache, up to 4.80 GHz), 16GB DDR5, 1TB SSD, Intel Graphics, No OS, Matte Gray",
@@ -4331,7 +4571,9 @@
           "price": 2998.99,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": "PC Garage",
+      "is_marketplace": false
     },
     "https://www.pcgarage.ro/notebook-laptop/asus/156-vivobook-15-m1502naq-fhd-procesor-amd-ryzen-7-170-16m-cache-up-to-475-ghz-8gb-ddr5-512gb-ssd-amd-radeon-680m-no-os-quiet-blue/": {
       "title": "Laptop ASUS 15.6'' Vivobook 15 M1502NAQ, FHD, Procesor AMD Ryzen™ 7 170 (16M cache, up to 4.75 GHz), 8GB DDR5, 512GB SSD, AMD Radeon 680M, No OS, Quiet Blue",
@@ -4356,7 +4598,9 @@
           "price": 2498.99,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": "PC Garage",
+      "is_marketplace": false
     },
     "https://www.pcgarage.ro/notebook-laptop/asus/14-vivobook-s14-s3407va-wuxga-procesor-intel-core-5-210h-12m-cache-up-to-480-ghz-16gb-ddr5-1tb-ssd-intel-uhd-no-os-cool-silver/": {
       "title": "Laptop ASUS 14'' Vivobook S14 S3407VA, WUXGA, Procesor Intel® Core™ 5 210H (12M Cache, up to 4.80 GHz), 16GB DDR5, 1TB SSD, Intel Graphics, No OS, Cool Silver",
@@ -4396,7 +4640,9 @@
           "price": 3998.99,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": "PC Garage",
+      "is_marketplace": false
     },
     "https://www.pcgarage.ro/notebook-laptop/asus/156-vivobook-go-15-e1504fa-fhd-procesor-amd-ryzen-5-40-4m-cache-up-to-43-ghz-8gb-lpddr5-256gb-ssd-amd-radeon-610m-no-os-mixed-black/": {
       "title": "Laptop ASUS 15.6'' Vivobook Go 15 E1504FA, FHD, Procesor AMD Ryzen™ 5 40 (4M Cache, up to 4.3 GHz), 8GB LPDDR5, 256GB SSD, AMD Radeon 610M, No OS, Mixed Black",
@@ -4421,7 +4667,9 @@
           "price": 1798.99,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": "PC Garage",
+      "is_marketplace": false
     },
     "https://www.pcgarage.ro/notebook-laptop/asus/156-vivobook-go-15-e1504fa-fhd-procesor-amd-ryzen-5-40-4m-cache-up-to-43-ghz-8gb-lpddr5-512gb-ssd-amd-radeon-610m-no-os-mixed-black-1/": {
       "title": "Laptop ASUS 15.6'' Vivobook Go 15 E1504FA, FHD, Procesor AMD Ryzen™ 5 40 (4M Cache, up to 4.3 GHz), 8GB LPDDR5, 512GB SSD, AMD Radeon 610M, No OS, Mixed Black",
@@ -4446,7 +4694,9 @@
           "price": 1848.99,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": "PC Garage",
+      "is_marketplace": false
     },
     "https://www.pcgarage.ro/notebook-laptop/asus/156-vivobook-15-x1504ma-fhd-procesor-intel-core-3-304-6m-cache-up-to-430-ghz-8gb-ddr5-256gb-ssd-intel-graphics-no-os-quiet-blue/": {
       "title": "Laptop ASUS 15.6'' Vivobook 15 X1504MA, FHD, Procesor Intel® Core™ 3 304 (6M Cache, up to 4.30 GHz), 8GB DDR5, 256GB SSD, Intel Graphics, No OS, Quiet Blue",
@@ -4471,7 +4721,9 @@
           "price": 1948.99,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": "PC Garage",
+      "is_marketplace": false
     },
     "https://www.pcgarage.ro/notebook-laptop/asus/156-vivobook-15-x1504ma-fhd-procesor-intel-core-3-304-6m-cache-up-to-430-ghz-8gb-ddr5-256gb-ssd-intel-graphics-no-os-quiet-blue-1/": {
       "title": "Laptop ASUS 15.6'' Vivobook 15 X1504MA, FHD, Procesor Intel® Core™ 3 304 (6M Cache, up to 4.30 GHz), 8GB DDR5, 256GB SSD, Intel Graphics, No OS, Quiet Blue",
@@ -4496,7 +4748,9 @@
           "price": 1948.99,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": "PC Garage",
+      "is_marketplace": false
     },
     "https://www.flanco.ro/laptop-asus-vivobook-m1607ka-mb224-16-amd-ryzen-ai-5-330-16gb-512gb-ssd-no-os-quiet-blue.html": {
       "title": "Laptop Asus Vivobook M1607KA-MB224, 16\", AMD Ryzen AI 5 330, 16GB, 512GB SSD, No OS, Quiet Blue",
@@ -4522,7 +4776,9 @@
           "stock_status": "in_stock"
         }
       ],
-      "reference_price": 3499.99
+      "reference_price": 3499.99,
+      "seller": "Flanco",
+      "is_marketplace": false
     },
     "https://www.flanco.ro/laptop-asus-vivobook-m1502naq-bq104-amd-ryzen-r5-150-15-6-8gb-512gb-no-os-quiet-blue.html": {
       "title": "Laptop Asus Vivobook M1502NAQ-BQ104, AMD Ryzen R5-150, 15.6\", 8GB, 512GB, No OS, Quiet Blue",
@@ -4548,7 +4804,9 @@
           "stock_status": "in_stock"
         }
       ],
-      "reference_price": 3499.99
+      "reference_price": 3499.99,
+      "seller": "Flanco",
+      "is_marketplace": false
     },
     "https://www.flanco.ro/laptop-asus-vivobook-15-x1502va-15-6-intel-core-i5-13420h-8gb-ddr4-512gb-ssd-intel-uhd-no-os-quiet-blue.html": {
       "title": "Laptop Asus Vivobook 15 X1502VA 15.6\", Intel Core i5-13420H, 8GB DDR4, 512GB SSD, Intel UHD, No OS, Quiet Blue",
@@ -4574,7 +4832,9 @@
           "stock_status": "in_stock"
         }
       ],
-      "reference_price": 2699.99
+      "reference_price": 2699.99,
+      "seller": "Flanco",
+      "is_marketplace": false
     },
     "https://www.flanco.ro/laptop-asus-vivobook-16-a1605va-mb1947-intel-core-i5-13420h-16-inch-ram-8gb-ssd-512gb-intel-uhd-graphics-no-os-cool-silver.html": {
       "title": "Laptop ASUS Vivobook 16 A1605VA-MB1947, Intel Core i5-13420H, 16 inch, RAM 8GB, SSD 512GB, Intel UHD Graphics, No OS, Cool Silver",
@@ -4600,7 +4860,9 @@
           "stock_status": "in_stock"
         }
       ],
-      "reference_price": 3339.99
+      "reference_price": 3339.99,
+      "seller": "Flanco",
+      "is_marketplace": false
     },
     "https://www.flanco.ro/laptop-asus-vivobook-15-a1502va-bq1023-intel-core-i5-13420h-15-6-inch-ram-8gb-ssd-1tb-intel-uhd-graphics-no-os-quiet-blue.html": {
       "title": "Laptop ASUS Vivobook 15 A1502VA-BQ1023, Intel Core i5-13420H, 15.6 inch, RAM 8GB, SSD 1TB, Intel UHD Graphics, No OS, Quiet Blue",
@@ -4626,7 +4888,9 @@
           "stock_status": "in_stock"
         }
       ],
-      "reference_price": 3389.99
+      "reference_price": 3389.99,
+      "seller": "Flanco",
+      "is_marketplace": false
     },
     "https://www.flanco.ro/laptop-asus-vivobook-15-m1502naq-bq159-amd-ryzen-7-170-15-6-fhd-ips-8-gb-ram-ddr5-512-gb-ssd-radeon-graphics-fara-sistem-de-operare-quiet-blue.html": {
       "title": "Laptop Asus Vivobook 15 M1502NAQ-BQ159, AMD Ryzen 7 170, 15.6\" FHD, IPS, 8 GB RAM DDR5, 512 GB SSD, Radeon Graphics, Fara Sistem de operare, Quiet Blue",
@@ -4652,7 +4916,9 @@
           "stock_status": "in_stock"
         }
       ],
-      "reference_price": 3299.99
+      "reference_price": 3299.99,
+      "seller": "Flanco",
+      "is_marketplace": false
     },
     "https://www.flanco.ro/laptop-asus-vivobook-15-x1504va-15-6-fhd-procesor-intel-core-7-150u-16gb-ddr4-512gb-ssd-intel-graphics-no-os-quiet-blue.html": {
       "title": "Laptop Asus Vivobook 15 X1504VA, 15.6'', FHD, Procesor Intel Core 7 150U, 16GB DDR4, 512GB SSD, Intel Graphics, No OS, Quiet Blue",
@@ -4678,7 +4944,9 @@
           "stock_status": "in_stock"
         }
       ],
-      "reference_price": 4299.99
+      "reference_price": 4299.99,
+      "seller": "Flanco",
+      "is_marketplace": false
     },
     "https://www.flanco.ro/laptop-asus-vivobook-15-x1502va-15-6-fhd-procesor-intel-core-i7-13620h-16gb-ddr4-512gb-ssd-intel-uhd-no-os-quiet-blue.html": {
       "title": "Laptop Asus Vivobook 15 X1502VA, 15.6\", FHD, Procesor Intel Core i7-13620H, 16GB DDR4, 512GB SSD, Intel UHD, No OS, Quiet Blue",
@@ -4704,7 +4972,9 @@
           "stock_status": "in_stock"
         }
       ],
-      "reference_price": 4099.99
+      "reference_price": 4099.99,
+      "seller": "Flanco",
+      "is_marketplace": false
     },
     "https://www.flanco.ro/laptop-asus-vivobook-15-a1502va-cu-procesor-intelr-coretm-i5-13420h-pana-la-4-6ghz-15-6-full-hd-ips-8gb-ddr4-ram-512gb-ssd-intelr-hd-graphics-no-os-quiet-blue.html": {
       "title": "Laptop ASUS Vivobook 15 A1502VA cu procesor Intel® Core™ i5-13420H pana la 4.6GHz, 15.6'', Full HD, IPS, 8GB DDR4 RAM, 512GB SSD, Intel® HD Graphics, No OS, Quiet Blue",
@@ -4730,7 +5000,9 @@
           "stock_status": "in_stock"
         }
       ],
-      "reference_price": 2899.99
+      "reference_price": 2899.99,
+      "seller": "Flanco",
+      "is_marketplace": false
     },
     "https://www.flanco.ro/laptop-asus-vivobook-15-x1504ma-bq642-intel-core-5-320-15-6-fhd-ips-8-gb-ram-ddr5-256-gb-ssd-intel-graphics-fara-sistem-de-operare-albastru-inchis.html": {
       "title": "Laptop Asus VivoBook 15 X1504MA-BQ642, Intel Core 5 320, 15.6\" FHD, IPS, 8 GB RAM DDR5, 256 GB SSD, Intel Graphics, Fara Sistem de operare, Albastru inchis",
@@ -4756,7 +5028,9 @@
           "stock_status": "in_stock"
         }
       ],
-      "reference_price": 4019.99
+      "reference_price": 4019.99,
+      "seller": "Flanco",
+      "is_marketplace": false
     },
     "https://www.flanco.ro/laptop-asus-vivobook-15-x1504ma-bq204-intel-core-7-350-15-6-fhd-ips-16-gb-ram-ddr5-512-gb-ssd-intel-graphics-fara-sistem-de-operare-albastru-inchis.html": {
       "title": "Laptop Asus VivoBook 15 X1504MA-BQ204, Intel Core 7 350, 15.6\" FHD, IPS, 16 GB RAM DDR5, 512 GB SSD, Intel Graphics, Fara Sistem de operare, Albastru inchis",
@@ -4782,7 +5056,9 @@
           "stock_status": "in_stock"
         }
       ],
-      "reference_price": 5199.99
+      "reference_price": 5199.99,
+      "seller": "Flanco",
+      "is_marketplace": false
     },
     "https://www.flanco.ro/laptop-asus-vivobook-15-x1504ma-bq214-intel-core-7-350-15-6-fhd-ips-8-gb-ram-ddr5-512-gb-ssd-intel-graphics-fara-sistem-de-operare-albastru-inchis.html": {
       "title": "Laptop Asus VivoBook 15 X1504MA-BQ214, Intel Core 7 350, 15.6\" FHD, IPS, 8 GB RAM DDR5, 512 GB SSD, Intel Graphics, Fara Sistem de operare, Albastru inchis",
@@ -4808,7 +5084,9 @@
           "stock_status": "in_stock"
         }
       ],
-      "reference_price": 4629.99
+      "reference_price": 4629.99,
+      "seller": "Flanco",
+      "is_marketplace": false
     },
     "https://www.flanco.ro/laptop-asus-vivobook-15-x1504ma-bq212-intel-core-5-320-15-6-fhd-ips-16-gb-ram-ddr5-512-gb-ssd-intel-graphics-fara-sistem-de-operare-albastru-inchis.html": {
       "title": "Laptop Asus VivoBook 15 X1504MA-BQ212, Intel Core 5 320, 15.6\" FHD, IPS, 16 GB RAM DDR5, 512 GB SSD, Intel Graphics, Fara Sistem de operare, Albastru inchis",
@@ -5009,7 +5287,9 @@
           "price": 5581.99,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/laptop-lenovo-v15-g4-iru-procesor-intelr-coretm-i3-1315u-15-6-fhd-ips-24-gb-ddr4-1-tb-ssd-gma-uhd-windows-11-pro-business-black-fb-805/pd/DVSSZ93BM/": {
       "title": "Laptop Lenovo V15 G4 IRU, Procesor Intel® Core™ i3-1315U, 15.6\" FHD IPS, 24 GB DDR4, 1 TB SSD, GMA UHD, Windows 11 Pro, Business Black",
@@ -5161,7 +5441,9 @@
           "price": 4990.0,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/laptop-lenovo-v15-g4-business-intel-core-i3-16gb-ssd-512gb-15-6-negru-83a1006xhv/pd/DLCNM1YBM/": {
       "title": "Laptop Lenovo V15 G4 Business, Intel Core i3, 16GB, SSD 512GB, 15,6\", Negru",
@@ -5215,7 +5497,9 @@
           "price": 3307.05,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/laptop-lenovo-v15-g3-iap-15-6-fhd-intel-core-i5-1235u-10-core-24-gb-ddr4-1-tb-ssd-m2-pcie-intel-iris-xe-graphics-1-7-kg-black-82tt00a5rm-6/pd/DBCQDTYBM/": {
       "title": "Laptop Lenovo V15 G3 IAP, 15.6\" FHD, Intel Core i5-1235U 10-core, 24 GB DDR4, 1 TB SSD m2 PCIe, Intel Iris Xe Graphics, 1.7 kg Black",
@@ -5258,7 +5542,9 @@
           "price": 199.99,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/laptop-lenovo-v15-g4-abp-cu-procesor-amd-ryzentm-7-7730u-pana-la-4-5ghz-15-6-full-hd-ips-16gb-ddr4-512gb-ssd-video-integrated-amd-radeontm-graphic-windowsr-11-pro-business-black-82yy001frm/pd/DZN69M2BM/": {
       "title": "Laptop Lenovo V15 G4 ABP cu procesor AMD Ryzen™ 7 7730U pana la 4.5GHz, 15.6\" Full HD, IPS, 16GB DDR4, 512GB SSD, Video Integrated AMD Radeon™ Graphic, Windows® 11 Pro, Business Black",
@@ -5279,7 +5565,9 @@
           "price": 3499.01,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/laptop-lenovo-v15-g5-irl-15-6-full-hd-intelr-coretm-i3-1315u-pana-la-4-5-ghz-8-gb-ram-ddr5-5200-512-gb-ssd-intelr-uhd-graphics-free-dos-business-black-512-gb-pky360742drmo/pd/DR2GX82BM/": {
       "title": "Laptop Lenovo V15 G5 IRL, 15.6\" Full HD, Intel® Core™ i3 1315U pana la 4.5 GHz, 8 GB RAM DDR5 5200, 512 GB SSD, Intel® UHD Graphics, Free Dos, Business Black 512 GB",
@@ -5294,8 +5582,15 @@
           "date": "2026-09-09",
           "price": 2807.4,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 2807.4,
+          "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/laptop-lenovo-v15-g4-iru-procesor-intelr-coretm-i3-1315u-15-6-fhd-ips-16-gb-ddr4-2-tb-ssd-gma-uhd-windows-11-pro-business-black-fb-490/pd/D3TSVLYBM/": {
       "title": "Laptop Lenovo V15 G4 IRU, Procesor Intel® Core™ i3-1315U, 15.6\" FHD IPS, 16 GB DDR4, 2 TB SSD, GMA UHD, Windows 11 Pro, Business Black",
@@ -5327,7 +5622,9 @@
           "price": 3699.99,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/laptop-gaming-lenovo-loq-15irx9-cu-procesor-intel-coretm-i5-13450hx-pana-la-4-6ghz-15-6-full-hd-ips-144hz-16gb-ddr5-512gb-ssd-nvidia-geforce-rtxtm-3050-6gb-gddr6-no-os-luna-grey-3y-on-site-premium-car/pd/D1NVT92BM/": {
       "title": "Laptop Gaming Lenovo LOQ 15IRX9 cu procesor Intel Core™ i5-13450HX pana la 4.6GHz, 15.6\" Full HD, IPS, 144Hz, 16GB DDR5, 512GB SSD, NVIDIA GeForce RTX™ 3050 6GB GDDR6, No OS, Luna Grey, 3Y on-site Premium Care",
@@ -5402,7 +5699,9 @@
           "price": 2794.8,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.flanco.ro/laptop-asus-15-6-vivobook-15-x1504va-fhd-60-hz-intel-core-i7-1355u-16gb-ddr4-1tb-ssd-no-os-quiet-blue.html": {
       "title": "Laptop Asus 15.6'' Vivobook 15 X1504VA, FHD, 60 Hz, Intel Core i7-1355U, 16GB DDR4, 1TB SSD, No OS, Quiet Blue",
@@ -5548,7 +5847,9 @@
           "price": 78.65,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/laptop-lenovo-v15-g4-15-6-16gb-ram-512gb-ssd-grafica-amd-radeon-negru-49904/pd/DK97T83BM/": {
       "title": "Laptop Lenovo V15 G4, 15.6'', 16GB RAM, 512GB SSD, grafica AMD Radeon, negru",
@@ -5564,7 +5865,9 @@
           "price": 4070.32,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/laptop-lenovo-v15-g4-amd-ryzen-5-16gb-ram-ssd-256gb-negru-15-6-82yu00ynhv/pd/D17X663BM/": {
       "title": "Laptop, Lenovo, V15 G4, AMD Ryzen 5, 16GB RAM, SSD 256GB, Negru, 15,6\"",
@@ -5596,7 +5899,9 @@
           "price": 2148.99,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": "PC Garage",
+      "is_marketplace": false
     },
     "https://www.pcgarage.ro/notebook-laptop/asus/156-vivobook-15-x1504ma-fhd-procesor-intel-core-5-315-6m-cache-up-to-440-ghz-8gb-ddr5-256gb-ssd-intel-graphics-no-os-quiet-blue/": {
       "title": "Laptop ASUS 15.6'' Vivobook 15 X1504MA, FHD, Procesor Intel® Core™ 5 315 (6M Cache, up to 4.40 GHz), 8GB DDR5, 256GB SSD, Intel Graphics, No OS, Quiet Blue",
@@ -5612,7 +5917,9 @@
           "price": 2398.99,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": "PC Garage",
+      "is_marketplace": false
     },
     "https://www.emag.ro/telefon-mobil-apple-iphone-16-plus-512gb-5g-black-my1p3zd-a/pd/DFF67LYBM/": {
       "title": "Telefon mobil Apple iPhone 16 Plus, 512GB, 5G, Black",
@@ -5688,7 +5995,9 @@
           "price": 1499.0,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/telefon-mobil-xiaomi-redmi-note-15-pro-5g-8gb-ram-256gb-rom-negru-men-r1-508717/pd/DRNMFT2BM/": {
       "title": "Telefon mobil Xiaomi REDMI Note 15 Pro+ 5G, 8GB RAM, 256GB ROM, Negru",
@@ -5732,7 +6041,9 @@
           "price": 19844.0,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/laptop-lenovo-v15-g5-irl-intel-core-i7-13620h-16gb-ddr5-1-9-tb-ssd-15-6-fhd-fdrerttgyuui8j/pd/D9WWJ53BM/": {
       "title": "Laptop Lenovo V15 G5 IRL, Intel Core i7-13620H, 16GB DDR5, 1.9 TB SSD, 15.6\" FHD",
@@ -5743,7 +6054,9 @@
           "price": 10769.0,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/laptop-lenovo-v15-g5-procesor-intel-core-i7-13620h-32gb-ram-3tb-ssd-15-6-fhd-ggfyjiktgrfdt/pd/DP39TR3BM/": {
       "title": "Laptop, Lenovo, V15 G5, procesor Intel Core i7-13620H, 32GB RAM, 3TB SSD, 15.6\" FHD",
@@ -5754,7 +6067,9 @@
           "price": 10769.0,
           "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/laptop-lenovo-v15-g5-irl-cu-procesor-intelr-core-i7-13620h-pana-la-4-90-ghz-15-6-fhd-8-gb-ram-ddr5-1-tb-ssd-intelr-uhd-graphics-windows-11-pro-business-black-fb-0125/pd/DJQG0W3BM/": {
       "title": "Laptop Lenovo V15 G5 IRL cu procesor Intel® Core i7-13620H pana la 4.90 GHz, 15.6\" FHD, 8 GB RAM DDR5, 1 TB SSD, Intel® UHD Graphics, Windows 11 Pro, Business Black",
@@ -5777,6 +6092,32 @@
           "stock_status": "in_stock"
         }
       ]
+    },
+    "https://www.emag.ro/telefon-mobil-redmagic-10-pro-dual-sim-16gb-ram-512gb-5g-transparent-silver-1123126431014071/pd/DZC3K23BM/": {
+      "title": "Telefon mobil Redmagic 10 PRO, Dual SIM, 16GB RAM, 512GB, 5G, Transparent Silver",
+      "site": "emag",
+      "history": [
+        {
+          "date": "2026-09-10",
+          "price": 4299.99,
+          "stock_status": "in_stock"
+        }
+      ],
+      "seller": null,
+      "is_marketplace": null
+    },
+    "https://www.emag.ro/telefon-mobil-apple-iphone-16-plus-512gb-5g-pink-my253zd-a/pd/DD367LYBM/": {
+      "title": "Telefon mobil Apple iPhone 16 Plus, 512GB, 5G, Pink",
+      "site": "emag",
+      "history": [
+        {
+          "date": "2026-09-10",
+          "price": 6313.99,
+          "stock_status": "limited_stock"
+        }
+      ],
+      "seller": null,
+      "is_marketplace": null
     }
   }
 }
