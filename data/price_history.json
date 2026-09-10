@@ -3730,6 +3730,11 @@
           "date": "2026-09-08",
           "price": 6499.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 6499.99,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -5013,6 +5018,11 @@
           "date": "2026-09-09",
           "price": 4190.0,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 4190.0,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -5356,6 +5366,11 @@
           "date": "2026-09-09",
           "price": 2794.8,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 2794.8,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -5529,6 +5544,11 @@
           "date": "2026-09-09",
           "price": 3599.7,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 3599.7,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -5631,6 +5651,28 @@
         {
           "date": "2026-09-10",
           "price": 1499.0,
+          "stock_status": "in_stock"
+        }
+      ]
+    },
+    "https://www.emag.ro/telefon-mobil-xiaomi-redmi-note-15-pro-5g-8gb-ram-256gb-rom-negru-men-r1-508717/pd/DRNMFT2BM/": {
+      "title": "Telefon mobil Xiaomi REDMI Note 15 Pro+ 5G, 8GB RAM, 256GB ROM, Negru",
+      "site": "emag",
+      "history": [
+        {
+          "date": "2026-09-10",
+          "price": 1785.0,
+          "stock_status": "in_stock"
+        }
+      ]
+    },
+    "https://www.emag.ro/telefon-mobil-apple-iphone-15-plus-128gb-5g-black-mu0y3rx-a/pd/DDCH93YBM/": {
+      "title": "Telefon mobil Apple iPhone 15 Plus, 128GB, 5G, Black",
+      "site": "emag",
+      "history": [
+        {
+          "date": "2026-09-10",
+          "price": 5784.99,
           "stock_status": "in_stock"
         }
       ]
