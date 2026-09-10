@@ -1084,6 +1084,11 @@
           "date": "2026-09-08",
           "price": 12100.0,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 12100.0,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -1320,6 +1325,11 @@
         {
           "date": "2026-09-07",
           "price": 6171.0
+        },
+        {
+          "date": "2026-09-10",
+          "price": 3499.99,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -2215,6 +2225,11 @@
         {
           "date": "2026-09-08",
           "price": 5599.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 5640.0,
           "stock_status": "in_stock"
         }
       ]
@@ -3665,6 +3680,11 @@
         {
           "date": "2026-09-07",
           "price": 4690.0
+        },
+        {
+          "date": "2026-09-10",
+          "price": 3799.76,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -3730,6 +3750,11 @@
           "date": "2026-09-08",
           "price": 6499.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 6499.99,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -3755,6 +3780,11 @@
         {
           "date": "2026-09-07",
           "price": 4793.46
+        },
+        {
+          "date": "2026-09-10",
+          "price": 4795.62,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -5013,6 +5043,11 @@
           "date": "2026-09-09",
           "price": 4190.0,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 4190.0,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -5302,6 +5337,11 @@
           "date": "2026-09-08",
           "price": 4499.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 4499.99,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -5354,6 +5394,11 @@
         },
         {
           "date": "2026-09-09",
+          "price": 2794.8,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
           "price": 2794.8,
           "stock_status": "in_stock"
         }
@@ -5529,6 +5574,11 @@
           "date": "2026-09-09",
           "price": 3599.7,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 3599.7,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -5583,6 +5633,11 @@
           "date": "2026-09-09",
           "price": 4499.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 4499.99,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -5631,6 +5686,94 @@
         {
           "date": "2026-09-10",
           "price": 1499.0,
+          "stock_status": "in_stock"
+        }
+      ]
+    },
+    "https://www.emag.ro/telefon-mobil-xiaomi-redmi-note-15-pro-5g-8gb-ram-256gb-rom-negru-men-r1-508717/pd/DRNMFT2BM/": {
+      "title": "Telefon mobil Xiaomi REDMI Note 15 Pro+ 5G, 8GB RAM, 256GB ROM, Negru",
+      "site": "emag",
+      "history": [
+        {
+          "date": "2026-09-10",
+          "price": 1785.0,
+          "stock_status": "in_stock"
+        }
+      ]
+    },
+    "https://www.emag.ro/telefon-mobil-apple-iphone-15-plus-128gb-5g-black-mu0y3rx-a/pd/DDCH93YBM/": {
+      "title": "Telefon mobil Apple iPhone 15 Plus, 128GB, 5G, Black",
+      "site": "emag",
+      "history": [
+        {
+          "date": "2026-09-10",
+          "price": 5784.99,
+          "stock_status": "in_stock"
+        }
+      ]
+    },
+    "https://www.emag.ro/laptop-lenovo-v15-g5-15-6-fhd-intel-core-i5-16gb-ram-512gb-ssd-negru-83hfs03200/pd/DHQZZM2BM/": {
+      "title": "Laptop Lenovo V15 G5, 15.6\" FHD, Intel Core i5, 16GB RAM, 512GB SSD, Negru",
+      "site": "emag",
+      "history": [
+        {
+          "date": "2026-09-10",
+          "price": 3499.0,
+          "stock_status": "in_stock"
+        }
+      ]
+    },
+    "https://www.emag.ro/laptop-lenovo-v15-g5-irl-intel-core-i7-13620h-32gb-ddr5-6-4tb-ssd-15-6-fhd-jhyuijgtfrt5g57/pd/DQ79TR3BM/": {
+      "title": "Laptop Lenovo V15 G5 IRL, Intel Core i7-13620H, 32GB DDR5, 6.4TB SSD, 15.6\" FHD",
+      "site": "emag",
+      "history": [
+        {
+          "date": "2026-09-10",
+          "price": 19844.0,
+          "stock_status": "in_stock"
+        }
+      ]
+    },
+    "https://www.emag.ro/laptop-lenovo-v15-g5-irl-intel-core-i7-13620h-16gb-ddr5-1-9-tb-ssd-15-6-fhd-fdrerttgyuui8j/pd/D9WWJ53BM/": {
+      "title": "Laptop Lenovo V15 G5 IRL, Intel Core i7-13620H, 16GB DDR5, 1.9 TB SSD, 15.6\" FHD",
+      "site": "emag",
+      "history": [
+        {
+          "date": "2026-09-10",
+          "price": 10769.0,
+          "stock_status": "in_stock"
+        }
+      ]
+    },
+    "https://www.emag.ro/laptop-lenovo-v15-g5-procesor-intel-core-i7-13620h-32gb-ram-3tb-ssd-15-6-fhd-ggfyjiktgrfdt/pd/DP39TR3BM/": {
+      "title": "Laptop, Lenovo, V15 G5, procesor Intel Core i7-13620H, 32GB RAM, 3TB SSD, 15.6\" FHD",
+      "site": "emag",
+      "history": [
+        {
+          "date": "2026-09-10",
+          "price": 10769.0,
+          "stock_status": "in_stock"
+        }
+      ]
+    },
+    "https://www.emag.ro/laptop-lenovo-v15-g5-irl-cu-procesor-intelr-core-i7-13620h-pana-la-4-90-ghz-15-6-fhd-8-gb-ram-ddr5-1-tb-ssd-intelr-uhd-graphics-windows-11-pro-business-black-fb-0125/pd/DJQG0W3BM/": {
+      "title": "Laptop Lenovo V15 G5 IRL cu procesor Intel® Core i7-13620H pana la 4.90 GHz, 15.6\" FHD, 8 GB RAM DDR5, 1 TB SSD, Intel® UHD Graphics, Windows 11 Pro, Business Black",
+      "site": "emag",
+      "history": [
+        {
+          "date": "2026-09-10",
+          "price": 4149.99,
+          "stock_status": "in_stock"
+        }
+      ]
+    },
+    "https://www.emag.ro/laptop-lenovo-v15-g5-irl-intel-core-i7-13620h-32gb-ddr5-6tb-ssd-15-6-fhd-negru-dfthtytu787y54/pd/DKK9TR3BM/": {
+      "title": "Laptop Lenovo V15 G5 IRL, Intel Core i7-13620H, 32GB DDR5, 6TB SSD, 15.6\" FHD, Negru",
+      "site": "emag",
+      "history": [
+        {
+          "date": "2026-09-10",
+          "price": 16940.0,
           "stock_status": "in_stock"
         }
       ]
