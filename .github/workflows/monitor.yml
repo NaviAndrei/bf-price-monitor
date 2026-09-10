@@ -18,6 +18,9 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: monitor
+  cancel-in-progress: false
 jobs:
   monitor:
     runs-on: self-hosted
@@ -31,6 +34,8 @@ jobs:
       PLAYWRIGHT_BROWSERS_PATH: C:\actions-runner\ms-playwright-cache
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Install dependencies
         run: "& \"$env:PYTHON\" -m pip install -r requirements.txt"
@@ -66,6 +71,8 @@ jobs:
             # onto the current remote tip immediately before pushing so a run
             # that finishes second integrates the other run's commit instead
             # of getting a non-fast-forward rejection.
+                        if (Test-Path ".git/rebase-merge") { Remove-Item -Recurse -Force ".git/rebase-merge" }
+            if (Test-Path ".git/rebase-apply") { Remove-Item -Recurse -Force ".git/rebase-apply" }
             git pull --rebase origin master
             if ($LASTEXITCODE -ne 0) {
               Write-Error "git pull --rebase failed -- likely a genuine content conflict in data/price_history.json between two runs' commits, not just the race this rebase is meant to absorb. Aborting the rebase so this persistent runner's checkout isn't left mid-rebase and blocking every subsequent scheduled run."
@@ -79,3 +86,4 @@ jobs:
               exit 1
             }
           }
+
