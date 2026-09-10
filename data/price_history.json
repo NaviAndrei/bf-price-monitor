@@ -1320,6 +1320,11 @@
         {
           "date": "2026-09-07",
           "price": 6171.0
+        },
+        {
+          "date": "2026-09-10",
+          "price": 3499.99,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -2215,6 +2220,11 @@
         {
           "date": "2026-09-08",
           "price": 5599.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 5640.0,
           "stock_status": "in_stock"
         }
       ]
@@ -3665,6 +3675,11 @@
         {
           "date": "2026-09-07",
           "price": 4690.0
+        },
+        {
+          "date": "2026-09-10",
+          "price": 3799.76,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -3760,6 +3775,11 @@
         {
           "date": "2026-09-07",
           "price": 4793.46
+        },
+        {
+          "date": "2026-09-10",
+          "price": 4795.62,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -5603,6 +5623,11 @@
           "date": "2026-09-09",
           "price": 4499.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 4499.99,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -5701,6 +5726,17 @@
     },
     "https://www.emag.ro/laptop-lenovo-v15-g5-irl-intel-core-i7-13620h-16gb-ddr5-1-9-tb-ssd-15-6-fhd-fdrerttgyuui8j/pd/D9WWJ53BM/": {
       "title": "Laptop Lenovo V15 G5 IRL, Intel Core i7-13620H, 16GB DDR5, 1.9 TB SSD, 15.6\" FHD",
+      "site": "emag",
+      "history": [
+        {
+          "date": "2026-09-10",
+          "price": 10769.0,
+          "stock_status": "in_stock"
+        }
+      ]
+    },
+    "https://www.emag.ro/laptop-lenovo-v15-g5-procesor-intel-core-i7-13620h-32gb-ram-3tb-ssd-15-6-fhd-ggfyjiktgrfdt/pd/DP39TR3BM/": {
+      "title": "Laptop, Lenovo, V15 G5, procesor Intel Core i7-13620H, 32GB RAM, 3TB SSD, 15.6\" FHD",
       "site": "emag",
       "history": [
         {
