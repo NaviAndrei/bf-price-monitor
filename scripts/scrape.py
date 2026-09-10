@@ -453,6 +453,33 @@ SCRAPERS = {
 }
 
 
+def should_alert(
+    prev_price: float | None,
+    new_price: float,
+    past_prices: list[float],
+    stock_status: str,
+    target_price: float | None = None,
+    min_drop_percent: float | None = None,
+) -> bool:
+    # A deal monitor only cares about savings: price increases and
+    # unchanged prices never alert, regardless of thresholds.
+    if prev_price is None or new_price >= prev_price or stock_status == "out_of_stock":
+        return False
+
+    # An all-time low is always worth surfacing, even if it's a smaller drop
+    # than min_drop_percent or hasn't reached target_price yet.
+    if not past_prices or new_price < min(past_prices):
+        return True
+
+    if target_price is not None and new_price > target_price:
+        return False
+    if min_drop_percent is not None:
+        drop_percent = ((prev_price - new_price) / prev_price) * 100
+        if drop_percent < min_drop_percent:
+            return False
+    return True
+
+
 def main():
     watchlist = json.load(open(WATCHLIST_FILE, encoding="utf-8"))
     history = load_history()
@@ -497,13 +524,13 @@ def main():
             )
             entry["history"] = entry["history"][-HISTORY_LIMIT:]
 
-            # An out-of-stock listing's price isn't buyable, so a "price
-            # change" against it isn't actionable — still recorded above for
-            # history/trend purposes, just not surfaced as an alert.
-            if (
-                prev_price is not None
-                and prev_price != r["price"]
-                and stock_status != "out_of_stock"
+            if should_alert(
+                prev_price,
+                r["price"],
+                past_prices,
+                stock_status,
+                target_price=item.get("target_price"),
+                min_drop_percent=item.get("min_drop_percent"),
             ):
                 alerts.append(
                     {

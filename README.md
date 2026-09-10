@@ -83,6 +83,21 @@ needs a `site` (`emag`, `pcgarage`, or `flanco` — `altex` entries are
 accepted but will never produce results, see "Site status" above) and a
 `query` (the search term to use on that site's search page).
 
+Two optional fields narrow down which price drops actually trigger an
+alert (every price is still recorded to `data/price_history.json`
+regardless of these fields — they only affect whether an alert fires):
+
+- `target_price` (float): only alert once the price drops to this value or
+  below.
+- `min_drop_percent` (float): only alert once the drop from the last
+  recorded price is at least this percentage.
+
+If neither is set, every price decrease alerts (a price increase never
+does). Whichever fields are set must both pass for an alert to fire. An
+**all-time-low override** always alerts when a price is the lowest ever
+recorded for that product, even if `target_price` hasn't been reached yet
+or `min_drop_percent` isn't met.
+
 ### 3. Local testing (Windows/WSL)
 
 ```bash
