@@ -1084,6 +1084,11 @@
           "date": "2026-09-08",
           "price": 12100.0,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 12100.0,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -5332,6 +5337,11 @@
           "date": "2026-09-08",
           "price": 4499.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-10",
+          "price": 4499.99,
+          "stock_status": "in_stock"
         }
       ]
     },
@@ -5742,6 +5752,28 @@
         {
           "date": "2026-09-10",
           "price": 10769.0,
+          "stock_status": "in_stock"
+        }
+      ]
+    },
+    "https://www.emag.ro/laptop-lenovo-v15-g5-irl-cu-procesor-intelr-core-i7-13620h-pana-la-4-90-ghz-15-6-fhd-8-gb-ram-ddr5-1-tb-ssd-intelr-uhd-graphics-windows-11-pro-business-black-fb-0125/pd/DJQG0W3BM/": {
+      "title": "Laptop Lenovo V15 G5 IRL cu procesor Intel® Core i7-13620H pana la 4.90 GHz, 15.6\" FHD, 8 GB RAM DDR5, 1 TB SSD, Intel® UHD Graphics, Windows 11 Pro, Business Black",
+      "site": "emag",
+      "history": [
+        {
+          "date": "2026-09-10",
+          "price": 4149.99,
+          "stock_status": "in_stock"
+        }
+      ]
+    },
+    "https://www.emag.ro/laptop-lenovo-v15-g5-irl-intel-core-i7-13620h-32gb-ddr5-6tb-ssd-15-6-fhd-negru-dfthtytu787y54/pd/DKK9TR3BM/": {
+      "title": "Laptop Lenovo V15 G5 IRL, Intel Core i7-13620H, 32GB DDR5, 6TB SSD, 15.6\" FHD, Negru",
+      "site": "emag",
+      "history": [
+        {
+          "date": "2026-09-10",
+          "price": 16940.0,
           "stock_status": "in_stock"
         }
       ]
