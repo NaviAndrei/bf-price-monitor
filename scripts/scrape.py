@@ -524,13 +524,13 @@ def main():
             )
             entry["history"] = entry["history"][-HISTORY_LIMIT:]
 
-            if should_alert(
-                prev_price,
-                r["price"],
-                past_prices,
-                stock_status,
-                target_price=item.get("target_price"),
-                min_drop_percent=item.get("min_drop_percent"),
+            # An out-of-stock listing's price isn't buyable, so a "price
+            # change" against it isn't actionable — still recorded above for
+            # history/trend purposes, just not surfaced as an alert.
+            if (
+                prev_price is not None
+                and prev_price != r["price"]
+                and stock_status != "out_of_stock"
             ):
                 alerts.append(
                     {
