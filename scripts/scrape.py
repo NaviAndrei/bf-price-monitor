@@ -78,9 +78,6 @@ def _block_heavy_requests(route):
     ):
         return route.abort()
     return route.continue_()
-HISTORY_LIMIT = (
-    30  # keep last 30 daily price points per product, for the 30-day-low check
-)
 
 # 403/429 can mean a transient rate-limit spike rather than a hard block, so
 # it's worth a few spaced-out retries before giving up — unlike a persistent
@@ -480,11 +477,50 @@ def should_alert(
     return True
 
 
+def update_lifetime_stats(entry: dict, new_price: float, today_str: str) -> dict:
+    # Legacy entries (recorded before this field existed) carry no
+    # all_time_low/all_time_high/first_seen — derive a starting baseline from
+    # their existing history before folding in new_price, so upgrading an old
+    # price_history.json doesn't silently reset a product's recorded extremes.
+    if "all_time_low" not in entry or "all_time_high" not in entry or "first_seen" not in entry:
+        past_prices = [h["price"] for h in entry.get("history", [])]
+        if "all_time_low" not in entry:
+            entry["all_time_low"] = min(past_prices) if past_prices else new_price
+        if "all_time_high" not in entry:
+            entry["all_time_high"] = max(past_prices) if past_prices else new_price
+        if "first_seen" not in entry:
+            past_dates = [h["date"] for h in entry.get("history", [])]
+            entry["first_seen"] = min(past_dates) if past_dates else today_str
+
+    entry["all_time_low"] = min(entry["all_time_low"], new_price)
+    entry["all_time_high"] = max(entry["all_time_high"], new_price)
+    return entry
+
+
+def prune_history(
+    history: list[dict], reference_date: date, max_days: int = 90, min_entries: int = 2
+) -> list[dict]:
+    kept = [
+        h
+        for h in history
+        if (reference_date - date.fromisoformat(h["date"])).days <= max_days
+    ]
+    # A product with sparse history (e.g. only checked once every few
+    # months) could otherwise be pruned down to 0-1 entries, which breaks
+    # prev_price/past_prices comparisons in main(). Falling back to the most
+    # recent min_entries keeps those comparisons possible even though it
+    # means occasionally keeping an entry older than max_days.
+    if len(kept) < min_entries:
+        return history[-min_entries:]
+    return kept
+
+
 def main():
     watchlist = json.load(open(WATCHLIST_FILE, encoding="utf-8"))
     history = load_history()
     alerts = []
-    today = date.today().isoformat()
+    today_date = date.today()
+    today = today_date.isoformat()
 
     for item in watchlist:
         scraper = SCRAPERS.get(item["site"])
@@ -519,10 +555,12 @@ def main():
             prev_price = past_prices[-1] if past_prices else None
             stock_status = r.get("stock_status", "unknown")
 
+            update_lifetime_stats(entry, r["price"], today)
+
             entry["history"].append(
                 {"date": today, "price": r["price"], "stock_status": stock_status}
             )
-            entry["history"] = entry["history"][-HISTORY_LIMIT:]
+            entry["history"] = prune_history(entry["history"], today_date)
 
             # An out-of-stock listing's price isn't buyable, so a "price
             # change" against it isn't actionable — still recorded above for
@@ -545,6 +583,8 @@ def main():
                         "stock_status": stock_status,
                         "seller": r.get("seller"),
                         "is_marketplace": r.get("is_marketplace"),
+                        "all_time_low": entry["all_time_low"],
+                        "all_time_high": entry["all_time_high"],
                     }
                 )
 
