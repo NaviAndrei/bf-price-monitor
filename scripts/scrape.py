@@ -1,4 +1,5 @@
 # scripts/scrape.py
+import functools
 import json
 import random
 import re
@@ -11,6 +12,72 @@ from bs4 import BeautifulSoup
 
 HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
 REQUEST_TIMEOUT = 15
+
+# Playwright's own navigation-timeout default is 30s; the listing pages this
+# scrapes are simple search results, so 25s is plenty and fails fast instead
+# of tying up the runner when a site truly stalls.
+PLAYWRIGHT_NAV_TIMEOUT_MS = 25_000
+
+# Aborted outright to cut bandwidth/time: none of these resource types affect
+# the DOM data (title/price/stock) this scraper reads out of listing pages.
+TRACKING_DOMAINS = (
+    "google-analytics.com",
+    "googletagmanager.com",
+    "doubleclick.net",
+    "facebook.net",
+    "facebook.com",
+    "hotjar.com",
+    "clarity.ms",
+    "criteo.com",
+    "criteo.net",
+)
+
+# Scraper-level retry: guards against unhandled exceptions inside a whole
+# scrape_*_listing() call (e.g. a page layout change BeautifulSoup can't
+# navigate), separate from the 403/429 retry already inside fetch()/
+# fetch_with_browser().
+SCRAPER_RETRY_ATTEMPTS = 2
+SCRAPER_RETRY_BASE_DELAY = 3  # seconds, plus random jitter
+
+
+def with_retry(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        for attempt in range(1, SCRAPER_RETRY_ATTEMPTS + 1):
+            try:
+                return func(*args, **kwargs)
+            except Exception as e:
+                if attempt == SCRAPER_RETRY_ATTEMPTS:
+                    raise
+                delay = SCRAPER_RETRY_BASE_DELAY + random.uniform(0, 1)
+                print(
+                    f"[{func.__name__}] failed ({e.__class__.__name__}: {e}), "
+                    f"retrying in {delay:.1f}s (attempt {attempt + 1}/{SCRAPER_RETRY_ATTEMPTS})"
+                )
+                time.sleep(delay)
+
+    return wrapper
+
+
+_BLOCKED_RESOURCE_RE = re.compile(
+    r"\.(png|jpe?g|gif|svg|webp|woff2?|css|ico)(\?|$)", re.IGNORECASE
+)
+
+
+def _block_heavy_requests(route):
+    # A single catch-all handler, rather than one route per pattern: Playwright
+    # runs multiple matching handlers last-registered-first, so splitting this
+    # into separate page.route() calls risks a later "**/*" registration
+    # short-circuiting an earlier, more specific one before it ever runs.
+    request = route.request
+    url = request.url
+    if _BLOCKED_RESOURCE_RE.search(url):
+        return route.abort()
+    if request.resource_type == "script" and any(
+        domain in url for domain in TRACKING_DOMAINS
+    ):
+        return route.abort()
+    return route.continue_()
 HISTORY_LIMIT = (
     30  # keep last 30 daily price points per product, for the 30-day-low check
 )
@@ -89,8 +156,10 @@ def fetch_with_browser(url: str, site_name: str) -> str | None:
             with Stealth().use_sync(sync_playwright()) as p:
                 browser = p.chromium.launch(headless=True)
                 page = browser.new_page(user_agent=HEADERS["User-Agent"])
+                page.set_default_navigation_timeout(PLAYWRIGHT_NAV_TIMEOUT_MS)
+                page.route("**/*", _block_heavy_requests)
                 response = page.goto(
-                    url, timeout=REQUEST_TIMEOUT * 1000, wait_until="domcontentloaded"
+                    url, timeout=PLAYWRIGHT_NAV_TIMEOUT_MS, wait_until="domcontentloaded"
                 )
                 status = response.status if response else None
 
@@ -161,16 +230,20 @@ def fetch(url: str, site_name: str) -> str | None:
 def emag_stock_status(card) -> str:
     # eMAG's search listing (verified live 2026-09-07 against "iphone 15" and
     # "laptop lenovo v15", 60+54 real cards checked) only ever surfaces two
-    # data-availability-id values for matched cards: "3" ("în stoc") and "2"
-    # ("ultimul produs in stoc" - last unit). No out-of-stock marker text
-    # ("stoc epuizat", "indisponibil") appeared anywhere on either page, so
-    # eMAG appears to exclude sold-out offers from search results entirely.
-    # The text check below is kept as a defensive fallback in case that
-    # changes; "unknown" covers any card whose markup doesn't match either.
+    # data-availability-id values for matched cards: "3" ("în stoc" - plenty)
+    # and "2" ("ultimul produs in stoc" - last unit, a real limited-stock
+    # signal). No out-of-stock marker text ("stoc epuizat", "indisponibil")
+    # appeared anywhere on either page, so eMAG appears to exclude sold-out
+    # offers from search results entirely. The text check below is kept as a
+    # defensive fallback in case that changes; "unknown" covers any card
+    # whose markup doesn't match either.
     text = card.get_text(" ", strip=True).lower()
     if "stoc epuizat" in text or "indisponibil" in text:
         return "out_of_stock"
-    if card.get("data-availability-id") in ("2", "3") or "in stoc" in text:
+    availability_id = card.get("data-availability-id")
+    if availability_id == "2" or "ultimul produs" in text:
+        return "limited_stock"
+    if availability_id == "3" or "in stoc" in text:
         return "in_stock"
     return "unknown"
 
@@ -203,6 +276,15 @@ def scrape_emag_listing(query: str) -> list[dict]:
                 "price": price,
                 "url": title_el["href"],
                 "stock_status": emag_stock_status(card),
+                # eMAG's search/listing page carries no seller identity
+                # anywhere in the card markup (verified live 2026-09-10:
+                # no vendor/seller text or data-* attribute on any card) —
+                # only individual product pages show "Vandut si livrat de",
+                # and robots.txt disallows /product/. Recorded as unknown
+                # rather than assumed, since guessing "eMAG" would be wrong
+                # for any card actually fulfilled by a marketplace seller.
+                "seller": None,
+                "is_marketplace": None,
             }
         )
     return results
@@ -210,20 +292,25 @@ def scrape_emag_listing(query: str) -> list[dict]:
 
 def pcgarage_stock_status(card) -> str:
     # PC Garage marks every listed card with a `.product_box_availability`
-    # div whose second class is the actual state (verified live 2026-09-07
-    # against "placa video rtx 3050" and a discontinued-laptop query, which
-    # surfaced all three real values): "instock" ("Stoc magazin
-    # suficient/limitat"), "insupplierstock" ("In stoc furnizor" - still
-    # orderable, fulfilled by the supplier rather than PC Garage's own
-    # warehouse), and "outofstock" ("Nu este in stoc").
+    # div whose class is "instock", "insupplierstock", or "outofstock"
+    # (verified live 2026-09-07 and re-verified 2026-09-10 across 4 queries,
+    # which surfaced all three). Re-verification on 2026-09-10 found the
+    # "instock" class covers two different texts: "Stoc magazin suficient"
+    # (plenty) and "Stoc magazin limitat" (limited) — the class alone can't
+    # tell them apart, so the text has to be checked too. "insupplierstock"
+    # ("In stoc furnizor") means still orderable but fulfilled by the
+    # supplier rather than PC Garage's own warehouse.
     el = card.select_one(".product_box_availability")
     if not el:
         return "unknown"
     classes = el.get("class") or []
+    text = el.get_text(strip=True).lower()
     if "outofstock" in classes:
         return "out_of_stock"
-    if "instock" in classes or "insupplierstock" in classes:
-        return "in_stock"
+    if "insupplierstock" in classes:
+        return "supplier_stock"
+    if "instock" in classes:
+        return "limited_stock" if "limitat" in text else "in_stock"
     return "unknown"
 
 
@@ -255,6 +342,9 @@ def scrape_pcgarage_listing(query: str) -> list[dict]:
                 "price": price,
                 "url": title_el["href"],
                 "stock_status": pcgarage_stock_status(card),
+                # PC Garage sells first-party only, no marketplace program.
+                "seller": "PC Garage",
+                "is_marketplace": False,
             }
         )
     return results
@@ -263,25 +353,26 @@ def scrape_pcgarage_listing(query: str) -> list[dict]:
 def flanco_stock_status(card) -> str:
     # Flanco marks every real listed card with a `.stocky-txt` span inside
     # `.produs-status .stock` whose class is the actual state (verified live
-    # 2026-09-07 against "laptop asus vivobook" and "iphone 13 mini", 20+25
-    # real cards checked — every one of them had this marker present):
-    # "in-stock" ("In stoc"), "limited-stock" ("Stoc limitat"),
-    # "supplier-stock" ("Exclusiv online"), "bin-display" ("Expus in
-    # magazin") — all four are purchasable states, just different fulfilment
-    # channels. No out-of-stock class was observed on either query, so
-    # Flanco appears to exclude sold-out products from search results
-    # entirely; the "out-of-stock"/"sold-out" check below is a defensive
-    # fallback in case that changes.
+    # 2026-09-07, re-verified 2026-09-10 against 3 queries, 65+ real cards
+    # checked — every one of them had this marker present): "in-stock"
+    # ("In stoc"), "limited-stock" ("Stoc limitat"), "supplier-stock"
+    # ("Exclusiv online" - fulfilled by the supplier rather than Flanco's own
+    # stock), "bin-display" ("Expus in magazin" - in-store display unit, not
+    # separately confirmed online). No out-of-stock class was observed on any
+    # verification query, so Flanco appears to exclude sold-out products from
+    # search results entirely; the "out-of-stock"/"sold-out" check below is a
+    # defensive fallback in case that changes.
     el = card.select_one(".stocky-txt")
     if not el:
         return "unknown"
     classes = el.get("class") or []
     if any("out-of-stock" in c or "sold-out" in c for c in classes):
         return "out_of_stock"
-    if any(
-        c in classes
-        for c in ("in-stock", "limited-stock", "supplier-stock", "bin-display")
-    ):
+    if "limited-stock" in classes:
+        return "limited_stock"
+    if "supplier-stock" in classes:
+        return "supplier_stock"
+    if "in-stock" in classes or "bin-display" in classes:
         return "in_stock"
     return "unknown"
 
@@ -323,6 +414,9 @@ def scrape_flanco_listing(query: str) -> list[dict]:
             "price": price,
             "url": title_el["href"],
             "stock_status": flanco_stock_status(card),
+            # Flanco sells first-party only, no marketplace program.
+            "seller": "Flanco",
+            "is_marketplace": False,
         }
         if reference_el:
             reference_price = parse_price(reference_el.get_text(strip=True))
@@ -347,21 +441,15 @@ def scrape_altex_listing(query: str) -> list[dict]:
     # alternative to Playwright) or reverse-engineering Altex's internal
     # API — out of scope per the one-bounded-attempt rule. Altex stays
     # stubbed; see README for the accepted-gap note.
-    url = f"https://www.altex.ro/search/?q={query.replace(' ', '+')}"
-    html = fetch(url, "altex")
-    if not html:
-        return []
-    print(
-        "[altex] page fetched successfully but no selectors are implemented yet, skipping"
-    )
+    print("[altex] skipped (Akamai-protected, out of scope)")
     return []
 
 
 SCRAPERS = {
-    "emag": scrape_emag_listing,
-    "pcgarage": scrape_pcgarage_listing,
-    "flanco": scrape_flanco_listing,
-    "altex": scrape_altex_listing,
+    "emag": with_retry(scrape_emag_listing),
+    "pcgarage": with_retry(scrape_pcgarage_listing),
+    "flanco": with_retry(scrape_flanco_listing),
+    "altex": with_retry(scrape_altex_listing),
 }
 
 
@@ -377,7 +465,13 @@ def main():
             print(f"Unknown site '{item['site']}' in watchlist, skipping")
             continue
 
-        results = scraper(item["query"])
+        try:
+            results = scraper(item["query"])
+        except Exception as e:
+            print(
+                f"[{item['site']}] scrape failed after retries ({e.__class__.__name__}: {e}), skipping"
+            )
+            results = []
         time.sleep(random.uniform(3, 7))  # polite delay between requests
 
         for r in results:
@@ -386,6 +480,8 @@ def main():
                 key, {"title": r["title"], "site": item["site"], "history": []}
             )
             entry["title"] = r["title"]
+            entry["seller"] = r.get("seller")
+            entry["is_marketplace"] = r.get("is_marketplace")
             if "reference_price" in r:
                 entry["reference_price"] = r["reference_price"]
 
@@ -401,7 +497,14 @@ def main():
             )
             entry["history"] = entry["history"][-HISTORY_LIMIT:]
 
-            if prev_price is not None and prev_price != r["price"]:
+            # An out-of-stock listing's price isn't buyable, so a "price
+            # change" against it isn't actionable — still recorded above for
+            # history/trend purposes, just not surfaced as an alert.
+            if (
+                prev_price is not None
+                and prev_price != r["price"]
+                and stock_status != "out_of_stock"
+            ):
                 alerts.append(
                     {
                         "title": r["title"],
@@ -413,6 +516,8 @@ def main():
                         "thirty_day_low": min(past_prices) if past_prices else None,
                         "reference_price": r.get("reference_price"),
                         "stock_status": stock_status,
+                        "seller": r.get("seller"),
+                        "is_marketplace": r.get("is_marketplace"),
                     }
                 )
 

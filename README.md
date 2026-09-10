@@ -10,9 +10,9 @@ free tier — no paid services required.
 
 | Site | Status | Method |
 |---|---|---|
-| eMAG | Live | plain `requests` |
-| PC Garage | Live | Playwright + playwright-stealth (Cloudflare JS challenge blocks plain `requests`) |
-| Flanco | Live | Playwright + playwright-stealth, including the legally-mandated 30-day reference price |
+| eMAG | Live | plain `requests`; listing page has no seller data, so `seller`/`is_marketplace` are always `null` |
+| PC Garage | Live | Playwright + playwright-stealth (Cloudflare JS challenge blocks plain `requests`); first-party only |
+| Flanco | Live | Playwright + playwright-stealth, including the legally-mandated 30-day reference price; first-party only |
 | Altex | Not working, excluded on purpose | — |
 
 Altex is fronted by Akamai and stalls the TLS handshake for a plain
@@ -34,7 +34,18 @@ than crashing the run.
 1. `scripts/scrape.py` fetches search/listing pages for each watchlist entry
    (never direct product pages), records today's price into
    `data/price_history.json`, and writes any price changes to
-   `data/alerts.json`.
+   `data/alerts.json`. Each recorded product also carries:
+   - `stock_status`: `in_stock`, `limited_stock`, `supplier_stock`,
+     `out_of_stock`, or `unknown` — granularity varies by site depending on
+     what its listing page actually exposes (see "Site status" below).
+     Alerts are suppressed (but the price is still recorded to history) when
+     `stock_status` is `out_of_stock`, since a sold-out price isn't
+     actionable.
+   - `seller` / `is_marketplace`: which company fulfills the listing, and
+     whether that's a third-party marketplace seller rather than the
+     retailer itself. Only populated for PC Garage and Flanco, which sell
+     first-party only (`is_marketplace: false`); `null` for eMAG, whose
+     listing pages carry no seller information at all (see "Site status").
 2. `scripts/analyze.py` asks an LLM whether each price change looks like a
    genuine discount, using the Hugging Face Inference API first and falling
    back to a local Ollama model if that fails. Flanco listings carry a
