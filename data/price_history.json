@@ -1663,8 +1663,18 @@
           "date": "2026-09-10",
           "price": 3842.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-11",
+          "price": 3842.99,
+          "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null,
+      "all_time_low": 3842.99,
+      "all_time_high": 3842.99,
+      "first_seen": "2026-09-06"
     },
     "https://www.emag.ro/laptop-lenovo-v15-g4-iru-procesor-intelr-coretm-i3-1315u-15-6-fhd-ips-16-gb-ddr4-512-gb-ssd-gma-uhd-windows-11-pro-business-black-fb-488/pd/D0TSVLYBM/": {
       "title": "Laptop Lenovo V15 G4 IRU, Procesor Intel® Core™ i3-1315U, 15.6\" FHD IPS, 16 GB DDR4, 512 GB SSD, GMA UHD, Windows 11 Pro, Business Black",
@@ -7092,6 +7102,86 @@
       ],
       "seller": null,
       "is_marketplace": null
+    },
+    "https://www.emag.ro/laptop-lenovo-v15-g2-alc-15-6-fhd-amd-ryzen-3-5300u-4-core-8-gb-ddr4-256-gb-ssd-m2-pcie-amd-radeon-graphics-windows-11-home-1-7-kg-black-82kd002jmz-1/pd/DGFHKG2BM/": {
+      "title": "Laptop Lenovo V15 G2 ALC, 15.6\" FHD, AMD Ryzen 3 5300U 4-core, 8 GB DDR4, 256 GB SSD m2 PCIe, AMD Radeon Graphics, Windows 11 Home, 1.7 kg Black",
+      "site": "emag",
+      "history": [
+        {
+          "date": "2026-09-11",
+          "price": 2059.0,
+          "stock_status": "limited_stock"
+        }
+      ],
+      "seller": null,
+      "is_marketplace": null,
+      "all_time_low": 2059.0,
+      "all_time_high": 2059.0,
+      "first_seen": "2026-09-11"
+    },
+    "https://www.emag.ro/laptop-lenovo-v15-g2-alc-15-6-fhd-amd-ryzen-3-5300u-4-core-20-gb-ddr4-256-gb-ssd-m2-pcie-amd-radeon-graphics-windows-11-home-1-7-kg-black-82kd002jmz-3/pd/D4T9KG2BM/": {
+      "title": "Laptop Lenovo V15 G2 ALC, 15.6\" FHD, AMD Ryzen 3 5300U 4-core, 20 GB DDR4, 256 GB SSD m2 PCIe, AMD Radeon Graphics, Windows 11 Home, 1.7 kg Black",
+      "site": "emag",
+      "history": [
+        {
+          "date": "2026-09-11",
+          "price": 2589.0,
+          "stock_status": "limited_stock"
+        }
+      ],
+      "seller": null,
+      "is_marketplace": null,
+      "all_time_low": 2589.0,
+      "all_time_high": 2589.0,
+      "first_seen": "2026-09-11"
+    },
+    "https://www.emag.ro/laptop-lenovo-v15-g2-alc-15-6-fhd-amd-ryzen-3-5300u-4-core-8-gb-ddr4-512-gb-ssd-m2-pcie-amd-radeon-graphics-windows-11-home-1-7-kg-black-82kd002jmz/pd/D4B2KG2BM/": {
+      "title": "Laptop Lenovo V15 G2 ALC, 15.6\" FHD, AMD Ryzen 3 5300U 4-core, 8 GB DDR4, 512 GB SSD m2 PCIe, AMD Radeon Graphics, Windows 11 Home, 1.7 kg Black",
+      "site": "emag",
+      "history": [
+        {
+          "date": "2026-09-11",
+          "price": 2169.0,
+          "stock_status": "limited_stock"
+        }
+      ],
+      "seller": null,
+      "is_marketplace": null,
+      "all_time_low": 2169.0,
+      "all_time_high": 2169.0,
+      "first_seen": "2026-09-11"
+    },
+    "https://www.emag.ro/laptop-lenovo-v15-g2-alc-15-6-fhd-amd-ryzen-3-5300u-4-core-20-gb-ddr4-512-gb-ssd-m2-pcie-amd-radeon-graphics-windows-11-home-1-7-kg-black-82kd002jmz-2/pd/D12XKG2BM/": {
+      "title": "Laptop Lenovo V15 G2 ALC, 15.6\" FHD, AMD Ryzen 3 5300U 4-core, 20 GB DDR4, 512 GB SSD m2 PCIe, AMD Radeon Graphics, Windows 11 Home, 1.7 kg Black",
+      "site": "emag",
+      "history": [
+        {
+          "date": "2026-09-11",
+          "price": 2649.0,
+          "stock_status": "limited_stock"
+        }
+      ],
+      "seller": null,
+      "is_marketplace": null,
+      "all_time_low": 2649.0,
+      "all_time_high": 2649.0,
+      "first_seen": "2026-09-11"
+    },
+    "https://www.pcgarage.ro/notebook-laptop/asus/16-vivobook-s16-m3607ga-wuxga-oled-procesor-amd-ryzen-ai-7-445-8m-cache-up-to-46-ghz-16gb-ddr5-1tb-ssd-amd-radeon-840m-no-os-matte-gray/": {
+      "title": "Laptop ASUS 16'' Vivobook S16 M3607GA, WUXGA OLED, Procesor AMD Ryzen™ AI 7 445 (8M Cache, up to 4.6 GHz), 16GB DDR5, 1TB SSD, AMD Radeon 840M, No OS, Matte Gray",
+      "site": "pcgarage",
+      "history": [
+        {
+          "date": "2026-09-11",
+          "price": 4598.99,
+          "stock_status": "limited_stock"
+        }
+      ],
+      "seller": "PC Garage",
+      "is_marketplace": false,
+      "all_time_low": 4598.99,
+      "all_time_high": 4598.99,
+      "first_seen": "2026-09-11"
     }
   }
 }
