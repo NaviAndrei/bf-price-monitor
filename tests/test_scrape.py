@@ -8,24 +8,24 @@ from scrape import prune_history, should_alert, update_lifetime_stats  # noqa: E
 
 
 def test_price_decrease_no_thresholds_alerts():
-    assert should_alert(100.0, 90.0, [110.0, 100.0], "in_stock") is True
+    assert should_alert(100.0, 90.0, "in_stock", all_time_low=100.0) is True
 
 
 def test_price_increase_never_alerts():
-    assert should_alert(100.0, 110.0, [90.0, 100.0], "in_stock") is False
+    assert should_alert(100.0, 110.0, "in_stock", all_time_low=90.0) is False
 
 
 def test_unchanged_price_does_not_alert():
-    assert should_alert(100.0, 100.0, [100.0], "in_stock") is False
+    assert should_alert(100.0, 100.0, "in_stock", all_time_low=100.0) is False
 
 
 def test_out_of_stock_suppresses_alert_even_on_drop():
-    assert should_alert(100.0, 80.0, [100.0], "out_of_stock") is False
+    assert should_alert(100.0, 80.0, "out_of_stock", all_time_low=100.0) is False
 
 
 def test_target_price_met_alerts():
     assert (
-        should_alert(100.0, 90.0, [110.0, 100.0], "in_stock", target_price=95.0)
+        should_alert(100.0, 90.0, "in_stock", target_price=95.0, all_time_low=100.0)
         is True
     )
 
@@ -34,7 +34,9 @@ def test_target_price_unmet_suppresses_alert():
     # 96.0 is above the recorded low of 80.0, so this isn't a new all-time
     # low and the target_price gate applies normally.
     assert (
-        should_alert(100.0, 96.0, [80.0, 100.0], "in_stock", target_price=95.0)
+        should_alert(
+            100.0, 96.0, "in_stock", target_price=95.0, all_time_low=80.0
+        )
         is False
     )
 
@@ -43,7 +45,7 @@ def test_min_drop_percent_met_alerts():
     # 100 -> 90 is a 10% drop, threshold is 5%
     assert (
         should_alert(
-            100.0, 90.0, [110.0, 100.0], "in_stock", min_drop_percent=5.0
+            100.0, 90.0, "in_stock", min_drop_percent=5.0, all_time_low=100.0
         )
         is True
     )
@@ -54,7 +56,7 @@ def test_min_drop_percent_unmet_suppresses_alert():
     # low of 80.0, so this isn't a new all-time low and the threshold applies.
     assert (
         should_alert(
-            100.0, 98.0, [80.0, 100.0], "in_stock", min_drop_percent=5.0
+            100.0, 98.0, "in_stock", min_drop_percent=5.0, all_time_low=80.0
         )
         is False
     )
@@ -67,9 +69,9 @@ def test_all_time_low_overrides_min_drop_percent():
         should_alert(
             100.0,
             99.0,
-            [120.0, 110.0, 100.0],
             "in_stock",
             min_drop_percent=50.0,
+            all_time_low=100.0,
         )
         is True
     )
@@ -81,9 +83,9 @@ def test_all_time_low_overrides_target_price():
         should_alert(
             100.0,
             99.0,
-            [120.0, 110.0, 100.0],
             "in_stock",
             target_price=50.0,
+            all_time_low=100.0,
         )
         is True
     )
@@ -95,16 +97,16 @@ def test_not_all_time_low_respects_target_price():
         should_alert(
             100.0,
             95.0,
-            [80.0, 90.0, 100.0],
             "in_stock",
             target_price=50.0,
+            all_time_low=80.0,
         )
         is False
     )
 
 
 def test_no_prior_history_never_alerts():
-    assert should_alert(None, 90.0, [], "in_stock") is False
+    assert should_alert(None, 90.0, "in_stock") is False
 
 
 REFERENCE_DATE = date(2026, 1, 1)

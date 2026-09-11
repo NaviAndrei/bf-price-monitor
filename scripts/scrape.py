@@ -4,7 +4,7 @@ import json
 import random
 import re
 import time
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 
 import requests
@@ -453,10 +453,10 @@ SCRAPERS = {
 def should_alert(
     prev_price: float | None,
     new_price: float,
-    past_prices: list[float],
     stock_status: str,
     target_price: float | None = None,
     min_drop_percent: float | None = None,
+    all_time_low: float | None = None,
 ) -> bool:
     # A deal monitor only cares about savings: price increases and
     # unchanged prices never alert, regardless of thresholds.
@@ -464,8 +464,11 @@ def should_alert(
         return False
 
     # An all-time low is always worth surfacing, even if it's a smaller drop
-    # than min_drop_percent or hasn't reached target_price yet.
-    if not past_prices or new_price < min(past_prices):
+    # than min_drop_percent or hasn't reached target_price yet. Sourced from
+    # the persistent entry["all_time_low"] field (pre-update) rather than
+    # min(past_prices), since past_prices is now bounded to a 90-day rolling
+    # window and would miss a true record low set further back than that.
+    if all_time_low is not None and new_price < all_time_low:
         return True
 
     if target_price is not None and new_price > target_price:
@@ -551,9 +554,11 @@ def main():
             if entry["history"] and entry["history"][-1]["date"] == today:
                 continue  # already recorded today (e.g. two queries matched the same product)
 
-            past_prices = [h["price"] for h in entry["history"]]
+            prior_history = list(entry["history"])
+            past_prices = [h["price"] for h in prior_history]
             prev_price = past_prices[-1] if past_prices else None
             stock_status = r.get("stock_status", "unknown")
+            prior_all_time_low = entry.get("all_time_low")
 
             update_lifetime_stats(entry, r["price"], today)
 
@@ -565,11 +570,25 @@ def main():
             # An out-of-stock listing's price isn't buyable, so a "price
             # change" against it isn't actionable — still recorded above for
             # history/trend purposes, just not surfaced as an alert.
-            if (
-                prev_price is not None
-                and prev_price != r["price"]
-                and stock_status != "out_of_stock"
+            if should_alert(
+                prev_price,
+                r["price"],
+                stock_status,
+                target_price=item.get("target_price"),
+                min_drop_percent=item.get("min_drop_percent"),
+                all_time_low=prior_all_time_low,
             ):
+                thirty_day_cutoff = today_date - timedelta(days=30)
+                recent_prices = [
+                    h["price"]
+                    for h in prior_history
+                    if date.fromisoformat(h["date"]) >= thirty_day_cutoff
+                ]
+                oldest_date = (
+                    date.fromisoformat(prior_history[0]["date"])
+                    if prior_history
+                    else today_date
+                )
                 alerts.append(
                     {
                         "title": r["title"],
@@ -578,7 +597,8 @@ def main():
                         "url": key,
                         "old_price": prev_price,
                         "new_price": r["price"],
-                        "thirty_day_low": min(past_prices) if past_prices else None,
+                        "thirty_day_low": min(recent_prices) if recent_prices else prev_price,
+                        "history_days": (today_date - oldest_date).days,
                         "reference_price": r.get("reference_price"),
                         "stock_status": stock_status,
                         "seller": r.get("seller"),
