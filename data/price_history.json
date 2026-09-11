@@ -5768,9 +5768,16 @@
           "date": "2026-09-08",
           "price": 3289.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-11",
+          "price": 3218.99,
+          "stock_status": "supplier_stock"
         }
       ],
-      "reference_price": 4659.99
+      "reference_price": 4659.99,
+      "seller": "Flanco",
+      "is_marketplace": false
     },
     "https://www.flanco.ro/laptop-asus-vivobook-go-15-l510kab-ej1058-15-6-1920-x-1080-intel-celeron-n4500-8-gb-ddr4-512-gb-ssd-intel-graphics-no-os-negru.html": {
       "title": "Laptop Asus Vivobook Go 15 L510KAB-EJ1058 15.6'' 1920 x 1080, Intel Celeron N4500, 8 GB DDR4, 512 GB SSD, Intel Graphics, No OS, Negru",
@@ -6532,8 +6539,15 @@
           "date": "2026-09-08",
           "price": 4465.07,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-11",
+          "price": 4465.07,
+          "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/telefon-mobil-nokia-105-2023-dual-sim-charcoal-1gf019cpa2l04/pd/D655WWMBM/": {
       "title": "Telefon mobil Nokia 105 (2023), Dual SIM, Charcoal",
@@ -6894,6 +6908,19 @@
           "date": "2026-09-11",
           "price": 6312.99,
           "stock_status": "limited_stock"
+        }
+      ],
+      "seller": null,
+      "is_marketplace": null
+    },
+    "https://www.emag.ro/laptop-15-6-lenovo-v15-g4-amd-ryzen-5-5625u-19mb-4-3ghz-8gb-ddr4-256gb-ssd-amd-radeon-windows-11-pro-layout-de-negru-82yy006pge/pd/D4GZ882BM/": {
+      "title": "Laptop 15.6\" Lenovo V15 G4 AMD Ryzen 5 5625U (19MB 4.3GHz) 8GB DDR4 256GB SSD AMD Radeon Windows 11 Pro Layout DE negru",
+      "site": "emag",
+      "history": [
+        {
+          "date": "2026-09-11",
+          "price": 2956.41,
+          "stock_status": "in_stock"
         }
       ],
       "seller": null,
