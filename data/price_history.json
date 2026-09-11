@@ -4444,8 +4444,15 @@
           "date": "2026-09-08",
           "price": 3392.31,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-11",
+          "price": 3428.81,
+          "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/laptop-lenovo-v15-g5-irl-cu-procesor-intel-core-i7-13620h-pana-la-4-90-ghz-15-6-fhd-32gb-ram-512gb-ssd-intelr-uhd-graphics-windows-11-pro-83gw007uri1w/pd/DFRS983BM/": {
       "title": "Laptop Lenovo V15 G5 IRL cu procesor Intel Core i7-13620H pana la 4.90 GHz, 15.6\" FHD, 32GB RAM, 512GB SSD, Intel® UHD Graphics, Windows 11 Pro",
@@ -4732,8 +4739,15 @@
           "date": "2026-09-10",
           "price": 2949.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-11",
+          "price": 2949.99,
+          "stock_status": "limited_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/laptop-lenovo-v15-g4-iru-cu-procesor-intelr-coretm-i5-13420h-pana-la-4-6-ghz-15-6-full-hd-ips-8gb-ddr4-ram-512gb-ssd-intelr-uhd-graphics-no-os-business-black-3y-carry-in-83a1008wrm/pd/DNSQ3TYBM/": {
       "title": "Laptop Lenovo V15 G4 IRU cu procesor Intel® Core™ i5-13420H pana la 4.6 GHz, 15.6\", Full HD, IPS, 8GB DDR4 RAM, 512GB SSD, Intel® UHD Graphics, No OS, Business Black, 3y Carry-in",
@@ -6024,8 +6038,15 @@
           "date": "2026-09-09",
           "price": 3749.98,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-11",
+          "price": 3749.98,
+          "stock_status": "limited_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/laptop-lenovo-v15-g5-irl-cu-procesor-intel-core-i5-13420h-pana-la-4-60-ghz-15-6-fhd-16gb-ddr5-ram-1tb-ssd-intel-uhd-graphics-no-os-83hf00gmbm/pd/D6YW3M2BM/": {
       "title": "Laptop Lenovo V15 G5 IRL cu procesor Intel Core i5-13420H pana la 4.60 GHz, 15.6\" FHD, 16GB DDR5 RAM, 1TB SSD, Intel UHD Graphics, No OS",
