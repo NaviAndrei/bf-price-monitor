@@ -138,6 +138,16 @@ def parse_price(raw: str) -> float | None:
         return None
 
 
+def title_matches_query(title: str, query: str) -> bool:
+    # Retailer search is fuzzy/token-based, so a query like "iphone 15" can
+    # surface "Xiaomi 15T" (matches "15") or "Honor 600" (matches nothing but
+    # still ranks). Requiring every query word to appear in the title rejects
+    # those false matches while still allowing normal word-order/case drift
+    # between the search query and the listed title.
+    title_words = title.lower().split()
+    return all(word in title_words for word in query.lower().split())
+
+
 def fetch_with_browser(url: str, site_name: str) -> str | None:
     # For sites whose Cloudflare challenge blocks plain `requests` outright
     # (403 on every attempt, even from a residential IP). A stealth-patched
@@ -264,12 +274,15 @@ def scrape_emag_listing(query: str) -> list[dict]:
         price_el = card.select_one(".product-new-price")
         if not (title_el and price_el and title_el.get("href")):
             continue
+        title_text = title_el.get_text(strip=True)
+        if not title_matches_query(title_text, query):
+            continue
         price = parse_price(price_el.get_text(strip=True))
         if price is None:
             continue
         results.append(
             {
-                "title": title_el.get_text(strip=True),
+                "title": title_text,
                 "price": price,
                 "url": title_el["href"],
                 "stock_status": emag_stock_status(card),
@@ -330,12 +343,15 @@ def scrape_pcgarage_listing(query: str) -> list[dict]:
         price_el = card.select_one(".product_box_price_container p.price")
         if not (title_el and price_el and title_el.get("href")):
             continue
+        title_text = title_el.get_text(strip=True)
+        if not title_matches_query(title_text, query):
+            continue
         price = parse_price(price_el.get_text(strip=True))
         if price is None:
             continue
         results.append(
             {
-                "title": title_el.get_text(strip=True),
+                "title": title_text,
                 "price": price,
                 "url": title_el["href"],
                 "stock_status": pcgarage_stock_status(card),
@@ -397,17 +413,24 @@ def scrape_flanco_listing(query: str) -> list[dict]:
         title_el = card.select_one(".product-item-link")
         price_el = card.select_one(".price-box.price-final_price .special-price .price")
         # OUG 27/2022 requires retailers to publish the lowest price from the
-        # last 30 days when a product is discounted — Flanco surfaces this
-        # legally-audited figure directly in the markup, so we capture it
-        # instead of relying only on our own scrape history.
+        # last 30 days when a product is discounted. Despite that legal
+        # intent, this markup ("pretVechi"/"pricePrp") is Flanco's own
+        # claimed strike-through reference price (PRP) — a retailer-supplied
+        # figure, not independently verified here. It is stored below as
+        # reference_price for display/audit purposes only; thirty_day_low
+        # must always be computed from our own recorded history in
+        # data/price_history.json, never from this field.
         reference_el = card.select_one(".pretVechi .pricePrp .price")
         if not (title_el and price_el and title_el.get("href")):
+            continue
+        title_text = title_el.get_text(strip=True)
+        if not title_matches_query(title_text, query):
             continue
         price = parse_price(price_el.get_text(strip=True))
         if price is None:
             continue
         result = {
-            "title": title_el.get_text(strip=True),
+            "title": title_text,
             "price": price,
             "url": title_el["href"],
             "stock_status": flanco_stock_status(card),
@@ -470,6 +493,18 @@ def should_alert(
     # window and would miss a true record low set further back than that.
     if all_time_low is not None and new_price < all_time_low:
         return True
+
+    # Below the all-time-low override, a "drop" of a few lei on a
+    # three-figure item isn't a deal worth a notification — it's noise from
+    # normal price-tracking granularity. Both an absolute (RON) and a
+    # relative (%) floor are required since a flat RON cutoff alone would
+    # let a 5 RON drop on a 20 RON accessory (25%) alert, while a
+    # percent-only cutoff would let a 2% drop on a 2000 RON laptop (40 RON)
+    # through — neither is the "false micro-drop" this guards against.
+    drop_val = prev_price - new_price
+    drop_percent = (drop_val / prev_price) * 100
+    if drop_val < 5.0 or drop_percent < 2.0:
+        return False
 
     if target_price is not None and new_price > target_price:
         return False

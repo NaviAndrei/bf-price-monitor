@@ -4,7 +4,12 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 
-from scrape import prune_history, should_alert, update_lifetime_stats  # noqa: E402
+from scrape import (  # noqa: E402
+    prune_history,
+    should_alert,
+    title_matches_query,
+    update_lifetime_stats,
+)
 
 
 def test_price_decrease_no_thresholds_alerts():
@@ -107,6 +112,41 @@ def test_not_all_time_low_respects_target_price():
 
 def test_no_prior_history_never_alerts():
     assert should_alert(None, 90.0, "in_stock") is False
+
+
+def test_micro_drop_below_ron_floor_suppressed():
+    # 100 -> 97 is a 3 RON drop (3%): clears the percent floor but not the
+    # absolute RON floor, so it must still be suppressed.
+    assert should_alert(100.0, 97.0, "in_stock", all_time_low=80.0) is False
+
+
+def test_micro_drop_below_percent_floor_suppressed():
+    # 1000 -> 995 is a 5 RON drop (0.5%): clears the RON floor but not the
+    # percent floor, so it must still be suppressed.
+    assert should_alert(1000.0, 995.0, "in_stock", all_time_low=800.0) is False
+
+
+def test_drop_meeting_both_floors_alerts():
+    # 200 -> 190 is a 10 RON drop (5%): clears both floors.
+    assert should_alert(200.0, 190.0, "in_stock", all_time_low=150.0) is True
+
+
+def test_all_time_low_override_bypasses_micro_drop_floor():
+    # Only a 1 RON, 1% drop, but still a genuine new all-time low — the
+    # override must fire even though it wouldn't clear either floor alone.
+    assert should_alert(100.0, 99.0, "in_stock", all_time_low=100.0) is True
+
+
+def test_title_matches_query_rejects_unrelated_product():
+    assert title_matches_query("Acer Nitro V15", "laptop lenovo v15") is False
+
+
+def test_title_matches_query_rejects_partial_number_match():
+    assert title_matches_query("Xiaomi 15T", "iphone 15") is False
+
+
+def test_title_matches_query_accepts_case_and_order_insensitive_match():
+    assert title_matches_query("LAPTOP Lenovo V15 G4 AMN", "lenovo laptop v15") is True
 
 
 REFERENCE_DATE = date(2026, 1, 1)
