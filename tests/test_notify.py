@@ -66,7 +66,8 @@ def test_build_inline_keyboard_produces_valid_urls():
 
     compari_url = buttons[1]["url"]
     assert compari_url.startswith("https://www.compari.ro/CategorySearch.php?st=")
-    assert "Laptop+Lenovo+V15+G4+AMN" in compari_url
+    assert "Laptop+Lenovo+V15+G4" in compari_url
+    assert "AMN" not in compari_url
 
 
 def test_generate_quickchart_url_returns_none_below_three_points():

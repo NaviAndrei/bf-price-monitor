@@ -56,7 +56,9 @@ def format_telegram_message(alert: dict) -> str:
 
 
 def build_inline_keyboard(alert: dict) -> dict:
-    cleaned_title = " ".join(alert["title"].split()[:5])
+    # First 4 words keeps Compari search queries clean — a full title
+    # (with RAM/storage specs) over-narrows the search and returns nothing.
+    cleaned_title = " ".join(alert["title"].split()[:4])
     compari_url = (
         "https://www.compari.ro/CategorySearch.php?st="
         f"{urllib.parse.quote_plus(cleaned_title)}"
