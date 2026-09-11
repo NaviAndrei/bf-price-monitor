@@ -459,6 +459,11 @@
           "date": "2026-09-10",
           "price": 3590.0,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-11",
+          "price": 8228.0,
+          "stock_status": "limited_stock"
         }
       ],
       "seller": null,
@@ -1612,6 +1617,11 @@
           "date": "2026-09-10",
           "price": 3499.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-11",
+          "price": 3499.99,
+          "stock_status": "limited_stock"
         }
       ],
       "seller": null,
@@ -1741,8 +1751,15 @@
           "date": "2026-09-10",
           "price": 6318.86,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-11",
+          "price": 6318.86,
+          "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/laptop-lenovo-v15-g5-irl-cu-procesor-intel-core-i5-13420h-pana-la-4-60-ghz-15-6-fhd-16gb-ddr5-ram-512gb-ssd-intel-uhd-graphics-windows-11-pro-83gw00alri1w/pd/DLK59W3BM/": {
       "title": "Laptop Lenovo V15 G5 IRL cu procesor Intel Core i5-13420H pana la 4.60 GHz, 15.6\" FHD, 16GB DDR5 RAM, 512GB SSD, Intel UHD Graphics, Windows 11 Pro",
@@ -1770,6 +1787,11 @@
           "date": "2026-09-10",
           "price": 3799.0,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-11",
+          "price": 3799.0,
+          "stock_status": "limited_stock"
         }
       ],
       "seller": null,
@@ -2222,8 +2244,15 @@
           "date": "2026-09-10",
           "price": 2949.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-11",
+          "price": 2949.0,
+          "stock_status": "limited_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/telefon-mobil-xiaomi-15t-12gb-ram-256gb-rom-5g-gray-woven-strap-ring-stand-mzb0n3keu/pd/DZ9M943BM/": {
       "title": "Telefon mobil Xiaomi 15T, 12GB RAM, 256GB ROM, 5G Gray + Woven Strap Ring Stand",
@@ -4319,8 +4348,15 @@
           "date": "2026-09-10",
           "price": 2117.5,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-11",
+          "price": 2252.27,
+          "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/laptop-lenovo-v15-g5-irl-cu-procesor-intel-core-i7-13620h-pana-la-4-90-ghz-15-6-fhd-16gb-ddr5-ram-1tb-ssd-intel-uhd-graphics-no-os-83gw007uri2/pd/DKRS983BM/": {
       "title": "Laptop Lenovo V15 G5 IRL cu procesor Intel Core i7-13620H pana la 4.90 GHz, 15.6\" FHD, 16GB DDR5 RAM, 1TB SSD, Intel UHD Graphics, No OS",
@@ -6127,6 +6163,11 @@
           "date": "2026-09-10",
           "price": 4990.0,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-11",
+          "price": 4990.0,
+          "stock_status": "limited_stock"
         }
       ],
       "seller": null,
@@ -6287,6 +6328,11 @@
         },
         {
           "date": "2026-09-10",
+          "price": 2807.4,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-11",
           "price": 2807.4,
           "stock_status": "in_stock"
         }
@@ -6528,8 +6574,15 @@
           "date": "2026-09-10",
           "price": 749.0,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-11",
+          "price": 749.0,
+          "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/telefon-mobil-apple-iphone-14-256gb-5g-yellow-mr3y3rx-a/pd/D3YTV6MBM/": {
       "title": "Telefon mobil Apple iPhone 14, 256GB, 5G, Yellow",
@@ -6784,8 +6837,15 @@
           "date": "2026-09-10",
           "price": 3499.0,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-11",
+          "price": 3499.0,
+          "stock_status": "limited_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null
     },
     "https://www.emag.ro/laptop-lenovo-v15-g5-irl-intel-core-i7-13620h-32gb-ddr5-6-4tb-ssd-15-6-fhd-jhyuijgtfrt5g57/pd/DQ79TR3BM/": {
       "title": "Laptop Lenovo V15 G5 IRL, Intel Core i7-13620H, 32GB DDR5, 6.4TB SSD, 15.6\" FHD",
@@ -6921,6 +6981,32 @@
           "date": "2026-09-11",
           "price": 2956.41,
           "stock_status": "in_stock"
+        }
+      ],
+      "seller": null,
+      "is_marketplace": null
+    },
+    "https://www.emag.ro/laptop-15-6-lenovo-v15-g4-amd-ryzen-5-7520u-6mb-4-3ghz-16gb-ddr5-512gb-ssd-radeon-610m-amn-fhd-4m-win-11-pro-black-82yu01aege/pd/DCWZ882BM/": {
+      "title": "Laptop 15.6\" Lenovo V15 G4 AMD Ryzen 5 7520U (6MB 4.3GHz) 16GB DDR5 512GB SSD Radeon 610M AMN FHD 4M Win 11 Pro Black",
+      "site": "emag",
+      "history": [
+        {
+          "date": "2026-09-11",
+          "price": 4930.56,
+          "stock_status": "in_stock"
+        }
+      ],
+      "seller": null,
+      "is_marketplace": null
+    },
+    "https://www.emag.ro/laptop-15-6-lenovo-v15-g5-intel-5-210h-12mb-4-8ghz-16gb-ddr5-512gb-ssd-intel-graphics-irl-no-os-black-83hf00h5ri/pd/DB6Z882BM/": {
+      "title": "Laptop 15.6\" Lenovo V15 G5 Intel 5 210H (12MB 4.8GHz) 16GB DDR5 512GB SSD Intel Graphics IRL No OS Black",
+      "site": "emag",
+      "history": [
+        {
+          "date": "2026-09-11",
+          "price": 3706.48,
+          "stock_status": "limited_stock"
         }
       ],
       "seller": null,
