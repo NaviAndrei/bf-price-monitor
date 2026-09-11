@@ -1447,8 +1447,18 @@
           "date": "2026-09-10",
           "price": 2431.01,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-11",
+          "price": 2431.01,
+          "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null,
+      "all_time_low": 2431.01,
+      "all_time_high": 2431.01,
+      "first_seen": "2026-09-06"
     },
     "https://www.emag.ro/laptop-lenovo-v15-g4-amd-ryzen-5-16gb-ram-ssd-512gb-negru-15-6-inch-82yu00ymrm/pd/DR4NH53BM/": {
       "title": "Laptop Lenovo V15 G4, AMD Ryzen 5, 16GB RAM, SSD 512GB, Negru, 15.6 inch",
@@ -1713,8 +1723,18 @@
           "date": "2026-09-09",
           "price": 2701.24,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-11",
+          "price": 2562.98,
+          "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null,
+      "all_time_low": 2441.99,
+      "all_time_high": 2701.24,
+      "first_seen": "2026-09-06"
     },
     "https://www.emag.ro/laptop-lenovo-v15-15-6-amd-ryzen-5-7520u-8-gb-ram-256-gb-ssd-amd-radeon-graphics-qwerty-spaniol-negru-0196803948028/pd/D8RXJ8YBM/": {
       "title": "Laptop Lenovo V15, 15.6\", AMD Ryzen 5 7520U, 8 GB RAM, 256 GB SSD, AMD RADEON GRAPHICS, Qwerty Spaniol, Negru",
@@ -4194,8 +4214,18 @@
           "date": "2026-09-08",
           "price": 10769.0,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-11",
+          "price": 7986.0,
+          "stock_status": "limited_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null,
+      "all_time_low": 4598.0,
+      "all_time_high": 10769.0,
+      "first_seen": "2026-09-06"
     },
     "https://www.emag.ro/laptop-lenovo-v15-g3-iap-cu-procesor-intelr-coretm-i3-1215u-pana-la-4-40-ghz-15-6-full-hd-8gb-256gb-ssd-intel-uhd-graphics-no-os-black-82tt009yrm/pd/DV5F35MBM/": {
       "title": "Laptop Lenovo V15 G3 IAP cu procesor Intel® Core™ i3-1215U pana la 4.40 GHz, 15.6\", Full HD, 8GB, 256GB SSD, Intel UHD Graphics, No OS, Black",
@@ -4513,8 +4543,18 @@
           "date": "2026-09-10",
           "price": 6499.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-11",
+          "price": 6499.99,
+          "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null,
+      "all_time_low": 6499.99,
+      "all_time_high": 6499.99,
+      "first_seen": "2026-09-07"
     },
     "https://www.emag.ro/telefon-mobil-xiaomi-redmi-note-15-pro-5g-12gb-ram-512gb-rom-negru-ro-redminote15pro-5g-12gb512gb-black/pd/DGBMFT2BM/": {
       "title": "Telefon mobil Xiaomi REDMI Note 15 Pro+ 5G, 12GB RAM, 512GB ROM, Negru",
@@ -4543,8 +4583,18 @@
           "date": "2026-09-10",
           "price": 4795.62,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-11",
+          "price": 4794.53,
+          "stock_status": "limited_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null,
+      "all_time_low": 4793.46,
+      "all_time_high": 4795.62,
+      "first_seen": "2026-09-07"
     },
     "https://www.emag.ro/telefon-mobil-xiaomi-15t-pro-12gb-ram-256gb-5g-mocha-gold-xm-x15tpromch256/pd/DXL2RL3BM/": {
       "title": "Telefon mobil Xiaomi 15T Pro, 12GB RAM, 256GB, 5G, Mocha Gold",
@@ -6847,8 +6897,18 @@
           "date": "2026-09-10",
           "price": 5784.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-11",
+          "price": 5784.99,
+          "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null,
+      "all_time_low": 5784.99,
+      "all_time_high": 5784.99,
+      "first_seen": "2026-09-10"
     },
     "https://www.emag.ro/laptop-lenovo-v15-g5-15-6-fhd-intel-core-i5-16gb-ram-512gb-ssd-negru-83hfs03200/pd/DHQZZM2BM/": {
       "title": "Laptop Lenovo V15 G5, 15.6\" FHD, Intel Core i5, 16GB RAM, 512GB SSD, Negru",
