@@ -1885,10 +1885,18 @@
           "date": "2026-09-10",
           "price": 3168.0,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-12",
+          "price": 3091.67,
+          "stock_status": "in_stock"
         }
       ],
       "seller": null,
-      "is_marketplace": null
+      "is_marketplace": null,
+      "all_time_low": 3091.67,
+      "all_time_high": 3168.0,
+      "first_seen": "2026-09-06"
     },
     "https://www.emag.ro/laptop-lenovo-v15-g5-irl-cu-procesor-intelr-core-i7-13620h-pana-la-4-90-ghz-15-6-fhd-8-gb-ram-ddr5-512-gb-ssd-intelr-uhd-graphics-windows-11-pro-business-black-fb-0182/pd/DFQG0W3BM/": {
       "title": "Laptop Lenovo V15 G5 IRL cu procesor Intel® Core i7-13620H pana la 4.90 GHz, 15.6\" FHD, 8 GB RAM DDR5, 512 GB SSD, Intel® UHD Graphics, Windows 11 Pro, Business Black",
@@ -4564,6 +4572,11 @@
         },
         {
           "date": "2026-09-11",
+          "price": 7986.0,
+          "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-12",
           "price": 7986.0,
           "stock_status": "limited_stock"
         }
