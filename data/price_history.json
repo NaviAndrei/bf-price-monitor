@@ -1510,6 +1510,11 @@
           "date": "2026-09-12",
           "price": 2388.04,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-13",
+          "price": 2388.04,
+          "stock_status": "in_stock"
         }
       ],
       "seller": null,
@@ -2010,6 +2015,11 @@
           "date": "2026-09-12",
           "price": 3512.98,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-13",
+          "price": 3586.71,
+          "stock_status": "in_stock"
         }
       ],
       "seller": null,
@@ -2425,6 +2435,11 @@
         },
         {
           "date": "2026-09-12",
+          "price": 4961.0,
+          "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-13",
           "price": 4961.0,
           "stock_status": "limited_stock"
         }
