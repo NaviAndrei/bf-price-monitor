@@ -87,3 +87,24 @@ jobs:
             }
           }
 
+      - name: Ping healthcheck
+        if: ${{ success() }}
+        env:
+          HEALTHCHECK_URL: ${{ secrets.HEALTHCHECK_URL }}
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:HEALTHCHECK_URL)) {
+            Write-Output "[healthcheck] HEALTHCHECK_URL not set, skipping"
+            exit 0
+          }
+
+          try {
+            $response = Invoke-WebRequest -Uri $env:HEALTHCHECK_URL -TimeoutSec 15
+            if ($response.StatusCode -ge 200 -and $response.StatusCode -lt 300) {
+              Write-Output "[healthcheck] ping succeeded"
+            } else {
+              Write-Warning "[healthcheck] ping failed or returned a non-success status; monitor job remains successful"
+            }
+          } catch {
+            Write-Warning "[healthcheck] ping failed or returned a non-success status; monitor job remains successful"
+          }
+

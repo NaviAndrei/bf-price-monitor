@@ -114,6 +114,35 @@ and pull the model referenced by `OLLAMA_MODEL` in `scripts/analyze.py`
 On Windows, run these directly in PowerShell or inside WSL — no path
 differences beyond the usual `python` vs `python3` naming.
 
+## Health monitoring
+
+`.github/workflows/monitor.yml` ends with a "Ping healthcheck" step that
+pings a [Healthchecks.io](https://healthchecks.io) URL after every other
+step in the run has succeeded.
+
+This is a **dead-man switch**: it only confirms that a fully successful
+monitoring run completed end to end. It is not a per-store scraper-health
+alert — it says nothing about whether eMAG, PC Garage, or Flanco's
+selectors are still valid, or whether any individual site returned zero
+products (that class of failure needs the `selector-drift-detector` check
+instead).
+
+If the self-hosted runner PC loses power or network, if the runner service
+stops accepting jobs, if the workflow is delayed or cannot complete, or if
+any step fails before the final "Ping healthcheck" step runs, no ping
+arrives — and Healthchecks.io alerts the owner once the check's configured
+grace period elapses.
+
+Setup:
+
+1. Create a Healthchecks.io check with a schedule matching the workflow's
+   cron (`0 */2 * * *`, i.e. every 2 hours).
+2. Add its ping URL as the `HEALTHCHECK_URL` repository Actions secret
+   (**Settings → Secrets and variables → Actions**).
+3. Never commit or disclose that URL — anyone with it can spoof successful
+   runs or spam the check into a false "down" alert. If it leaks, replace it
+   in Healthchecks.io and update the secret.
+
 ## Notes
 
 - Scraping only ever hits listing/search pages, respecting each site's
