@@ -2127,10 +2127,18 @@
           "date": "2026-09-11",
           "price": 3799.0,
           "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-12",
+          "price": 3799.0,
+          "stock_status": "limited_stock"
         }
       ],
       "seller": null,
-      "is_marketplace": null
+      "is_marketplace": null,
+      "all_time_low": 3799.0,
+      "all_time_high": 3799.0,
+      "first_seen": "2026-09-06"
     },
     "https://www.emag.ro/laptop-lenovo-v15-15-6-8-gb-ram-intel-core-i3-1215u-256-gb-ssd-gri-0197528652900/pd/D71XJ8YBM/": {
       "title": "Laptop Lenovo V15, 15.6\", 8 GB RAM, Intel Core I3-1215U, 256 GB SSD, gri",
