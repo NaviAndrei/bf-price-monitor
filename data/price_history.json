@@ -2219,10 +2219,18 @@
           "date": "2026-09-11",
           "price": 4961.0,
           "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-12",
+          "price": 4961.0,
+          "stock_status": "limited_stock"
         }
       ],
       "seller": null,
-      "is_marketplace": null
+      "is_marketplace": null,
+      "all_time_low": 4598.0,
+      "all_time_high": 4961.0,
+      "first_seen": "2026-09-06"
     },
     "https://www.emag.ro/laptop-lenovo-v15-g4-15-6-fhd-r3-7320u-16gb-512gb-ssd-win-11-pro-41327/pd/DRTRT83BM/": {
       "title": "Laptop Lenovo V15 G4, 15.6'' FHD, R3-7320U, 16GB, 512GB SSD, Win 11 Pro",
@@ -4416,10 +4424,18 @@
           "date": "2026-09-11",
           "price": 3993.0,
           "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-12",
+          "price": 3993.0,
+          "stock_status": "limited_stock"
         }
       ],
       "seller": null,
-      "is_marketplace": null
+      "is_marketplace": null,
+      "all_time_low": 3993.0,
+      "all_time_high": 3993.0,
+      "first_seen": "2026-09-06"
     },
     "https://www.emag.ro/laptop-lenovo-v15-g3-iap-cu-procesor-intelr-coretm-i3-1215u-pana-la-4-40-ghz-15-6-full-hd-8gb-ddr4-512gb-ssd-intelr-uhd-graphics-no-os-business-black-82tt00a0rm/pd/DS8RTWMBM/": {
       "title": "Laptop Lenovo V15 G3 IAP cu procesor Intel® Core™ i3-1215U pana la 4.40 GHz, 15.6\", Full HD, 8GB DDR4, 512GB SSD, Intel® UHD Graphics, No OS, Business Black",
@@ -7909,6 +7925,54 @@
       "all_time_low": 4598.99,
       "all_time_high": 4598.99,
       "first_seen": "2026-09-11"
+    },
+    "https://www.emag.ro/laptop-lenovo-v15-g5-irl-cu-procesor-intelr-core-i7-13620h-pana-la-4-90-ghz-15-6-fhd-8-gb-ram-ddr5-256-gb-ssd-intelr-uhd-graphics-windows-11-pro-business-black-fb-0408/pd/D7CDXY2BM/": {
+      "title": "Laptop Lenovo V15 G5 IRL cu procesor Intel® Core i7-13620H pana la 4.90 GHz, 15.6\" FHD, 8 GB RAM DDR5, 256 GB SSD, Intel® UHD Graphics, Windows 11 Pro, Business Black",
+      "site": "emag",
+      "history": [
+        {
+          "date": "2026-09-12",
+          "price": 3199.99,
+          "stock_status": "limited_stock"
+        }
+      ],
+      "seller": null,
+      "is_marketplace": null,
+      "all_time_low": 3199.99,
+      "all_time_high": 3199.99,
+      "first_seen": "2026-09-12"
+    },
+    "https://www.emag.ro/laptop-lenovo-v15-g4-iru-cu-procesor-lntelr-coretm-i5-13420h-pana-la-4-6ghz-15-6-full-hd-ips-8gb-ddr4-7-75-tb-ssd-intelr-uhd-graphics-no-os-charcoal-black-hygyhffrr557ygf/pd/DLKQRQ3BM/": {
+      "title": "Laptop Lenovo V15 G4 IRU cu procesor lntel® Core™ i5-13420H pana la 4.6GHz, 15.6\", Full HD, IPS, 8GB DDR4, 7.75 TB SSD, Intel® UHD Graphics, No OS, charcoal Black",
+      "site": "emag",
+      "history": [
+        {
+          "date": "2026-09-12",
+          "price": 21780.0,
+          "stock_status": "limited_stock"
+        }
+      ],
+      "seller": null,
+      "is_marketplace": null,
+      "all_time_low": 21780.0,
+      "all_time_high": 21780.0,
+      "first_seen": "2026-09-12"
+    },
+    "https://www.emag.ro/laptop-lenovo-v15-g4-iru-procesor-intel-core-i5-13420h-40gb-ram-6tb-ssd-anthrazitschwarz-15-6-full-hd-ghfguyjhyh8ytr5v/pd/DSV84S3BM/": {
+      "title": "Laptop Lenovo V15 G4 IRU, procesor Intel Core i5-13420H, 40GB RAM, 6TB SSD, Anthrazitschwarz, 15.6\" Full HD",
+      "site": "emag",
+      "history": [
+        {
+          "date": "2026-09-12",
+          "price": 16940.0,
+          "stock_status": "limited_stock"
+        }
+      ],
+      "seller": null,
+      "is_marketplace": null,
+      "all_time_low": 16940.0,
+      "all_time_high": 16940.0,
+      "first_seen": "2026-09-12"
     }
   }
 }
