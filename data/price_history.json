@@ -1462,10 +1462,18 @@
           "date": "2026-09-11",
           "price": 2595.27,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-12",
+          "price": 2600.11,
+          "stock_status": "in_stock"
         }
       ],
       "seller": null,
-      "is_marketplace": null
+      "is_marketplace": null,
+      "all_time_low": 2595.27,
+      "all_time_high": 2600.11,
+      "first_seen": "2026-09-06"
     },
     "https://www.emag.ro/laptop-lenovo-v15-g5-irl-cu-procesor-intelr-core-i3-1315u-pana-la-4-5ghz-15-6-full-hd-16gb-ddr5-ram-512gb-ssd-intelr-uhd-graphics-no-os-business-black-83gw0086ri/pd/D4FXR83BM/": {
       "title": "Laptop Lenovo V15 G5 IRL cu procesor Intel® Core i3-1315U pana la 4.5GHZ, 15.6\" Full HD, 16GB DDR5 RAM, 512GB SSD, Intel® UHD Graphics, No OS, Business Black",
@@ -2253,8 +2261,18 @@
           "date": "2026-09-10",
           "price": 3709.24,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-12",
+          "price": 3709.24,
+          "stock_status": "in_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null,
+      "all_time_low": 3568.48,
+      "all_time_high": 3709.24,
+      "first_seen": "2026-09-06"
     },
     "https://www.emag.ro/laptop-lenovo-v15-g5-irl-cu-procesor-intel-core-i7-13620h-pana-la-4-90-ghz-15-6-fhd-16gb-ddr5-ram-1tb-ssd-intel-uhd-graphics-windows-11-pro-83gw007uri2w/pd/DJRS983BM/": {
       "title": "Laptop Lenovo V15 G5 IRL cu procesor Intel Core i7-13620H pana la 4.90 GHz, 15.6\" FHD, 16GB DDR5 RAM, 1TB SSD, Intel UHD Graphics, Windows 11 Pro",
@@ -4781,8 +4799,18 @@
         {
           "date": "2026-09-07",
           "price": 3449.99
+        },
+        {
+          "date": "2026-09-12",
+          "price": 3449.99,
+          "stock_status": "limited_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null,
+      "all_time_low": 3449.99,
+      "all_time_high": 3449.99,
+      "first_seen": "2026-09-07"
     },
     "https://www.emag.ro/laptop-lenovo-v15-g5-15-6-fhd-intel-core-3-100u-8gb-ram-256gb-ssd-negru-83hfs00r00/pd/DFQZZM2BM/": {
       "title": "Laptop Lenovo V15 G5, 15.6\" FHD, Intel Core 3 100U, 8GB RAM, 256GB SSD, Negru",
