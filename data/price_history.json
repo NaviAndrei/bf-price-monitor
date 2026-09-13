@@ -1974,10 +1974,18 @@
           "date": "2026-09-11",
           "price": 10769.0,
           "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-13",
+          "price": 10769.0,
+          "stock_status": "limited_stock"
         }
       ],
       "seller": null,
-      "is_marketplace": null
+      "is_marketplace": null,
+      "all_time_low": 5990.0,
+      "all_time_high": 10769.0,
+      "first_seen": "2026-09-06"
     },
     "https://www.emag.ro/laptop-lenovo-15-6-v15-g5-irl-fhd-ips-procesor-intel-core-i5-13420h-12m-cache-up-to-4-60-ghz-16gb-ddr5-512gb-ssd-intel-uhd-no-os-83hf00cjri/pd/DDMPTR2BM/": {
       "title": "Laptop Lenovo 15.6'' V15 G5 IRL FHD IPS Procesor Intel Core i5-13420H (12M Cache up to 4.60 GHz) 16GB DDR5 512GB SSD Intel UHD No OS",
@@ -2259,6 +2267,11 @@
           "date": "2026-09-12",
           "price": 2562.98,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-13",
+          "price": 2582.65,
+          "stock_status": "in_stock"
         }
       ],
       "seller": null,
@@ -2474,6 +2487,11 @@
         },
         {
           "date": "2026-09-12",
+          "price": 3709.24,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-13",
           "price": 3709.24,
           "stock_status": "in_stock"
         }
@@ -4667,6 +4685,11 @@
           "date": "2026-09-12",
           "price": 3993.0,
           "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-13",
+          "price": 3993.0,
+          "stock_status": "limited_stock"
         }
       ],
       "seller": null,
@@ -5032,6 +5055,11 @@
         },
         {
           "date": "2026-09-12",
+          "price": 3449.99,
+          "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-13",
           "price": 3449.99,
           "stock_status": "limited_stock"
         }
@@ -7227,8 +7255,18 @@
           "date": "2026-09-10",
           "price": 4190.0,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-13",
+          "price": 4190.0,
+          "stock_status": "limited_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null,
+      "all_time_low": 4190.0,
+      "all_time_high": 4190.0,
+      "first_seen": "2026-09-07"
     },
     "https://www.emag.ro/laptop-lenovo-v15-g5-irl-cu-procesor-intel-core-i5-13420h-pana-la-4-60-ghz-15-6-fhd-16gb-ddr5-ram-512gb-ssd-intel-uhd-graphics-no-os-83hf00glbm/pd/DQYW3M2BM/": {
       "title": "Laptop Lenovo V15 G5 IRL cu procesor Intel Core i5-13420H pana la 4.60 GHz, 15.6\" FHD, 16GB DDR5 RAM, 512GB SSD, Intel UHD Graphics, No OS",
@@ -7364,10 +7402,18 @@
           "date": "2026-09-11",
           "price": 4990.0,
           "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-13",
+          "price": 4990.0,
+          "stock_status": "limited_stock"
         }
       ],
       "seller": null,
-      "is_marketplace": null
+      "is_marketplace": null,
+      "all_time_low": 4990.0,
+      "all_time_high": 4990.0,
+      "first_seen": "2026-09-07"
     },
     "https://www.emag.ro/laptop-lenovo-v15-g4-business-intel-core-i3-16gb-ssd-512gb-15-6-negru-83a1006xhv/pd/DLCNM1YBM/": {
       "title": "Laptop Lenovo V15 G4 Business, Intel Core i3, 16GB, SSD 512GB, 15,6\", Negru",
@@ -8452,6 +8498,11 @@
           "date": "2026-09-12",
           "price": 3199.99,
           "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-13",
+          "price": 3199.99,
+          "stock_status": "limited_stock"
         }
       ],
       "seller": null,
@@ -8482,6 +8533,11 @@
       "history": [
         {
           "date": "2026-09-12",
+          "price": 16940.0,
+          "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-13",
           "price": 16940.0,
           "stock_status": "limited_stock"
         }
