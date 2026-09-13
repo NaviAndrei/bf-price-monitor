@@ -1,0 +1,66 @@
+name: Store scraper breakage
+description: Report a retailer scraper returning wrong, missing, or no data
+labels: [bug]
+body:
+  - type: dropdown
+    id: store
+    attributes:
+      label: Store
+      description: Which retailer's scraper is affected?
+      options:
+        - eMAG
+        - PC Garage
+        - Flanco
+        - Altex
+    validations:
+      required: true
+
+  - type: input
+    id: query
+    attributes:
+      label: Search query / product URL
+      description: The watchlist query or product URL that failed
+      placeholder: e.g. "iphone 15" or https://www.emag.ro/...
+    validations:
+      required: true
+
+  - type: input
+    id: run-id
+    attributes:
+      label: Workflow run ID or link
+      description: Link to the failing run of the Price Monitor workflow, if available
+      placeholder: https://github.com/NaviAndrei/bf-price-monitor/actions/runs/...
+    validations:
+      required: false
+
+  - type: textarea
+    id: observed
+    attributes:
+      label: Observed behavior
+      description: What actually happened
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What you expected to happen instead
+    validations:
+      required: true
+
+  - type: textarea
+    id: health-metrics
+    attributes:
+      label: Health metrics
+      description: Zero products returned, all stock statuses "unknown", price parsing failures, etc.
+    validations:
+      required: false
+
+  - type: textarea
+    id: artifacts
+    attributes:
+      label: Additional artifacts
+      description: Screenshots, saved HTML, or log snippets
+    validations:
+      required: false
