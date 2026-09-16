@@ -755,6 +755,11 @@
           "date": "2026-09-14",
           "price": 7865.0,
           "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 7865.0,
+          "stock_status": "limited_stock"
         }
       ],
       "seller": null,
@@ -1084,10 +1089,18 @@
           "date": "2026-09-11",
           "price": 4299.74,
           "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 4299.74,
+          "stock_status": "limited_stock"
         }
       ],
       "seller": null,
-      "is_marketplace": null
+      "is_marketplace": null,
+      "all_time_low": 4299.74,
+      "all_time_high": 10769.0,
+      "first_seen": "2026-09-06"
     },
     "https://www.emag.ro/laptop-lenovo-v15-g5-irl-cu-procesor-intelr-core-i3-1315u-pana-la-4-50-ghz-15-6-fhd-8gb-ram-512gb-ssd-intelr-uhd-graphics-no-os-83gw007wri/pd/DG8RKZ3BM/": {
       "title": "Laptop Lenovo V15 G5 IRL cu procesor Intel® Core i3-1315U pana la 4.50 GHz, 15.6\" FHD, 8GB RAM, 512GB SSD, Intel® UHD Graphics, No OS",
@@ -1543,12 +1556,17 @@
           "date": "2026-09-14",
           "price": 2697.21,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 3029.54,
+          "stock_status": "in_stock"
         }
       ],
       "seller": null,
       "is_marketplace": null,
       "all_time_low": 2517.53,
-      "all_time_high": 2697.21,
+      "all_time_high": 3029.54,
       "first_seen": "2026-09-06"
     },
     "https://www.emag.ro/laptop-lenovo-15-6-v15-g4-abp-fhd-procesor-amd-ryzentm-5-5625u-16m-cache-up-to-4-3-ghz-8gb-ddr4-512gb-ssd-amd-radeon-no-os-business-black-82yy0068rm/pd/D6BPTR2BM/": {
@@ -2246,6 +2264,11 @@
           "date": "2026-09-14",
           "price": 2431.01,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 2431.01,
+          "stock_status": "limited_stock"
         }
       ],
       "seller": null,
@@ -2378,6 +2401,11 @@
           "date": "2026-09-14",
           "price": 3514.98,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 3839.99,
+          "stock_status": "in_stock"
         }
       ],
       "seller": null,
@@ -2498,6 +2526,11 @@
         },
         {
           "date": "2026-09-14",
+          "price": 3499.99,
+          "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-16",
           "price": 3499.99,
           "stock_status": "limited_stock"
         }
@@ -5615,6 +5648,11 @@
           "date": "2026-09-14",
           "price": 3799.76,
           "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 3799.76,
+          "stock_status": "limited_stock"
         }
       ],
       "seller": null,
@@ -8215,12 +8253,17 @@
           "date": "2026-09-13",
           "price": 4990.0,
           "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 5490.0,
+          "stock_status": "limited_stock"
         }
       ],
       "seller": null,
       "is_marketplace": null,
       "all_time_low": 4990.0,
-      "all_time_high": 4990.0,
+      "all_time_high": 5490.0,
       "first_seen": "2026-09-07"
     },
     "https://www.emag.ro/laptop-lenovo-v15-g4-business-intel-core-i3-16gb-ssd-512gb-15-6-negru-83a1006xhv/pd/DLCNM1YBM/": {
@@ -8444,6 +8487,11 @@
         },
         {
           "date": "2026-09-14",
+          "price": 2807.4,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-16",
           "price": 2807.4,
           "stock_status": "in_stock"
         }
@@ -9022,6 +9070,11 @@
           "date": "2026-09-14",
           "price": 3499.0,
           "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 3499.0,
+          "stock_status": "limited_stock"
         }
       ],
       "seller": null,
@@ -9177,6 +9230,11 @@
         },
         {
           "date": "2026-09-14",
+          "price": 3038.79,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-16",
           "price": 3038.79,
           "stock_status": "in_stock"
         }
@@ -9563,6 +9621,38 @@
       "is_marketplace": false,
       "all_time_low": 2248.99,
       "all_time_high": 2248.99,
+      "first_seen": "2026-09-16"
+    },
+    "https://www.emag.ro/laptop-15-6-lenovo-v15-g4-amd-ryzen-7-5825u-20mb-4-5ghz-8gb-ddr4-256gb-ssd-amd-radeon-windows-11-pro-layout-de-negru-82yy006sge/pd/DLGZ882BM/": {
+      "title": "Laptop 15.6\" Lenovo V15 G4 AMD Ryzen 7 5825U (20MB 4.5GHz) 8GB DDR4 256GB SSD AMD Radeon Windows 11 Pro Layout DE negru",
+      "site": "emag",
+      "history": [
+        {
+          "date": "2026-09-16",
+          "price": 3038.79,
+          "stock_status": "in_stock"
+        }
+      ],
+      "seller": null,
+      "is_marketplace": null,
+      "all_time_low": 3038.79,
+      "all_time_high": 3038.79,
+      "first_seen": "2026-09-16"
+    },
+    "https://www.emag.ro/laptop-lenovo-v15-g4-iru-intel-core-i7-40-gb-1-tb-ssd-15-6-full-hd-1920-x-1080-tn-intel-uhd-graphics-3200-mhz-windows-11-pro-213440gb1tb/pd/DH861K3BM/": {
+      "title": "Laptop Lenovo V15 G4 IRU, Intel Core i7, 40 GB 1 TB SSD, 15.6 \" Full HD 1920 x 1080 TN, Intel UHD Graphics, 3200 MHz, Windows 11 Pro",
+      "site": "emag",
+      "history": [
+        {
+          "date": "2026-09-16",
+          "price": 9922.0,
+          "stock_status": "limited_stock"
+        }
+      ],
+      "seller": null,
+      "is_marketplace": null,
+      "all_time_low": 9922.0,
+      "all_time_high": 9922.0,
       "first_seen": "2026-09-16"
     }
   }
