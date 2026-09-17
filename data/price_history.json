@@ -820,6 +820,11 @@
           "date": "2026-09-16",
           "price": 7865.0,
           "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 7865.0,
+          "stock_status": "limited_stock"
         }
       ],
       "seller": null,
@@ -1686,6 +1691,11 @@
           "date": "2026-09-16",
           "price": 3029.54,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 3029.54,
+          "stock_status": "in_stock"
         }
       ],
       "seller": null,
@@ -1743,6 +1753,11 @@
         },
         {
           "date": "2026-09-16",
+          "price": 2982.64,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-17",
           "price": 2982.64,
           "stock_status": "in_stock"
         }
@@ -2696,6 +2711,11 @@
         },
         {
           "date": "2026-09-16",
+          "price": 3499.99,
+          "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-17",
           "price": 3499.99,
           "stock_status": "limited_stock"
         }
@@ -7499,12 +7519,17 @@
           "date": "2026-09-16",
           "price": 2759.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 2499.99,
+          "stock_status": "in_stock"
         }
       ],
-      "reference_price": 3499.99,
+      "reference_price": 260.0,
       "seller": "Flanco",
       "is_marketplace": false,
-      "all_time_low": 2759.99,
+      "all_time_low": 2499.99,
       "all_time_high": 2759.99,
       "first_seen": "2026-09-07"
     },
@@ -7555,13 +7580,18 @@
           "date": "2026-09-16",
           "price": 2099.0,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 2499.9,
+          "stock_status": "in_stock"
         }
       ],
       "reference_price": 3499.99,
       "seller": "Flanco",
       "is_marketplace": false,
       "all_time_low": 2099.0,
-      "all_time_high": 2398.99,
+      "all_time_high": 2499.9,
       "first_seen": "2026-09-07"
     },
     "https://www.flanco.ro/laptop-asus-vivobook-15-x1502va-15-6-intel-core-i5-13420h-8gb-ddr4-512gb-ssd-intel-uhd-no-os-quiet-blue.html": {
@@ -7611,12 +7641,17 @@
           "date": "2026-09-16",
           "price": 2400.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 2249.99,
+          "stock_status": "in_stock"
         }
       ],
-      "reference_price": 2699.99,
+      "reference_price": 99.0,
       "seller": "Flanco",
       "is_marketplace": false,
-      "all_time_low": 2400.99,
+      "all_time_low": 2249.99,
       "all_time_high": 2400.99,
       "first_seen": "2026-09-07"
     },
@@ -8506,6 +8541,11 @@
           "date": "2026-09-14",
           "price": 3590.0,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 3590.0,
+          "stock_status": "in_stock"
         }
       ],
       "seller": null,
@@ -8857,6 +8897,11 @@
         },
         {
           "date": "2026-09-16",
+          "price": 2807.4,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-17",
           "price": 2807.4,
           "stock_status": "in_stock"
         }
@@ -9450,6 +9495,11 @@
           "date": "2026-09-16",
           "price": 3499.0,
           "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 3499.0,
+          "stock_status": "limited_stock"
         }
       ],
       "seller": null,
@@ -9610,6 +9660,11 @@
         },
         {
           "date": "2026-09-16",
+          "price": 3038.79,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-17",
           "price": 3038.79,
           "stock_status": "in_stock"
         }
@@ -10061,6 +10116,11 @@
           "date": "2026-09-16",
           "price": 3038.79,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 3038.79,
+          "stock_status": "in_stock"
         }
       ],
       "seller": null,
@@ -10075,6 +10135,11 @@
       "history": [
         {
           "date": "2026-09-16",
+          "price": 9922.0,
+          "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-17",
           "price": 9922.0,
           "stock_status": "limited_stock"
         }
