@@ -2449,6 +2449,11 @@
           "date": "2026-09-16",
           "price": 2431.01,
           "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 2431.01,
+          "stock_status": "limited_stock"
         }
       ],
       "seller": null,
@@ -9038,10 +9043,18 @@
           "date": "2026-09-10",
           "price": 2794.8,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 3090.4,
+          "stock_status": "limited_stock"
         }
       ],
       "seller": null,
-      "is_marketplace": null
+      "is_marketplace": null,
+      "all_time_low": 2794.8,
+      "all_time_high": 3137.4,
+      "first_seen": "2026-09-08"
     },
     "https://www.flanco.ro/laptop-asus-15-6-vivobook-15-x1504va-fhd-60-hz-intel-core-i7-1355u-16gb-ddr4-1tb-ssd-no-os-quiet-blue.html": {
       "title": "Laptop Asus 15.6'' Vivobook 15 X1504VA, FHD, 60 Hz, Intel Core i7-1355U, 16GB DDR4, 1TB SSD, No OS, Quiet Blue",
@@ -10227,6 +10240,23 @@
       "is_marketplace": null,
       "all_time_low": 3499.0,
       "all_time_high": 3499.0,
+      "first_seen": "2026-09-17"
+    },
+    "https://www.flanco.ro/laptop-asus-vivobook-15-x1504ma-bq212-intel-core-5-320-15-6-fhd-ips-8-gb-ram-ddr5-512-gb-ssd-intel-graphics-fara-sistem-de-operare-albastru-inchis.html": {
+      "title": "Laptop Asus VivoBook 15 X1504MA-BQ212, Intel Core 5 320, 15.6\" FHD, IPS, 8 GB RAM DDR5, 512 GB SSD, Intel Graphics, Fara Sistem de operare, Albastru inchis",
+      "site": "flanco",
+      "history": [
+        {
+          "date": "2026-09-17",
+          "price": 3224.99,
+          "stock_status": "supplier_stock"
+        }
+      ],
+      "seller": "Flanco",
+      "is_marketplace": false,
+      "reference_price": 4659.99,
+      "all_time_low": 3224.99,
+      "all_time_high": 3224.99,
       "first_seen": "2026-09-17"
     }
   }
