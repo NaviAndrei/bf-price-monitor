@@ -3,12 +3,15 @@ import functools
 import json
 import random
 import re
+import sys
 import time
 from datetime import date, timedelta
 from pathlib import Path
 
 import requests
 from bs4 import BeautifulSoup
+
+from bf_price_monitor.config import load_watchlist
 
 HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
 REQUEST_TIMEOUT = 15
@@ -554,7 +557,11 @@ def prune_history(
 
 
 def main():
-    watchlist = json.load(open(WATCHLIST_FILE, encoding="utf-8"))
+    try:
+        watchlist = load_watchlist(WATCHLIST_FILE)
+    except ValueError as e:
+        print(f"Watchlist validation failed: {e}", file=sys.stderr)
+        sys.exit(1)
     history = load_history()
     alerts = []
     today_date = date.today()
