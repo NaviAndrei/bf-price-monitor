@@ -2313,6 +2313,11 @@
           "date": "2026-09-14",
           "price": 6880.0,
           "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 6880.0,
+          "stock_status": "limited_stock"
         }
       ],
       "seller": null,
@@ -5928,12 +5933,17 @@
           "date": "2026-09-14",
           "price": 3426.1,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 3431.69,
+          "stock_status": "in_stock"
         }
       ],
       "seller": null,
       "is_marketplace": null,
       "all_time_low": 3294.77,
-      "all_time_high": 3428.81,
+      "all_time_high": 3431.69,
       "first_seen": "2026-09-07"
     },
     "https://www.emag.ro/laptop-lenovo-v15-g5-irl-cu-procesor-intel-core-i7-13620h-pana-la-4-90-ghz-15-6-fhd-32gb-ram-512gb-ssd-intelr-uhd-graphics-windows-11-pro-83gw007uri1w/pd/DFRS983BM/": {
@@ -7648,7 +7658,7 @@
           "stock_status": "in_stock"
         }
       ],
-      "reference_price": 99.0,
+      "reference_price": 149.0,
       "seller": "Flanco",
       "is_marketplace": false,
       "all_time_low": 2249.99,
@@ -8651,6 +8661,11 @@
         },
         {
           "date": "2026-09-16",
+          "price": 5490.0,
+          "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-17",
           "price": 5490.0,
           "stock_status": "limited_stock"
         }
@@ -10164,6 +10179,54 @@
       "is_marketplace": null,
       "all_time_low": 8228.0,
       "all_time_high": 8228.0,
+      "first_seen": "2026-09-17"
+    },
+    "https://www.emag.ro/laptop-lenovo-v15-g5-irl-intel-core-3-100u-15-6-inch-ram-8gb-ssd-256gb-intel-uhd-graphics-windows-11-pro-edu-business-black-83hfs00r00/pd/DFQZZM2BM/": {
+      "title": "Laptop Lenovo V15 G5 IRL, Intel Core 3 100U, 15.6 inch, RAM 8GB, SSD 256GB, Intel UHD Graphics, Windows 11 Pro EDU, Business Black",
+      "site": "emag",
+      "history": [
+        {
+          "date": "2026-09-17",
+          "price": 1999.0,
+          "stock_status": "in_stock"
+        }
+      ],
+      "seller": null,
+      "is_marketplace": null,
+      "all_time_low": 1999.0,
+      "all_time_high": 1999.0,
+      "first_seen": "2026-09-17"
+    },
+    "https://www.emag.ro/laptop-lenovo-v15-g4-amn-procesor-amd-ryzentm-5-7520u-4m-cache-up-to-4-3-ghz-15-6-fhd-16gb-512gb-ssd-amd-radeon-610m-negru-82yu016tpb/pd/D3QD6B2BM/": {
+      "title": "Laptop Lenovo V15 G4 AMN Procesor AMD Ryzen™ 5 7520U 4M Cache, up to 4.3 GHz, 15.6\" FHD, 16GB, 512GB SSD, AMD Radeon 610M, Negru",
+      "site": "emag",
+      "history": [
+        {
+          "date": "2026-09-17",
+          "price": 2867.53,
+          "stock_status": "in_stock"
+        }
+      ],
+      "seller": null,
+      "is_marketplace": null,
+      "all_time_low": 2867.53,
+      "all_time_high": 2867.53,
+      "first_seen": "2026-09-17"
+    },
+    "https://www.emag.ro/laptop-lenovo-v15-g5-irl-cu-procesor-intel-coretm-i5-13420h-pana-la-4-60-ghz-15-6-fhd-ips-16gb-ram-512gb-ssd-intelr-uhd-graphics-windows-11-pro-edu-business-black-83hfs03200/pd/DHQZZM2BM/": {
+      "title": "Laptop Lenovo V15 G5 IRL cu procesor Intel Core™ i5-13420H pana la 4.60 GHz, 15.6\" FHD IPS, 16GB RAM, 512GB SSD, Intel® UHD Graphics,Windows 11 Pro EDU, Business Black",
+      "site": "emag",
+      "history": [
+        {
+          "date": "2026-09-17",
+          "price": 3499.0,
+          "stock_status": "limited_stock"
+        }
+      ],
+      "seller": null,
+      "is_marketplace": null,
+      "all_time_low": 3499.0,
+      "all_time_high": 3499.0,
       "first_seen": "2026-09-17"
     }
   }
