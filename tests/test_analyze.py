@@ -1,9 +1,4 @@
-import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
-
-from analyze import evaluate_omnibus_rule, extract_json  # noqa: E402
+from analyze import evaluate_omnibus_rule, extract_json
 
 
 def test_evaluate_omnibus_rule_insufficient_history():

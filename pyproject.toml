@@ -1,0 +1,48 @@
+[project]
+name = "bf-price-monitor"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+    "requests>=2.31",
+    "beautifulsoup4>=4.12",
+    "huggingface_hub>=0.24",
+    "playwright>=1.45",
+    "playwright-stealth>=1.0.6",
+    "pydantic>=2.7",
+    "structlog>=24.0",
+    "jsonschema>=4.22",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8",
+    "pytest-cov",
+    "ruff",
+    "mypy",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["bf_price_monitor"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
+
+# scripts/ predates this lint config and its scraping/detection/notification
+# logic is out of scope for reformatting; .claude/ is tooling, not app code.
+[tool.ruff.lint.per-file-ignores]
+"scripts/*.py" = ["E501"]
+".claude/*" = ["E501"]
+
+[tool.mypy]
+strict = true
+ignore_missing_imports = true
+plugins = ["pydantic.mypy"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--tb=short -q"
+pythonpath = ["scripts"]

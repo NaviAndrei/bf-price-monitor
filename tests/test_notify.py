@@ -1,9 +1,4 @@
-import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
-
-from notify import (  # noqa: E402
+from notify import (
     build_inline_keyboard,
     format_telegram_message,
     generate_quickchart_url,

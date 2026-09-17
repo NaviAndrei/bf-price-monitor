@@ -1,6 +1,11 @@
 __pycache__/
 *.pyc
 .env
+.venv/
+.coverage
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
 data/alerts.json
 data/formatted_alerts.json
 .remember/

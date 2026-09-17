@@ -1,10 +1,6 @@
-import sys
 from datetime import date, timedelta
-from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
-
-from scrape import (  # noqa: E402
+from scrape import (
     prune_history,
     should_alert,
     title_matches_query,
