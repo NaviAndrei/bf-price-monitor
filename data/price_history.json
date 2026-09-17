@@ -2979,6 +2979,11 @@
           "date": "2026-09-13",
           "price": 3799.0,
           "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 3799.0,
+          "stock_status": "limited_stock"
         }
       ],
       "seller": null,
