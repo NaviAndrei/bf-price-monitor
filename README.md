@@ -100,11 +100,23 @@ or `min_drop_percent` isn't met.
 
 ### 3. Local testing (Windows/WSL)
 
+Dependencies are managed via [uv](https://docs.astral.sh/uv/) and locked in
+`uv.lock`; `pyproject.toml` is the canonical dependency source (`requirements.txt`
+is kept only for the self-hosted `monitor.yml` workflow's `pip install` step).
+
 ```bash
-pip install -r requirements.txt
-python scripts/scrape.py      # writes data/alerts.json if any prices changed
-python scripts/analyze.py     # HF_TOKEN must be set in the environment, or leave it unset to force the Ollama fallback
-python scripts/notify.py      # TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID must be set
+uv sync --extra dev          # installs locked deps, incl. Playwright + dev tools
+uv run playwright install chromium
+uv run python scripts/scrape.py      # writes data/alerts.json if any prices changed
+uv run python scripts/analyze.py     # HF_TOKEN must be set in the environment, or leave it unset to force the Ollama fallback
+uv run python scripts/notify.py      # TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID must be set
+```
+
+If `uv.lock` doesn't exist yet or dependencies in `pyproject.toml` changed,
+regenerate it with:
+
+```bash
+uv lock
 ```
 
 For the Ollama fallback to work locally, install [Ollama](https://ollama.com)
