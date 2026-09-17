@@ -47,6 +47,16 @@
           "date": "2026-09-14",
           "price": 3099.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 3099.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 3099.99,
+          "stock_status": "in_stock"
         }
       ],
       "seller": null,
@@ -99,6 +109,16 @@
         },
         {
           "date": "2026-09-14",
+          "price": 4840.0,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 4840.0,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-17",
           "price": 4840.0,
           "stock_status": "in_stock"
         }
@@ -155,6 +175,16 @@
           "date": "2026-09-14",
           "price": 3699.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 3699.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 3699.99,
+          "stock_status": "in_stock"
         }
       ],
       "seller": null,
@@ -207,6 +237,16 @@
         },
         {
           "date": "2026-09-14",
+          "price": 3499.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 3499.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-17",
           "price": 3499.99,
           "stock_status": "in_stock"
         }
@@ -263,6 +303,16 @@
           "date": "2026-09-14",
           "price": 2499.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 2499.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 2499.99,
+          "stock_status": "in_stock"
         }
       ],
       "seller": null,
@@ -315,6 +365,16 @@
         },
         {
           "date": "2026-09-14",
+          "price": 3199.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 3199.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-17",
           "price": 3199.99,
           "stock_status": "in_stock"
         }
@@ -371,6 +431,16 @@
           "date": "2026-09-14",
           "price": 10285.0,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 10285.0,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 10285.0,
+          "stock_status": "in_stock"
         }
       ],
       "seller": null,
@@ -423,6 +493,16 @@
         },
         {
           "date": "2026-09-14",
+          "price": 10890.0,
+          "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 10890.0,
+          "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-17",
           "price": 10890.0,
           "stock_status": "limited_stock"
         }
@@ -479,6 +559,16 @@
           "date": "2026-09-14",
           "price": 4139.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 4139.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 4139.99,
+          "stock_status": "in_stock"
         }
       ],
       "seller": null,
@@ -531,6 +621,16 @@
         },
         {
           "date": "2026-09-14",
+          "price": 2099.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 2099.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-17",
           "price": 2099.99,
           "stock_status": "in_stock"
         }
@@ -587,6 +687,16 @@
           "date": "2026-09-14",
           "price": 2699.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 2699.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 2699.99,
+          "stock_status": "in_stock"
         }
       ],
       "seller": null,
@@ -639,6 +749,16 @@
         },
         {
           "date": "2026-09-14",
+          "price": 3299.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 3299.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-17",
           "price": 3299.99,
           "stock_status": "in_stock"
         }
@@ -695,6 +815,16 @@
           "date": "2026-09-14",
           "price": 7865.0,
           "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 7865.0,
+          "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 7865.0,
+          "stock_status": "limited_stock"
         }
       ],
       "seller": null,
@@ -747,6 +877,16 @@
         },
         {
           "date": "2026-09-14",
+          "price": 2174.37,
+          "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 2174.37,
+          "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-17",
           "price": 2174.37,
           "stock_status": "limited_stock"
         }
@@ -803,6 +943,16 @@
           "date": "2026-09-14",
           "price": 4199.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 4199.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 4199.99,
+          "stock_status": "in_stock"
         }
       ],
       "seller": null,
@@ -857,11 +1007,21 @@
           "date": "2026-09-14",
           "price": 3099.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 2299.0,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 2299.0,
+          "stock_status": "in_stock"
         }
       ],
       "seller": null,
       "is_marketplace": null,
-      "all_time_low": 2899.99,
+      "all_time_low": 2299.0,
       "all_time_high": 3099.99,
       "first_seen": "2026-09-06"
     },
@@ -904,6 +1064,16 @@
         },
         {
           "date": "2026-09-14",
+          "price": 3630.0,
+          "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 3630.0,
+          "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-17",
           "price": 3630.0,
           "stock_status": "limited_stock"
         }
@@ -960,6 +1130,16 @@
           "date": "2026-09-14",
           "price": 2299.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 2299.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 2299.99,
+          "stock_status": "in_stock"
         }
       ],
       "seller": null,
@@ -999,10 +1179,23 @@
           "date": "2026-09-11",
           "price": 4299.74,
           "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 4299.74,
+          "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 4299.74,
+          "stock_status": "limited_stock"
         }
       ],
       "seller": null,
-      "is_marketplace": null
+      "is_marketplace": null,
+      "all_time_low": 4299.74,
+      "all_time_high": 10769.0,
+      "first_seen": "2026-09-06"
     },
     "https://www.emag.ro/laptop-lenovo-v15-g5-irl-cu-procesor-intelr-core-i3-1315u-pana-la-4-50-ghz-15-6-fhd-8gb-ram-512gb-ssd-intelr-uhd-graphics-no-os-83gw007wri/pd/DG8RKZ3BM/": {
       "title": "Laptop Lenovo V15 G5 IRL cu procesor Intel® Core i3-1315U pana la 4.50 GHz, 15.6\" FHD, 8GB RAM, 512GB SSD, Intel® UHD Graphics, No OS",
@@ -1048,6 +1241,16 @@
         },
         {
           "date": "2026-09-14",
+          "price": 2199.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 2199.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-17",
           "price": 2199.99,
           "stock_status": "in_stock"
         }
@@ -1104,11 +1307,21 @@
           "date": "2026-09-14",
           "price": 2909.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 2889.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 2889.99,
+          "stock_status": "in_stock"
         }
       ],
       "seller": null,
       "is_marketplace": null,
-      "all_time_low": 2909.99,
+      "all_time_low": 2889.99,
       "all_time_high": 3199.99,
       "first_seen": "2026-09-06"
     },
@@ -1153,6 +1366,16 @@
           "date": "2026-09-14",
           "price": 2499.98,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 2499.98,
+          "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 2499.98,
+          "stock_status": "limited_stock"
         }
       ],
       "seller": null,
@@ -1205,6 +1428,16 @@
         },
         {
           "date": "2026-09-14",
+          "price": 2099.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 2099.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-17",
           "price": 2099.99,
           "stock_status": "in_stock"
         }
@@ -1261,6 +1494,16 @@
           "date": "2026-09-14",
           "price": 2204.0,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 2204.0,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 2204.0,
+          "stock_status": "in_stock"
         }
       ],
       "seller": null,
@@ -1313,6 +1556,16 @@
         },
         {
           "date": "2026-09-14",
+          "price": 3509.0,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 3509.0,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-17",
           "price": 3509.0,
           "stock_status": "in_stock"
         }
@@ -1369,6 +1622,16 @@
           "date": "2026-09-14",
           "price": 2868.76,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 2873.04,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 2873.04,
+          "stock_status": "in_stock"
         }
       ],
       "seller": null,
@@ -1423,12 +1686,22 @@
           "date": "2026-09-14",
           "price": 2697.21,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 3029.54,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 3029.54,
+          "stock_status": "in_stock"
         }
       ],
       "seller": null,
       "is_marketplace": null,
       "all_time_low": 2517.53,
-      "all_time_high": 2697.21,
+      "all_time_high": 3029.54,
       "first_seen": "2026-09-06"
     },
     "https://www.emag.ro/laptop-lenovo-15-6-v15-g4-abp-fhd-procesor-amd-ryzentm-5-5625u-16m-cache-up-to-4-3-ghz-8gb-ddr4-512gb-ssd-amd-radeon-no-os-business-black-82yy0068rm/pd/D6BPTR2BM/": {
@@ -1475,6 +1748,16 @@
         },
         {
           "date": "2026-09-14",
+          "price": 2982.64,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 2982.64,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-17",
           "price": 2982.64,
           "stock_status": "in_stock"
         }
@@ -1531,6 +1814,16 @@
           "date": "2026-09-14",
           "price": 2712.37,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 2712.37,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 2712.37,
+          "stock_status": "in_stock"
         }
       ],
       "seller": null,
@@ -1578,6 +1871,16 @@
         },
         {
           "date": "2026-09-14",
+          "price": 3208.93,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 3208.93,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-17",
           "price": 3208.93,
           "stock_status": "in_stock"
         }
@@ -1660,6 +1963,16 @@
           "date": "2026-09-13",
           "price": 2388.04,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 2388.04,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 2388.04,
+          "stock_status": "in_stock"
         }
       ],
       "seller": null,
@@ -1712,6 +2025,16 @@
         },
         {
           "date": "2026-09-14",
+          "price": 3185.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 3185.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-17",
           "price": 3185.99,
           "stock_status": "in_stock"
         }
@@ -1782,6 +2105,16 @@
           "date": "2026-09-14",
           "price": 2606.06,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 2606.06,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 2606.06,
+          "stock_status": "in_stock"
         }
       ],
       "seller": null,
@@ -1834,6 +2167,16 @@
         },
         {
           "date": "2026-09-14",
+          "price": 4235.0,
+          "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 4235.0,
+          "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-17",
           "price": 4235.0,
           "stock_status": "limited_stock"
         }
@@ -1890,12 +2233,22 @@
           "date": "2026-09-14",
           "price": 3706.44,
           "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 5929.0,
+          "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 5929.0,
+          "stock_status": "limited_stock"
         }
       ],
       "seller": null,
       "is_marketplace": null,
       "all_time_low": 3706.44,
-      "all_time_high": 3706.44,
+      "all_time_high": 5929.0,
       "first_seen": "2026-09-06"
     },
     "https://www.emag.ro/laptop-lenovo-v15-iil-cu-procesor-intel-core-i3-1005g1-pana-la-3-40-ghz-15-6-hd-4gb-256gb-ssd-intel-uhd-graphics-free-dos-grey-82c5a008eu/pd/DXFFMDMBM/": {
@@ -1958,6 +2311,11 @@
         },
         {
           "date": "2026-09-14",
+          "price": 6880.0,
+          "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-17",
           "price": 6880.0,
           "stock_status": "limited_stock"
         }
@@ -2086,6 +2444,16 @@
           "date": "2026-09-14",
           "price": 2431.01,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 2431.01,
+          "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 2431.01,
+          "stock_status": "limited_stock"
         }
       ],
       "seller": null,
@@ -2218,6 +2586,16 @@
           "date": "2026-09-14",
           "price": 3514.98,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 3839.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 3839.99,
+          "stock_status": "in_stock"
         }
       ],
       "seller": null,
@@ -2245,6 +2623,11 @@
         },
         {
           "date": "2026-09-14",
+          "price": 7490.0,
+          "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-16",
           "price": 7490.0,
           "stock_status": "limited_stock"
         }
@@ -2333,6 +2716,16 @@
         },
         {
           "date": "2026-09-14",
+          "price": 3499.99,
+          "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 3499.99,
+          "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-17",
           "price": 3499.99,
           "stock_status": "limited_stock"
         }
@@ -2443,12 +2836,17 @@
           "date": "2026-09-14",
           "price": 2899.97,
           "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 5203.0,
+          "stock_status": "limited_stock"
         }
       ],
       "seller": null,
       "is_marketplace": null,
       "all_time_low": 2899.97,
-      "all_time_high": 4840.0,
+      "all_time_high": 5203.0,
       "first_seen": "2026-09-06"
     },
     "https://www.emag.ro/laptop-lenovo-v15-g5-fhd-15-6-inch-intel-core-i3-1315u-8gb-256gb-ssd-free-dos-business-black-83hf00g3ri/pd/DQFS8N2BM/": {
@@ -2668,6 +3066,11 @@
         },
         {
           "date": "2026-09-13",
+          "price": 4961.0,
+          "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-17",
           "price": 4961.0,
           "stock_status": "limited_stock"
         }
@@ -3485,6 +3888,16 @@
           "date": "2026-09-14",
           "price": 7120.85,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 7120.85,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 7120.85,
+          "stock_status": "in_stock"
         }
       ],
       "seller": null,
@@ -3748,6 +4161,16 @@
         },
         {
           "date": "2026-09-14",
+          "price": 8502.0,
+          "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 8502.0,
+          "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-17",
           "price": 8502.0,
           "stock_status": "limited_stock"
         }
@@ -4925,6 +5348,16 @@
           "date": "2026-09-13",
           "price": 3993.0,
           "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 3993.0,
+          "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 3993.0,
+          "stock_status": "limited_stock"
         }
       ],
       "seller": null,
@@ -4964,10 +5397,18 @@
           "date": "2026-09-11",
           "price": 4598.0,
           "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 4598.0,
+          "stock_status": "limited_stock"
         }
       ],
       "seller": null,
-      "is_marketplace": null
+      "is_marketplace": null,
+      "all_time_low": 3993.0,
+      "all_time_high": 4598.0,
+      "first_seen": "2026-09-06"
     },
     "https://www.emag.ro/laptop-lenovo-v15-g2-ijl-cu-procesor-intelr-celeronr-n4500-pana-la-2-8-ghz-15-6-full-hd-8gb-256gb-ssd-intelr-uhd-graphics-no-os-black-3y-courier-or-carry-in-82qy00qcrm/pd/DXSQ3TYBM/": {
       "title": "Laptop Lenovo V15 G2 IJL cu procesor Intel® Celeron® N4500 pana la 2.8 GHz, 15.6\", Full HD, 8GB, 256GB SSD, Intel® UHD Graphics, No OS, Black, 3y Courier or Carry-in",
@@ -5032,6 +5473,16 @@
         },
         {
           "date": "2026-09-14",
+          "price": 2549.99,
+          "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 2549.99,
+          "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-17",
           "price": 2549.99,
           "stock_status": "limited_stock"
         }
@@ -5106,6 +5557,16 @@
           "date": "2026-09-13",
           "price": 7986.0,
           "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 7986.0,
+          "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 7986.0,
+          "stock_status": "limited_stock"
         }
       ],
       "seller": null,
@@ -5144,8 +5605,23 @@
           "date": "2026-09-08",
           "price": 11495.0,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 7381.0,
+          "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 7381.0,
+          "stock_status": "limited_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null,
+      "all_time_low": 6655.0,
+      "all_time_high": 11495.0,
+      "first_seen": "2026-09-06"
     },
     "https://www.emag.ro/laptop-lenovo-v15-g5-irl-15-6-intel-core-7-240h-10-core-intel-graphics-16gb-5200mhz-1x16gb-ddr5-negru-83hf00h6ri/pd/DQFQGN2BM/": {
       "title": "Laptop Lenovo V15 G5 IRL, 83HF00H6RI, 15.6\", Intel Core 7 240H (10-core), Intel Graphics, 16GB 5200MHz (1x16GB) DDR5, Negru",
@@ -5302,6 +5778,16 @@
           "date": "2026-09-13",
           "price": 3449.99,
           "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 3449.99,
+          "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 3449.99,
+          "stock_status": "limited_stock"
         }
       ],
       "seller": null,
@@ -5352,6 +5838,16 @@
           "date": "2026-09-14",
           "price": 1999.0,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 1999.0,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 1999.0,
+          "stock_status": "in_stock"
         }
       ],
       "seller": null,
@@ -5390,6 +5886,16 @@
         },
         {
           "date": "2026-09-14",
+          "price": 3799.76,
+          "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 3799.76,
+          "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-17",
           "price": 3799.76,
           "stock_status": "limited_stock"
         }
@@ -5432,12 +5938,17 @@
           "date": "2026-09-14",
           "price": 3426.1,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 3431.69,
+          "stock_status": "in_stock"
         }
       ],
       "seller": null,
       "is_marketplace": null,
       "all_time_low": 3294.77,
-      "all_time_high": 3428.81,
+      "all_time_high": 3431.69,
       "first_seen": "2026-09-07"
     },
     "https://www.emag.ro/laptop-lenovo-v15-g5-irl-cu-procesor-intel-core-i7-13620h-pana-la-4-90-ghz-15-6-fhd-32gb-ram-512gb-ssd-intelr-uhd-graphics-windows-11-pro-83gw007uri1w/pd/DFRS983BM/": {
@@ -5507,6 +6018,16 @@
         },
         {
           "date": "2026-09-13",
+          "price": 6499.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 6499.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-17",
           "price": 6499.99,
           "stock_status": "in_stock"
         }
@@ -5761,6 +6282,16 @@
           "date": "2026-09-14",
           "price": 2399.99,
           "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 2399.99,
+          "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 2399.99,
+          "stock_status": "limited_stock"
         }
       ],
       "seller": null,
@@ -5828,8 +6359,18 @@
         {
           "date": "2026-09-07",
           "price": 7381.0
+        },
+        {
+          "date": "2026-09-16",
+          "price": 8591.0,
+          "stock_status": "limited_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null,
+      "all_time_low": 7381.0,
+      "all_time_high": 8591.0,
+      "first_seen": "2026-09-07"
     },
     "https://www.emag.ro/laptop-lenovo-v15-g3-iap-cu-procesor-intelr-coretm-i3-1215u-pana-la-4-4-ghz-15-6-full-hd-16gb-512gb-ssd-intelr-uhd-graphics-no-os-business-black-3y-courier-or-carry-in-82tt00m4rm/pd/DPSQ3TYBM/": {
       "title": "Laptop Lenovo V15 G3 IAP cu procesor Intel® Core™ i3-1215U pana la 4.4 GHz, 15.6\", Full HD, 16GB, 512GB SSD, Intel® UHD Graphics, No OS, Business Black, 3y Courier or Carry-in",
@@ -5838,8 +6379,18 @@
         {
           "date": "2026-09-07",
           "price": 5082.0
+        },
+        {
+          "date": "2026-09-16",
+          "price": 5445.0,
+          "stock_status": "limited_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null,
+      "all_time_low": 5082.0,
+      "all_time_high": 5445.0,
+      "first_seen": "2026-09-07"
     },
     "https://www.emag.ro/laptop-lenovo-v15-15-6-intel-core-i5-13420h-8-gb-ram-512-gb-ssd-negru-s9145481/pd/D1ZJYN3BM/": {
       "title": "Laptop Lenovo V15, 15,6\", Intel Core i5-13420H, 8 GB RAM, 512 GB SSD, Negru",
@@ -5893,12 +6444,22 @@
           "date": "2026-09-14",
           "price": 1798.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 1898.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 1898.99,
+          "stock_status": "in_stock"
         }
       ],
       "seller": "PC Garage",
       "is_marketplace": false,
       "all_time_low": 1798.99,
-      "all_time_high": 1798.99,
+      "all_time_high": 1898.99,
       "first_seen": "2026-09-07"
     },
     "https://www.pcgarage.ro/notebook-laptop/asus/156-vivobook-go-15-e1504fa-fhd-procesor-amd-ryzen-3-30-4m-cache-up-to-41-ghz-8gb-lpddr5-512gb-ssd-amd-radeon-610m-no-os-mixed-black/": {
@@ -5943,12 +6504,22 @@
           "date": "2026-09-14",
           "price": 1648.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 1848.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 1848.99,
+          "stock_status": "in_stock"
         }
       ],
       "seller": "PC Garage",
       "is_marketplace": false,
       "all_time_low": 1648.99,
-      "all_time_high": 1648.99,
+      "all_time_high": 1848.99,
       "first_seen": "2026-09-07"
     },
     "https://www.pcgarage.ro/notebook-laptop/asus/156-vivobook-15-r1504va-fhd-procesor-intel-core-i3-1315u-10m-cache-up-to-450-ghz-with-ipu-8gb-ddr4-512gb-ssd-intel-uhd-win-11-home-quiet-blue/": {
@@ -5993,12 +6564,22 @@
           "date": "2026-09-14",
           "price": 2048.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 2098.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 2098.99,
+          "stock_status": "in_stock"
         }
       ],
       "seller": "PC Garage",
       "is_marketplace": false,
       "all_time_low": 2048.99,
-      "all_time_high": 2048.99,
+      "all_time_high": 2098.99,
       "first_seen": "2026-09-07"
     },
     "https://www.pcgarage.ro/notebook-laptop/asus/156-vivobook-go-15-e1504ta-fhd-procesor-intel-n150-6m-cache-up-to-360-ghz-8gb-lpddr5-256gb-ufs-intel-graphics-no-os-cool-silver/": {
@@ -6041,6 +6622,16 @@
         },
         {
           "date": "2026-09-14",
+          "price": 1598.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 1598.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-17",
           "price": 1598.99,
           "stock_status": "in_stock"
         }
@@ -6106,6 +6697,16 @@
         },
         {
           "date": "2026-09-14",
+          "price": 1398.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 1398.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-17",
           "price": 1398.99,
           "stock_status": "in_stock"
         }
@@ -6208,6 +6809,16 @@
           "date": "2026-09-14",
           "price": 8998.99,
           "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 8998.99,
+          "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 8998.99,
+          "stock_status": "limited_stock"
         }
       ],
       "seller": "PC Garage",
@@ -6258,12 +6869,22 @@
           "date": "2026-09-14",
           "price": 2998.99,
           "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 3148.99,
+          "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 3148.99,
+          "stock_status": "limited_stock"
         }
       ],
       "seller": "PC Garage",
       "is_marketplace": false,
       "all_time_low": 2998.99,
-      "all_time_high": 2998.99,
+      "all_time_high": 3148.99,
       "first_seen": "2026-09-07"
     },
     "https://www.pcgarage.ro/notebook-laptop/asus/14-vivobook-s14-s3407va-wuxga-procesor-intel-core-i7-13620h-24m-cache-up-to-490-ghz-16gb-ddr5-1tb-ssd-intel-uhd-no-os-cool-silver/": {
@@ -6308,12 +6929,22 @@
           "date": "2026-09-14",
           "price": 3298.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 3498.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 3498.99,
+          "stock_status": "in_stock"
         }
       ],
       "seller": "PC Garage",
       "is_marketplace": false,
       "all_time_low": 3298.99,
-      "all_time_high": 3298.99,
+      "all_time_high": 3498.99,
       "first_seen": "2026-09-07"
     },
     "https://www.pcgarage.ro/notebook-laptop/asus/156-vivobook-go-15-e1504fa-fhd-procesor-amd-ryzen-5-40-4m-cache-up-to-43-ghz-8gb-lpddr5-512gb-ssd-amd-radeon-610m-no-os-mixed-black/": {
@@ -6358,12 +6989,22 @@
           "date": "2026-09-14",
           "price": 1848.99,
           "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 1948.99,
+          "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 1948.99,
+          "stock_status": "limited_stock"
         }
       ],
       "seller": "PC Garage",
       "is_marketplace": false,
       "all_time_low": 1848.99,
-      "all_time_high": 1848.99,
+      "all_time_high": 1948.99,
       "first_seen": "2026-09-07"
     },
     "https://www.pcgarage.ro/notebook-laptop/asus/156-vivobook-15-m1502ya-fhd-procesor-amd-ryzen-7-7730u-16m-cache-up-to-453-ghz-8gb-ddr4-512gb-ssd-amd-radeon-no-os-cool-silver/": {
@@ -6453,12 +7094,22 @@
           "date": "2026-09-14",
           "price": 2998.99,
           "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 3198.99,
+          "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 3198.99,
+          "stock_status": "limited_stock"
         }
       ],
       "seller": "PC Garage",
       "is_marketplace": false,
       "all_time_low": 2998.99,
-      "all_time_high": 2998.99,
+      "all_time_high": 3198.99,
       "first_seen": "2026-09-07"
     },
     "https://www.pcgarage.ro/notebook-laptop/asus/156-vivobook-15-m1502naq-fhd-procesor-amd-ryzen-7-170-16m-cache-up-to-475-ghz-8gb-ddr5-512gb-ssd-amd-radeon-680m-no-os-quiet-blue/": {
@@ -6501,6 +7152,16 @@
         },
         {
           "date": "2026-09-14",
+          "price": 2498.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 2498.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-17",
           "price": 2498.99,
           "stock_status": "in_stock"
         }
@@ -6568,6 +7229,16 @@
           "date": "2026-09-14",
           "price": 3998.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 3998.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 3998.99,
+          "stock_status": "in_stock"
         }
       ],
       "seller": "PC Garage",
@@ -6618,12 +7289,22 @@
           "date": "2026-09-14",
           "price": 1798.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 1948.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 1948.99,
+          "stock_status": "in_stock"
         }
       ],
       "seller": "PC Garage",
       "is_marketplace": false,
       "all_time_low": 1798.99,
-      "all_time_high": 1798.99,
+      "all_time_high": 1948.99,
       "first_seen": "2026-09-07"
     },
     "https://www.pcgarage.ro/notebook-laptop/asus/156-vivobook-go-15-e1504fa-fhd-procesor-amd-ryzen-5-40-4m-cache-up-to-43-ghz-8gb-lpddr5-512gb-ssd-amd-radeon-610m-no-os-mixed-black-1/": {
@@ -6668,12 +7349,22 @@
           "date": "2026-09-14",
           "price": 1848.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 1948.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 1948.99,
+          "stock_status": "in_stock"
         }
       ],
       "seller": "PC Garage",
       "is_marketplace": false,
       "all_time_low": 1848.99,
-      "all_time_high": 1848.99,
+      "all_time_high": 1948.99,
       "first_seen": "2026-09-07"
     },
     "https://www.pcgarage.ro/notebook-laptop/asus/156-vivobook-15-x1504ma-fhd-procesor-intel-core-3-304-6m-cache-up-to-430-ghz-8gb-ddr5-256gb-ssd-intel-graphics-no-os-quiet-blue/": {
@@ -6718,12 +7409,22 @@
           "date": "2026-09-14",
           "price": 1948.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 2048.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 2048.99,
+          "stock_status": "in_stock"
         }
       ],
       "seller": "PC Garage",
       "is_marketplace": false,
       "all_time_low": 1948.99,
-      "all_time_high": 1948.99,
+      "all_time_high": 2048.99,
       "first_seen": "2026-09-07"
     },
     "https://www.pcgarage.ro/notebook-laptop/asus/156-vivobook-15-x1504ma-fhd-procesor-intel-core-3-304-6m-cache-up-to-430-ghz-8gb-ddr5-256gb-ssd-intel-graphics-no-os-quiet-blue-1/": {
@@ -6768,12 +7469,22 @@
           "date": "2026-09-14",
           "price": 1948.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 2048.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 2048.99,
+          "stock_status": "in_stock"
         }
       ],
       "seller": "PC Garage",
       "is_marketplace": false,
       "all_time_low": 1948.99,
-      "all_time_high": 1948.99,
+      "all_time_high": 2048.99,
       "first_seen": "2026-09-07"
     },
     "https://www.flanco.ro/laptop-asus-vivobook-m1607ka-mb224-16-amd-ryzen-ai-5-330-16gb-512gb-ssd-no-os-quiet-blue.html": {
@@ -6818,12 +7529,22 @@
           "date": "2026-09-14",
           "price": 2759.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 2759.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 2499.99,
+          "stock_status": "in_stock"
         }
       ],
-      "reference_price": 3499.99,
+      "reference_price": 260.0,
       "seller": "Flanco",
       "is_marketplace": false,
-      "all_time_low": 2759.99,
+      "all_time_low": 2499.99,
       "all_time_high": 2759.99,
       "first_seen": "2026-09-07"
     },
@@ -6869,13 +7590,23 @@
           "date": "2026-09-14",
           "price": 2099.0,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 2099.0,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 2499.9,
+          "stock_status": "in_stock"
         }
       ],
       "reference_price": 3499.99,
       "seller": "Flanco",
       "is_marketplace": false,
       "all_time_low": 2099.0,
-      "all_time_high": 2398.99,
+      "all_time_high": 2499.9,
       "first_seen": "2026-09-07"
     },
     "https://www.flanco.ro/laptop-asus-vivobook-15-x1502va-15-6-intel-core-i5-13420h-8gb-ddr4-512gb-ssd-intel-uhd-no-os-quiet-blue.html": {
@@ -6920,12 +7651,22 @@
           "date": "2026-09-14",
           "price": 2400.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 2400.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 2249.99,
+          "stock_status": "in_stock"
         }
       ],
-      "reference_price": 2699.99,
+      "reference_price": 149.0,
       "seller": "Flanco",
       "is_marketplace": false,
-      "all_time_low": 2400.99,
+      "all_time_low": 2249.99,
       "all_time_high": 2400.99,
       "first_seen": "2026-09-07"
     },
@@ -6969,6 +7710,16 @@
         },
         {
           "date": "2026-09-14",
+          "price": 2949.99,
+          "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 2949.99,
+          "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-17",
           "price": 2949.99,
           "stock_status": "limited_stock"
         }
@@ -7022,6 +7773,16 @@
           "date": "2026-09-14",
           "price": 2999.99,
           "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 2999.99,
+          "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 2999.99,
+          "stock_status": "limited_stock"
         }
       ],
       "reference_price": 3389.99,
@@ -7071,6 +7832,16 @@
         },
         {
           "date": "2026-09-14",
+          "price": 2679.99,
+          "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 2679.99,
+          "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-17",
           "price": 2679.99,
           "stock_status": "limited_stock"
         }
@@ -7124,6 +7895,16 @@
           "date": "2026-09-14",
           "price": 3099.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 3099.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 3099.99,
+          "stock_status": "in_stock"
         }
       ],
       "reference_price": 4299.99,
@@ -7168,6 +7949,16 @@
         },
         {
           "date": "2026-09-13",
+          "price": 2899.99,
+          "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 2899.99,
+          "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-17",
           "price": 2899.99,
           "stock_status": "limited_stock"
         }
@@ -7221,6 +8012,16 @@
           "date": "2026-09-14",
           "price": 2559.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 2559.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 2559.99,
+          "stock_status": "in_stock"
         }
       ],
       "reference_price": 2899.99,
@@ -7271,6 +8072,16 @@
         {
           "date": "2026-09-14",
           "price": 2928.99,
+          "stock_status": "supplier_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 2932.99,
+          "stock_status": "supplier_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 2932.99,
           "stock_status": "supplier_stock"
         }
       ],
@@ -7323,13 +8134,23 @@
           "date": "2026-09-14",
           "price": 4301.99,
           "stock_status": "supplier_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 4308.99,
+          "stock_status": "supplier_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 4308.99,
+          "stock_status": "supplier_stock"
         }
       ],
       "reference_price": 5199.99,
       "seller": "Flanco",
       "is_marketplace": false,
       "all_time_low": 4213.99,
-      "all_time_high": 4301.99,
+      "all_time_high": 4308.99,
       "first_seen": "2026-09-07"
     },
     "https://www.flanco.ro/laptop-asus-vivobook-15-x1504ma-bq214-intel-core-7-350-15-6-fhd-ips-8-gb-ram-ddr5-512-gb-ssd-intel-graphics-fara-sistem-de-operare-albastru-inchis.html": {
@@ -7374,6 +8195,16 @@
           "date": "2026-09-14",
           "price": 3652.99,
           "stock_status": "supplier_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 3657.99,
+          "stock_status": "supplier_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 3657.99,
+          "stock_status": "supplier_stock"
         }
       ],
       "reference_price": 4629.99,
@@ -7414,6 +8245,16 @@
         {
           "date": "2026-09-14",
           "price": 3219.99,
+          "stock_status": "supplier_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 3224.99,
+          "stock_status": "supplier_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 3224.99,
           "stock_status": "supplier_stock"
         }
       ],
@@ -7715,6 +8556,11 @@
           "date": "2026-09-14",
           "price": 3590.0,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 3590.0,
+          "stock_status": "in_stock"
         }
       ],
       "seller": null,
@@ -7817,12 +8663,22 @@
           "date": "2026-09-13",
           "price": 4990.0,
           "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 5490.0,
+          "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 5490.0,
+          "stock_status": "limited_stock"
         }
       ],
       "seller": null,
       "is_marketplace": null,
       "all_time_low": 4990.0,
-      "all_time_high": 4990.0,
+      "all_time_high": 5490.0,
       "first_seen": "2026-09-07"
     },
     "https://www.emag.ro/laptop-lenovo-v15-g4-business-intel-core-i3-16gb-ssd-512gb-15-6-negru-83a1006xhv/pd/DLCNM1YBM/": {
@@ -7896,6 +8752,16 @@
           "date": "2026-09-14",
           "price": 3307.05,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 3307.05,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 3307.05,
+          "stock_status": "limited_stock"
         }
       ],
       "seller": null,
@@ -7992,6 +8858,16 @@
           "date": "2026-09-14",
           "price": 3499.01,
           "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 3499.01,
+          "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 3499.01,
+          "stock_status": "limited_stock"
         }
       ],
       "seller": null,
@@ -8036,6 +8912,16 @@
         },
         {
           "date": "2026-09-14",
+          "price": 2807.4,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 2807.4,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-17",
           "price": 2807.4,
           "stock_status": "in_stock"
         }
@@ -8157,10 +9043,18 @@
           "date": "2026-09-10",
           "price": 2794.8,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 3090.4,
+          "stock_status": "limited_stock"
         }
       ],
       "seller": null,
-      "is_marketplace": null
+      "is_marketplace": null,
+      "all_time_low": 2794.8,
+      "all_time_high": 3137.4,
+      "first_seen": "2026-09-08"
     },
     "https://www.flanco.ro/laptop-asus-15-6-vivobook-15-x1504va-fhd-60-hz-intel-core-i7-1355u-16gb-ddr4-1tb-ssd-no-os-quiet-blue.html": {
       "title": "Laptop Asus 15.6'' Vivobook 15 X1504VA, FHD, 60 Hz, Intel Core i7-1355U, 16GB DDR4, 1TB SSD, No OS, Quiet Blue",
@@ -8393,11 +9287,21 @@
           "date": "2026-09-14",
           "price": 2148.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 2098.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 2098.99,
+          "stock_status": "in_stock"
         }
       ],
       "seller": "PC Garage",
       "is_marketplace": false,
-      "all_time_low": 2148.99,
+      "all_time_low": 2098.99,
       "all_time_high": 2148.99,
       "first_seen": "2026-09-09"
     },
@@ -8432,6 +9336,16 @@
         },
         {
           "date": "2026-09-14",
+          "price": 2048.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 2048.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-17",
           "price": 2048.99,
           "stock_status": "in_stock"
         }
@@ -8604,6 +9518,16 @@
           "date": "2026-09-14",
           "price": 3499.0,
           "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 3499.0,
+          "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 3499.0,
+          "stock_status": "limited_stock"
         }
       ],
       "seller": null,
@@ -8761,6 +9685,16 @@
           "date": "2026-09-14",
           "price": 3038.79,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 3038.79,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 3038.79,
+          "stock_status": "in_stock"
         }
       ],
       "seller": null,
@@ -8831,6 +9765,16 @@
           "date": "2026-09-14",
           "price": 2059.0,
           "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 2059.0,
+          "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 2059.0,
+          "stock_status": "limited_stock"
         }
       ],
       "seller": null,
@@ -8860,6 +9804,16 @@
         },
         {
           "date": "2026-09-14",
+          "price": 2589.0,
+          "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 2589.0,
+          "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-17",
           "price": 2589.0,
           "stock_status": "limited_stock"
         }
@@ -8893,6 +9847,16 @@
           "date": "2026-09-14",
           "price": 2169.0,
           "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 2169.0,
+          "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 2169.0,
+          "stock_status": "limited_stock"
         }
       ],
       "seller": null,
@@ -8922,6 +9886,16 @@
         },
         {
           "date": "2026-09-14",
+          "price": 2649.0,
+          "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 2649.0,
+          "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-17",
           "price": 2649.0,
           "stock_status": "limited_stock"
         }
@@ -8955,12 +9929,22 @@
           "date": "2026-09-14",
           "price": 4598.99,
           "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 4798.99,
+          "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 4798.99,
+          "stock_status": "limited_stock"
         }
       ],
       "seller": "PC Garage",
       "is_marketplace": false,
       "all_time_low": 4598.99,
-      "all_time_high": 4598.99,
+      "all_time_high": 4798.99,
       "first_seen": "2026-09-11"
     },
     "https://www.emag.ro/laptop-lenovo-v15-g5-irl-cu-procesor-intelr-core-i7-13620h-pana-la-4-90-ghz-15-6-fhd-8-gb-ram-ddr5-256-gb-ssd-intelr-uhd-graphics-windows-11-pro-business-black-fb-0408/pd/D7CDXY2BM/": {
@@ -8976,6 +9960,16 @@
           "date": "2026-09-13",
           "price": 3199.99,
           "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-16",
+          "price": 3199.99,
+          "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 3199.99,
+          "stock_status": "out_of_stock"
         }
       ],
       "seller": null,
@@ -9036,6 +10030,234 @@
       "all_time_low": 10690.0,
       "all_time_high": 10690.0,
       "first_seen": "2026-09-14"
+    },
+    "https://www.emag.ro/laptop-lenovo-v15-g5-irl-15-6-fhd-ips-intel-core-5-210h-16gb-ddr5-ssd-512gb-intel-graphics-windows-11-pro-business-black-83hf00h5ri-win11pro/pd/DF9RZG2BM/": {
+      "title": "Laptop Lenovo V15 G5 IRL, 15.6\" FHD IPS, Intel Core 5 210H, 16GB DDR5, SSD 512GB, Intel Graphics, Windows 11 Pro, Business Black",
+      "site": "emag",
+      "history": [
+        {
+          "date": "2026-09-16",
+          "price": 4174.5,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 4174.5,
+          "stock_status": "in_stock"
+        }
+      ],
+      "seller": null,
+      "is_marketplace": null,
+      "all_time_low": 4174.5,
+      "all_time_high": 4174.5,
+      "first_seen": "2026-09-16"
+    },
+    "https://www.emag.ro/laptop-15-6-lenovo-v15-g5-intel-i3-1315u-10mb-4-5ghz-8gb-ddr5-512gb-ssd-uhd-graphics-irl-fhd-no-os-black-83gw009fge/pd/D7P7GZ2BM/": {
+      "title": "Laptop 15.6\" Lenovo V15 G5 Intel i3-1315U (10MB 4.5GHz) 8GB DDR5 512GB SSD UHD graphics IRL FHD No OS Black",
+      "site": "emag",
+      "history": [
+        {
+          "date": "2026-09-16",
+          "price": 4328.15,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 4328.15,
+          "stock_status": "in_stock"
+        }
+      ],
+      "seller": null,
+      "is_marketplace": null,
+      "all_time_low": 4328.15,
+      "all_time_high": 4328.15,
+      "first_seen": "2026-09-16"
+    },
+    "https://www.emag.ro/laptop-15-6-lenovo-v15-g4-amd-ryzen-3-7320u-6mb-4-1ghz-16gb-ddr5-512gb-ssd-radeon-610m-amn-fhd-negru-82yu016vpb/pd/DLJRZG2BM/": {
+      "title": "Laptop 15.6\" Lenovo V15 G4 AMD Ryzen 3 7320U (6MB 4.1GHz) 16GB DDR5 512GB SSD Radeon 610M AMN FHD Negru",
+      "site": "emag",
+      "history": [
+        {
+          "date": "2026-09-16",
+          "price": 2668.58,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 2669.65,
+          "stock_status": "in_stock"
+        }
+      ],
+      "seller": null,
+      "is_marketplace": null,
+      "all_time_low": 2668.58,
+      "all_time_high": 2669.65,
+      "first_seen": "2026-09-16"
+    },
+    "https://www.emag.ro/laptop-lenovo-v15-g4-iru-procesor-intelr-coretm-i3-1315u-15-6-fhd-ips-40-gb-ddr4-1-tb-ssd-gma-uhd-windows-11-pro-business-black-fb-0276/pd/D3D4MM2BM/": {
+      "title": "Laptop Lenovo V15 G4 IRU, Procesor Intel® Core™ i3-1315U, 15.6\" FHD IPS, 40 GB DDR4, 1 TB SSD, GMA UHD, Windows 11 Pro, Business Black",
+      "site": "emag",
+      "history": [
+        {
+          "date": "2026-09-16",
+          "price": 3914.96,
+          "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 3914.96,
+          "stock_status": "limited_stock"
+        }
+      ],
+      "seller": null,
+      "is_marketplace": null,
+      "all_time_low": 3914.96,
+      "all_time_high": 3914.96,
+      "first_seen": "2026-09-16"
+    },
+    "https://www.pcgarage.ro/notebook-laptop/asus/156-vivobook-15-x1504ma-fhd-procesor-intel-core-5-320-6m-cache-up-to-460-ghz-8gb-ddr5-512gb-ssd-intel-graphics-no-os-quiet-blue/": {
+      "title": "Laptop ASUS 15.6'' Vivobook 15 X1504MA, FHD, Procesor Intel® Core™ 5 320 (6M Cache, up to 4.60 GHz), 8GB DDR5, 512GB SSD, Intel Graphics, No OS, Quiet Blue",
+      "site": "pcgarage",
+      "history": [
+        {
+          "date": "2026-09-16",
+          "price": 2248.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 2248.99,
+          "stock_status": "in_stock"
+        }
+      ],
+      "seller": "PC Garage",
+      "is_marketplace": false,
+      "all_time_low": 2248.99,
+      "all_time_high": 2248.99,
+      "first_seen": "2026-09-16"
+    },
+    "https://www.emag.ro/laptop-15-6-lenovo-v15-g4-amd-ryzen-7-5825u-20mb-4-5ghz-8gb-ddr4-256gb-ssd-amd-radeon-windows-11-pro-layout-de-negru-82yy006sge/pd/DLGZ882BM/": {
+      "title": "Laptop 15.6\" Lenovo V15 G4 AMD Ryzen 7 5825U (20MB 4.5GHz) 8GB DDR4 256GB SSD AMD Radeon Windows 11 Pro Layout DE negru",
+      "site": "emag",
+      "history": [
+        {
+          "date": "2026-09-16",
+          "price": 3038.79,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 3038.79,
+          "stock_status": "in_stock"
+        }
+      ],
+      "seller": null,
+      "is_marketplace": null,
+      "all_time_low": 3038.79,
+      "all_time_high": 3038.79,
+      "first_seen": "2026-09-16"
+    },
+    "https://www.emag.ro/laptop-lenovo-v15-g4-iru-intel-core-i7-40-gb-1-tb-ssd-15-6-full-hd-1920-x-1080-tn-intel-uhd-graphics-3200-mhz-windows-11-pro-213440gb1tb/pd/DH861K3BM/": {
+      "title": "Laptop Lenovo V15 G4 IRU, Intel Core i7, 40 GB 1 TB SSD, 15.6 \" Full HD 1920 x 1080 TN, Intel UHD Graphics, 3200 MHz, Windows 11 Pro",
+      "site": "emag",
+      "history": [
+        {
+          "date": "2026-09-16",
+          "price": 9922.0,
+          "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-17",
+          "price": 9922.0,
+          "stock_status": "limited_stock"
+        }
+      ],
+      "seller": null,
+      "is_marketplace": null,
+      "all_time_low": 9922.0,
+      "all_time_high": 9922.0,
+      "first_seen": "2026-09-16"
+    },
+    "https://www.emag.ro/laptop-lenovo-v15-g4-iru-intel-core-i7-40-gb-512-gb-ssd-15-6-full-hd-1920-x-1080-tn-intel-uhd-graphics-3200-mhz-windows-11-pro-2270-40gb-512gb/pd/DZ3M3F3BM/": {
+      "title": "Laptop Lenovo V15 G4 IRU, Intel Core i7, 40 GB 512 GB SSD, 15.6 \" Full HD 1920 x 1080 TN, Intel UHD Graphics, 3200 MHz, Windows 11 Pro",
+      "site": "emag",
+      "history": [
+        {
+          "date": "2026-09-17",
+          "price": 8228.0,
+          "stock_status": "limited_stock"
+        }
+      ],
+      "seller": null,
+      "is_marketplace": null,
+      "all_time_low": 8228.0,
+      "all_time_high": 8228.0,
+      "first_seen": "2026-09-17"
+    },
+    "https://www.emag.ro/laptop-lenovo-v15-g5-irl-intel-core-3-100u-15-6-inch-ram-8gb-ssd-256gb-intel-uhd-graphics-windows-11-pro-edu-business-black-83hfs00r00/pd/DFQZZM2BM/": {
+      "title": "Laptop Lenovo V15 G5 IRL, Intel Core 3 100U, 15.6 inch, RAM 8GB, SSD 256GB, Intel UHD Graphics, Windows 11 Pro EDU, Business Black",
+      "site": "emag",
+      "history": [
+        {
+          "date": "2026-09-17",
+          "price": 1999.0,
+          "stock_status": "in_stock"
+        }
+      ],
+      "seller": null,
+      "is_marketplace": null,
+      "all_time_low": 1999.0,
+      "all_time_high": 1999.0,
+      "first_seen": "2026-09-17"
+    },
+    "https://www.emag.ro/laptop-lenovo-v15-g4-amn-procesor-amd-ryzentm-5-7520u-4m-cache-up-to-4-3-ghz-15-6-fhd-16gb-512gb-ssd-amd-radeon-610m-negru-82yu016tpb/pd/D3QD6B2BM/": {
+      "title": "Laptop Lenovo V15 G4 AMN Procesor AMD Ryzen™ 5 7520U 4M Cache, up to 4.3 GHz, 15.6\" FHD, 16GB, 512GB SSD, AMD Radeon 610M, Negru",
+      "site": "emag",
+      "history": [
+        {
+          "date": "2026-09-17",
+          "price": 2867.53,
+          "stock_status": "in_stock"
+        }
+      ],
+      "seller": null,
+      "is_marketplace": null,
+      "all_time_low": 2867.53,
+      "all_time_high": 2867.53,
+      "first_seen": "2026-09-17"
+    },
+    "https://www.emag.ro/laptop-lenovo-v15-g5-irl-cu-procesor-intel-coretm-i5-13420h-pana-la-4-60-ghz-15-6-fhd-ips-16gb-ram-512gb-ssd-intelr-uhd-graphics-windows-11-pro-edu-business-black-83hfs03200/pd/DHQZZM2BM/": {
+      "title": "Laptop Lenovo V15 G5 IRL cu procesor Intel Core™ i5-13420H pana la 4.60 GHz, 15.6\" FHD IPS, 16GB RAM, 512GB SSD, Intel® UHD Graphics,Windows 11 Pro EDU, Business Black",
+      "site": "emag",
+      "history": [
+        {
+          "date": "2026-09-17",
+          "price": 3499.0,
+          "stock_status": "limited_stock"
+        }
+      ],
+      "seller": null,
+      "is_marketplace": null,
+      "all_time_low": 3499.0,
+      "all_time_high": 3499.0,
+      "first_seen": "2026-09-17"
+    },
+    "https://www.flanco.ro/laptop-asus-vivobook-15-x1504ma-bq212-intel-core-5-320-15-6-fhd-ips-8-gb-ram-ddr5-512-gb-ssd-intel-graphics-fara-sistem-de-operare-albastru-inchis.html": {
+      "title": "Laptop Asus VivoBook 15 X1504MA-BQ212, Intel Core 5 320, 15.6\" FHD, IPS, 8 GB RAM DDR5, 512 GB SSD, Intel Graphics, Fara Sistem de operare, Albastru inchis",
+      "site": "flanco",
+      "history": [
+        {
+          "date": "2026-09-17",
+          "price": 3224.99,
+          "stock_status": "supplier_stock"
+        }
+      ],
+      "seller": "Flanco",
+      "is_marketplace": false,
+      "reference_price": 4659.99,
+      "all_time_low": 3224.99,
+      "all_time_high": 3224.99,
+      "first_seen": "2026-09-17"
     }
   }
 }
