@@ -1,9 +1,9 @@
 # DEPRECATED: pyproject.toml is now the canonical dependency source
 # (see `uv sync`). This file exists only because .github/workflows/monitor.yml
 # installs via `pip install -r requirements.txt` and is out of scope to change
-# here. The `-e .` line installs bf_price_monitor itself so its config/domain
-# modules stay importable during that scheduled run.
--e .
+# here. The `.` line installs bf_price_monitor itself (non-editable) so its
+# config/domain modules stay importable during that scheduled run.
+.
 requests>=2.31
 beautifulsoup4>=4.12
 huggingface_hub>=0.24
