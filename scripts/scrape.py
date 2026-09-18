@@ -1,17 +1,22 @@
 # scripts/scrape.py
 import functools
+import hashlib
 import json
 import random
 import re
 import sys
 import time
+import uuid
 from datetime import date, timedelta
+from decimal import Decimal
 from pathlib import Path
 
 import requests
 from bs4 import BeautifulSoup
+from pydantic import ValidationError
 
 from bf_price_monitor.config import load_watchlist
+from bf_price_monitor.domain import Observation
 
 HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
 REQUEST_TIMEOUT = 15
@@ -566,6 +571,7 @@ def main():
     alerts = []
     today_date = date.today()
     today = today_date.isoformat()
+    run_id = str(uuid.uuid4())
 
     for item in watchlist:
         scraper = SCRAPERS.get(item["site"])
@@ -608,6 +614,37 @@ def main():
                 {"date": today, "price": r["price"], "stock_status": stock_status}
             )
             entry["history"] = prune_history(entry["history"], today_date)
+
+            # Structure-only validation (T-01): confirms every real observation
+            # this run persists conforms to the Observation domain model, without
+            # changing the legacy dict shape that price_history.json stores.
+            # offer_id/content_hash are deterministic derivations, not stored
+            # fields, since the legacy history format has neither.
+            try:
+                Observation.model_validate(
+                    {
+                        "offer_id": uuid.uuid5(uuid.NAMESPACE_URL, key),
+                        "price": Decimal(str(r["price"])),
+                        "shipping": Decimal("0"),
+                        "reference_price": (
+                            Decimal(str(r["reference_price"]))
+                            if r.get("reference_price") is not None
+                            else None
+                        ),
+                        "in_stock": stock_status != "out_of_stock",
+                        "extraction_method": "html",
+                        "content_hash": hashlib.sha256(
+                            f"{r['title']}|{r['price']}|{stock_status}".encode()
+                        ).hexdigest(),
+                        "run_id": run_id,
+                    }
+                )
+            except ValidationError as e:
+                print(
+                    f"[{item['site']}] Observation validation failed for {key}: {e}",
+                    file=sys.stderr,
+                )
+                raise
 
             # An out-of-stock listing's price isn't buyable, so a "price
             # change" against it isn't actionable — still recorded above for

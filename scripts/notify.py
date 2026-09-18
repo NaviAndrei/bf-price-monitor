@@ -2,12 +2,17 @@
 import html
 import json
 import os
+import sys
 import time
 import urllib.parse
+import uuid
 from datetime import datetime
 from pathlib import Path
 
 import requests
+from pydantic import ValidationError
+
+from bf_price_monitor.domain import AlertDecision
 
 FORMATTED_FILE = Path("data/formatted_alerts.json")
 PRICE_HISTORY_FILE = Path("data/price_history.json")
@@ -145,6 +150,33 @@ def main():
     products = price_history.get("products", {})
 
     for alert in alerts:
+        # Structure-only validation (T-01): every alert reaching this point
+        # already passed should_alert()'s filter in scrape.py, so verdict is
+        # always "alert" here — this confirms the payload matches the
+        # AlertDecision domain model before it goes out, without changing
+        # what gets sent. watch_id/observation_id are deterministic
+        # derivations, not stored fields, since formatted_alerts.json has
+        # neither.
+        try:
+            AlertDecision.model_validate(
+                {
+                    "policy_version": "omnibus-v1",
+                    "watch_id": uuid.uuid5(
+                        uuid.NAMESPACE_URL, f"{alert['site']}:{alert['query']}"
+                    ),
+                    "observation_id": uuid.uuid5(uuid.NAMESPACE_URL, alert["url"]),
+                    "verdict": "alert",
+                    "reasons": [alert.get("rule_verdict", "unknown")],
+                    "evidence_urls": [alert["url"]],
+                }
+            )
+        except ValidationError as e:
+            print(
+                f"AlertDecision validation failed for {alert.get('url')}: {e}",
+                file=sys.stderr,
+            )
+            raise
+
         message = format_telegram_message(alert)
         keyboard = build_inline_keyboard(alert)
         product_history = products.get(alert["url"], {}).get("history", [])

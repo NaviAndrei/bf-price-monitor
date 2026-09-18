@@ -2,13 +2,40 @@
 import json
 import os
 import re
+import sys
 from pathlib import Path
 
 import requests
 from huggingface_hub import InferenceClient
+from pydantic import BaseModel, ValidationError
 
 ALERTS_FILE = Path("data/alerts.json")
 FORMATTED_FILE = Path("data/formatted_alerts.json")
+
+
+class RawAlertCandidate(BaseModel):
+    """Structure-only validation boundary (T-01) for a price-change candidate
+    as scrape.py's should_alert() writes it to data/alerts.json — before this
+    module decides a rule_verdict, so it doesn't fit AlertDecision (which
+    requires that verdict to already exist) or Watch (no watchlist fields are
+    present at this point). Not one of the six canonical domain models; local
+    to this boundary only.
+    """
+
+    title: str
+    site: str
+    query: str
+    url: str
+    old_price: float | None
+    new_price: float
+    thirty_day_low: float
+    history_days: int
+    reference_price: float | None = None
+    stock_status: str
+    seller: str | None = None
+    is_marketplace: bool | None = None
+    all_time_low: float
+    all_time_high: float
 
 HF_MODEL = os.getenv("HF_MODEL", "Qwen/Qwen2.5-Coder-32B-Instruct")
 OLLAMA_URL = "http://localhost:11434/api/chat"
@@ -170,6 +197,15 @@ def main():
 
     formatted_alerts = []
     for a in alerts:
+        try:
+            RawAlertCandidate.model_validate(a)
+        except ValidationError as e:
+            print(
+                f"Alert candidate validation failed for {a.get('url')}: {e}",
+                file=sys.stderr,
+            )
+            raise
+
         thirty_day_low = a.get("thirty_day_low")
         metrics = evaluate_omnibus_rule(
             a["new_price"],

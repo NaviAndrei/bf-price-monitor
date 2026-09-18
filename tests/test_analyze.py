@@ -1,4 +1,6 @@
-from analyze import evaluate_omnibus_rule, extract_json
+import pytest
+from analyze import RawAlertCandidate, evaluate_omnibus_rule, extract_json
+from pydantic import ValidationError
 
 
 def test_evaluate_omnibus_rule_insufficient_history():
@@ -110,3 +112,44 @@ def test_extract_json_missing_keys_returns_none():
 def test_extract_json_empty_returns_none():
     assert extract_json(None) is None
     assert extract_json("") is None
+
+
+def test_raw_alert_candidate_accepts_real_scrape_alert_shape():
+    # Mirrors the dict scripts/scrape.py's alerts.append() writes to
+    # data/alerts.json for a real price-change candidate.
+    alert = {
+        "title": "Laptop Lenovo V15 G4 AMN",
+        "site": "emag",
+        "query": "laptop lenovo v15",
+        "url": "https://www.emag.ro/laptop-lenovo-v15/pd/ABC123/",
+        "old_price": 2699.0,
+        "new_price": 2499.99,
+        "thirty_day_low": 2599.0,
+        "history_days": 45,
+        "reference_price": None,
+        "stock_status": "in_stock",
+        "seller": None,
+        "is_marketplace": None,
+        "all_time_low": 2499.99,
+        "all_time_high": 2999.0,
+    }
+    validated = RawAlertCandidate.model_validate(alert)
+    assert validated.new_price == 2499.99
+
+
+def test_raw_alert_candidate_rejects_missing_required_field():
+    alert = {
+        "title": "Laptop Lenovo V15 G4 AMN",
+        "site": "emag",
+        "query": "laptop lenovo v15",
+        "url": "https://www.emag.ro/laptop-lenovo-v15/pd/ABC123/",
+        "old_price": 2699.0,
+        # "new_price" omitted
+        "thirty_day_low": 2599.0,
+        "history_days": 45,
+        "stock_status": "in_stock",
+        "all_time_low": 2499.99,
+        "all_time_high": 2999.0,
+    }
+    with pytest.raises(ValidationError):
+        RawAlertCandidate.model_validate(alert)
