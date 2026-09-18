@@ -3011,6 +3011,11 @@
           "date": "2026-09-16",
           "price": 5203.0,
           "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-18",
+          "price": 5203.0,
+          "stock_status": "limited_stock"
         }
       ],
       "seller": null,
@@ -5553,6 +5558,11 @@
           "date": "2026-09-17",
           "price": 3993.0,
           "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-18",
+          "price": 3993.0,
+          "stock_status": "limited_stock"
         }
       ],
       "seller": null,
@@ -5621,8 +5631,18 @@
           "date": "2026-09-08",
           "price": 3993.0,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-18",
+          "price": 4356.0,
+          "stock_status": "limited_stock"
         }
-      ]
+      ],
+      "seller": null,
+      "is_marketplace": null,
+      "all_time_low": 3993.0,
+      "all_time_high": 4356.0,
+      "first_seen": "2026-09-06"
     },
     "https://www.emag.ro/laptop-lenovo-v15-g4-iru-procesor-intelr-coretm-i3-1315u-15-6-fhd-ips-8-gb-ddr4-512-gb-ssd-gma-uhd-windows-11-pro-business-black-fb-483/pd/DGYZ5CYBM/": {
       "title": "Laptop Lenovo V15 G4 IRU, Procesor Intel® Core™ i3-1315U, 15.6\" FHD IPS, 8 GB DDR4, 512 GB SSD, GMA UHD, Windows 11 Pro, Business Black",
@@ -5765,6 +5785,11 @@
         },
         {
           "date": "2026-09-17",
+          "price": 7986.0,
+          "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-18",
           "price": 7986.0,
           "stock_status": "limited_stock"
         }
@@ -6589,6 +6614,11 @@
           "date": "2026-09-16",
           "price": 8591.0,
           "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-18",
+          "price": 8591.0,
+          "stock_status": "limited_stock"
         }
       ],
       "seller": null,
@@ -6607,6 +6637,11 @@
         },
         {
           "date": "2026-09-16",
+          "price": 5445.0,
+          "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-18",
           "price": 5445.0,
           "stock_status": "limited_stock"
         }
@@ -10604,6 +10639,11 @@
           "date": "2026-09-17",
           "price": 8228.0,
           "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-18",
+          "price": 8228.0,
+          "stock_status": "limited_stock"
         }
       ],
       "seller": null,
@@ -10639,6 +10679,11 @@
       "history": [
         {
           "date": "2026-09-17",
+          "price": 2867.53,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-18",
           "price": 2867.53,
           "stock_status": "in_stock"
         }
@@ -10738,6 +10783,38 @@
       "is_marketplace": false,
       "all_time_low": 3798.99,
       "all_time_high": 3798.99,
+      "first_seen": "2026-09-18"
+    },
+    "https://www.emag.ro/laptop-lenovo-v15-g4-abp-fhd-15-6-inch-amd-ryzen-5-5625u-8gb-256gb-ssd-windows-11-home-business-black-83cr005hmh/pd/D2BZTX2BM/": {
+      "title": "Laptop Lenovo V15 G4 ABP FHD 15.6 inch AMD Ryzen 5 5625U 8GB 256GB SSD Windows 11 Home Business Black",
+      "site": "emag",
+      "history": [
+        {
+          "date": "2026-09-18",
+          "price": 3541.99,
+          "stock_status": "in_stock"
+        }
+      ],
+      "seller": null,
+      "is_marketplace": null,
+      "all_time_low": 3541.99,
+      "all_time_high": 3541.99,
+      "first_seen": "2026-09-18"
+    },
+    "https://www.emag.ro/laptop-lenovo-v15-gen-4-15-6-fhd-amd-ryzen-5-5625u-8gb-512gb-ssd-windows-11-home-business-black-82yy0067mh/pd/DVWWW42BM/": {
+      "title": "Laptop Lenovo V15 Gen 4 15.6 FHD AMD Ryzen 5 5625U 8GB 512GB SSD Windows 11 Home Business Black",
+      "site": "emag",
+      "history": [
+        {
+          "date": "2026-09-18",
+          "price": 4197.99,
+          "stock_status": "in_stock"
+        }
+      ],
+      "seller": null,
+      "is_marketplace": null,
+      "all_time_low": 4197.99,
+      "all_time_high": 4197.99,
       "first_seen": "2026-09-18"
     }
   }
