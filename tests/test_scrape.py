@@ -3,6 +3,7 @@ from datetime import date, timedelta
 
 import scrape
 from scrape import (
+    canonicalize_url,
     prune_history,
     record_observation,
     should_alert,
@@ -38,9 +39,7 @@ def test_target_price_unmet_suppresses_alert():
     # 96.0 is above the recorded low of 80.0, so this isn't a new all-time
     # low and the target_price gate applies normally.
     assert (
-        should_alert(
-            100.0, 96.0, "in_stock", target_price=95.0, all_time_low=80.0
-        )
+        should_alert(100.0, 96.0, "in_stock", target_price=95.0, all_time_low=80.0)
         is False
     )
 
@@ -48,9 +47,7 @@ def test_target_price_unmet_suppresses_alert():
 def test_min_drop_percent_met_alerts():
     # 100 -> 90 is a 10% drop, threshold is 5%
     assert (
-        should_alert(
-            100.0, 90.0, "in_stock", min_drop_percent=5.0, all_time_low=100.0
-        )
+        should_alert(100.0, 90.0, "in_stock", min_drop_percent=5.0, all_time_low=100.0)
         is True
     )
 
@@ -59,9 +56,7 @@ def test_min_drop_percent_unmet_suppresses_alert():
     # 100 -> 98 is a 2% drop, threshold is 5%. 98.0 is above the recorded
     # low of 80.0, so this isn't a new all-time low and the threshold applies.
     assert (
-        should_alert(
-            100.0, 98.0, "in_stock", min_drop_percent=5.0, all_time_low=80.0
-        )
+        should_alert(100.0, 98.0, "in_stock", min_drop_percent=5.0, all_time_low=80.0)
         is False
     )
 
@@ -321,3 +316,172 @@ def test_daily_summary_and_lifetime_extrema_still_work_with_multiple_same_day_en
 
     pruned = prune_history(entry["history"], date(2026, 1, 1))
     assert [h["price"] for h in pruned] == [100.0, 90.0]
+
+
+def test_canonicalize_url_strips_utm_and_known_tracking_params():
+    url = (
+        "https://www.emag.ro/laptop-lenovo-v15/pd/ABC123/"
+        "?utm_source=fb&utm_campaign=bf&fbclid=xyz&gclid=abc"
+    )
+    assert canonicalize_url(url) == "https://emag.ro/laptop-lenovo-v15/pd/ABC123"
+
+
+def test_canonicalize_url_normalizes_www_and_trailing_slash():
+    assert (
+        canonicalize_url("https://WWW.emag.ro/laptop-lenovo-v15/pd/ABC123/")
+        == "https://emag.ro/laptop-lenovo-v15/pd/ABC123"
+    )
+
+
+def test_canonicalize_url_keeps_non_tracking_query_params():
+    url = "https://www.pcgarage.ro/produs-123/?color=black&utm_source=fb"
+    assert canonicalize_url(url) == "https://pcgarage.ro/produs-123?color=black"
+
+
+def test_canonicalize_url_tracking_variants_produce_same_key():
+    a = "https://www.emag.ro/laptop-lenovo-v15/pd/ABC123/?utm_source=google"
+    b = "https://emag.ro/laptop-lenovo-v15/pd/ABC123?ref=homepage&fbclid=999"
+    assert canonicalize_url(a) == canonicalize_url(b)
+
+
+def test_tracking_param_variant_does_not_create_duplicate_offer(tmp_path, monkeypatch):
+    # Regression test for T-06: a retailer swapping tracking params between
+    # runs (e.g. a different ad campaign each time) must not fork one
+    # product's history into two separate offers.
+    watchlist_file = tmp_path / "watchlist.json"
+    watchlist_file.write_text(
+        json.dumps([{"site": "emag", "query": "laptop lenovo v15"}]),
+        encoding="utf-8",
+    )
+    history_file = tmp_path / "price_history.json"
+    alerts_file = tmp_path / "alerts.json"
+
+    monkeypatch.setattr(scrape, "WATCHLIST_FILE", watchlist_file)
+    monkeypatch.setattr(scrape, "HISTORY_FILE", history_file)
+    monkeypatch.setattr(scrape, "ALERTS_FILE", alerts_file)
+    monkeypatch.setattr(scrape.time, "sleep", lambda *_: None)
+
+    url_variant_1 = "https://www.emag.ro/laptop-lenovo-v15/pd/ABC123/?utm_source=fb"
+    url_variant_2 = "https://emag.ro/laptop-lenovo-v15/pd/ABC123?ref=email&fbclid=999"
+
+    monkeypatch.setattr(
+        scrape,
+        "SCRAPERS",
+        {"emag": lambda query: [_watchlist_entry(url=url_variant_1)]},
+    )
+    scrape.main()
+
+    monkeypatch.setattr(
+        scrape,
+        "SCRAPERS",
+        {"emag": lambda query: [_watchlist_entry(url=url_variant_2)]},
+    )
+    scrape.main()
+
+    products = json.loads(history_file.read_text(encoding="utf-8"))["products"]
+    assert len(products) == 1
+    history = next(iter(products.values()))["history"]
+    assert len(history) == 2
+
+
+def test_load_history_migrates_legacy_raw_url_keys_to_canonical(tmp_path, monkeypatch):
+    # Regression test for T-06: price_history.json predating canonicalization
+    # is keyed by raw URLs (with "www." and a trailing slash). On load, those
+    # keys must be remapped to their canonical form so an already-tracked
+    # product keeps its history instead of forking into a fresh duplicate on
+    # the next run.
+    history_file = tmp_path / "price_history.json"
+    raw_key = "https://www.emag.ro/laptop-lenovo-v15/pd/ABC123/"
+    history_file.write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "products": {
+                    raw_key: {
+                        "title": "Laptop Lenovo V15",
+                        "site": "emag",
+                        "all_time_low": 2499.99,
+                        "all_time_high": 2999.0,
+                        "first_seen": "2026-01-01",
+                        "history": [
+                            {
+                                "date": "2026-01-01",
+                                "observed_at": "2026-01-01T10:00:00+00:00",
+                                "price": 2999.0,
+                                "stock_status": "in_stock",
+                            }
+                        ],
+                    }
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(scrape, "HISTORY_FILE", history_file)
+
+    products = scrape.load_history()
+
+    assert list(products.keys()) == [canonicalize_url(raw_key)]
+    assert products[canonicalize_url(raw_key)]["all_time_low"] == 2499.99
+
+
+def test_load_history_merges_pre_existing_tracking_param_duplicates(
+    tmp_path, monkeypatch
+):
+    # Regression test for T-06: price_history.json can already hold two raw
+    # keys that only differ by tracking params (the exact bug T-06 fixes
+    # going forward). On load these must merge into one entry rather than
+    # silently keeping just one and dropping the other's history/extrema.
+    history_file = tmp_path / "price_history.json"
+    raw_key_a = "https://www.emag.ro/laptop-lenovo-v15/pd/ABC123/?utm_source=fb"
+    raw_key_b = "https://emag.ro/laptop-lenovo-v15/pd/ABC123?ref=email"
+    history_file.write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "products": {
+                    raw_key_a: {
+                        "title": "Laptop Lenovo V15",
+                        "site": "emag",
+                        "all_time_low": 2999.0,
+                        "all_time_high": 2999.0,
+                        "first_seen": "2026-01-05",
+                        "history": [
+                            {
+                                "date": "2026-01-05",
+                                "observed_at": "2026-01-05T10:00:00+00:00",
+                                "price": 2999.0,
+                                "stock_status": "in_stock",
+                            }
+                        ],
+                    },
+                    raw_key_b: {
+                        "title": "Laptop Lenovo V15",
+                        "site": "emag",
+                        "all_time_low": 2499.99,
+                        "all_time_high": 3099.0,
+                        "first_seen": "2026-01-01",
+                        "history": [
+                            {
+                                "date": "2026-01-01",
+                                "observed_at": "2026-01-01T09:00:00+00:00",
+                                "price": 3099.0,
+                                "stock_status": "in_stock",
+                            }
+                        ],
+                    },
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(scrape, "HISTORY_FILE", history_file)
+
+    products = scrape.load_history()
+
+    assert len(products) == 1
+    entry = next(iter(products.values()))
+    assert entry["all_time_low"] == 2499.99
+    assert entry["all_time_high"] == 3099.0
+    assert entry["first_seen"] == "2026-01-01"
+    assert [h["price"] for h in entry["history"]] == [3099.0, 2999.0]

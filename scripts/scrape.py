@@ -10,6 +10,7 @@ import uuid
 from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 from pathlib import Path
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 import requests
 from bs4 import BeautifulSoup
@@ -87,6 +88,7 @@ def _block_heavy_requests(route):
         return route.abort()
     return route.continue_()
 
+
 # 403/429 can mean a transient rate-limit spike rather than a hard block, so
 # it's worth a few spaced-out retries before giving up — unlike a persistent
 # Cloudflare challenge page, which no amount of retrying clears.
@@ -111,7 +113,53 @@ def load_history() -> dict:
         # Pre-versioning file: bare {url: entry} dict. Wrap it so this run's
         # save writes the versioned format without losing any prior history.
         data = {"schema_version": HISTORY_SCHEMA_VERSION, "products": data}
-    return data["products"]
+    return _canonicalize_product_keys(data["products"])
+
+
+def _canonicalize_product_keys(products: dict) -> dict:
+    # T-06: existing price_history.json entries predate URL canonicalization
+    # and are keyed by the raw scraped URL (e.g. with "www." and a trailing
+    # slash). Remapping them here means an already-tracked product keeps
+    # updating under its new canonical key instead of forking into a fresh,
+    # history-less duplicate the next time main() runs.
+    canonical: dict[str, dict] = {}
+    for raw_key, entry in products.items():
+        key = canonicalize_url(raw_key)
+        if key not in canonical:
+            canonical[key] = entry
+        else:
+            # Only reached if two raw keys already aliased the same product
+            # (e.g. a prior tracking-param duplicate) — combine rather than
+            # silently drop one entry's history.
+            canonical[key] = _merge_product_entries(canonical[key], entry)
+    return canonical
+
+
+def _merge_product_entries(a: dict, b: dict) -> dict:
+    merged = dict(a)
+    history = list(a.get("history", []))
+    seen = {
+        (h["date"], h.get("observed_at"), h["price"], h["stock_status"])
+        for h in history
+    }
+    for h in b.get("history", []):
+        signature = (h["date"], h.get("observed_at"), h["price"], h["stock_status"])
+        if signature not in seen:
+            history.append(h)
+            seen.add(signature)
+    history.sort(key=lambda h: (h["date"], h.get("observed_at") or ""))
+    merged["history"] = history
+
+    lows = [e["all_time_low"] for e in (a, b) if "all_time_low" in e]
+    if lows:
+        merged["all_time_low"] = min(lows)
+    highs = [e["all_time_high"] for e in (a, b) if "all_time_high" in e]
+    if highs:
+        merged["all_time_high"] = max(highs)
+    first_seens = [e["first_seen"] for e in (a, b) if "first_seen" in e]
+    if first_seens:
+        merged["first_seen"] = min(first_seens)
+    return merged
 
 
 def save_history(products: dict) -> None:
@@ -146,6 +194,46 @@ def parse_price(raw: str) -> float | None:
         return None
 
 
+# Retailer-added tracking/session params that don't change product identity —
+# stripped so a tracking-link variant of the same listing doesn't fork its
+# history into a duplicate offer (T-06).
+TRACKING_QUERY_PARAMS = {
+    "ref",
+    "cmpid",
+    "emag_click_id",
+    "fbclid",
+    "gclid",
+    "gclsrc",
+    "msclkid",
+    "yclid",
+    "mc_cid",
+    "mc_eid",
+    "igshid",
+    "spm",
+    "_ga",
+}
+
+
+def canonicalize_url(url: str) -> str:
+    # Identity key for history/offer tracking: lowercase host with any
+    # leading "www." dropped, no trailing slash on the path, and tracking
+    # query params (utm_*, ref, fbclid, gclid, ...) stripped, with the
+    # remaining params sorted for a stable ordering. Two URLs differing only
+    # in tracking params canonicalize to the same key.
+    parsed = urlsplit(url)
+    host = parsed.netloc.lower()
+    if host.startswith("www."):
+        host = host[4:]
+    path = parsed.path.rstrip("/") or "/"
+    kept_params = sorted(
+        (k, v)
+        for k, v in parse_qsl(parsed.query, keep_blank_values=True)
+        if not k.lower().startswith("utm_") and k.lower() not in TRACKING_QUERY_PARAMS
+    )
+    query = urlencode(kept_params)
+    return urlunsplit((parsed.scheme, host, path, query, ""))
+
+
 def title_matches_query(title: str, query: str) -> bool:
     # Retailer search is fuzzy/token-based, so a query like "iphone 15" can
     # surface "Xiaomi 15T" (matches "15") or "Honor 600" (matches nothing but
@@ -174,7 +262,9 @@ def fetch_with_browser(url: str, site_name: str) -> str | None:
                 page.set_default_navigation_timeout(PLAYWRIGHT_NAV_TIMEOUT_MS)
                 page.route("**/*", _block_heavy_requests)
                 response = page.goto(
-                    url, timeout=PLAYWRIGHT_NAV_TIMEOUT_MS, wait_until="domcontentloaded"
+                    url,
+                    timeout=PLAYWRIGHT_NAV_TIMEOUT_MS,
+                    wait_until="domcontentloaded",
                 )
                 status = response.status if response else None
 
@@ -218,7 +308,9 @@ def fetch(url: str, site_name: str) -> str | None:
         try:
             r = requests.get(url, headers=HEADERS, timeout=REQUEST_TIMEOUT)
         except requests.exceptions.RequestException as e:
-            print(f"[{site_name}] unreachable ({e.__class__.__name__}), skipping this run")
+            print(
+                f"[{site_name}] unreachable ({e.__class__.__name__}), skipping this run"
+            )
             return None
 
         if r.status_code in RETRY_STATUS_CODES and attempt < MAX_FETCH_ATTEMPTS:
@@ -528,7 +620,11 @@ def update_lifetime_stats(entry: dict, new_price: float, today_str: str) -> dict
     # all_time_low/all_time_high/first_seen — derive a starting baseline from
     # their existing history before folding in new_price, so upgrading an old
     # price_history.json doesn't silently reset a product's recorded extremes.
-    if "all_time_low" not in entry or "all_time_high" not in entry or "first_seen" not in entry:
+    if (
+        "all_time_low" not in entry
+        or "all_time_high" not in entry
+        or "first_seen" not in entry
+    ):
         past_prices = [h["price"] for h in entry.get("history", [])]
         if "all_time_low" not in entry:
             entry["all_time_low"] = min(past_prices) if past_prices else new_price
@@ -609,7 +705,10 @@ def main():
         time.sleep(random.uniform(3, 7))  # polite delay between requests
 
         for r in results:
-            key = r["url"]
+            # Canonicalized, not the raw scraped URL (T-06): the history dict
+            # key and the identity used for offer_id/alerts below must stay
+            # stable across a retailer swapping tracking params between runs.
+            key = canonicalize_url(r["url"])
             entry = history.setdefault(
                 key, {"title": r["title"], "site": item["site"], "history": []}
             )
@@ -691,7 +790,9 @@ def main():
                         "url": key,
                         "old_price": prev_price,
                         "new_price": r["price"],
-                        "thirty_day_low": min(recent_prices) if recent_prices else prev_price,
+                        "thirty_day_low": min(recent_prices)
+                        if recent_prices
+                        else prev_price,
                         "history_days": (today_date - oldest_date).days,
                         "reference_price": r.get("reference_price"),
                         "stock_status": stock_status,
