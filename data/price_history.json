@@ -5607,6 +5607,11 @@
           "date": "2026-09-16",
           "price": 4598.0,
           "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-18",
+          "price": 4598.0,
+          "stock_status": "limited_stock"
         }
       ],
       "seller": null,
@@ -6572,10 +6577,18 @@
           "date": "2026-09-11",
           "price": 2949.99,
           "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-18",
+          "price": 2949.99,
+          "stock_status": "limited_stock"
         }
       ],
       "seller": null,
-      "is_marketplace": null
+      "is_marketplace": null,
+      "all_time_low": 2949.99,
+      "all_time_high": 2949.99,
+      "first_seen": "2026-09-07"
     },
     "https://www.emag.ro/laptop-lenovo-v15-g4-iru-cu-procesor-intelr-coretm-i5-13420h-pana-la-4-6-ghz-15-6-full-hd-ips-8gb-ddr4-ram-512gb-ssd-intelr-uhd-graphics-no-os-business-black-3y-carry-in-83a1008wrm/pd/DNSQ3TYBM/": {
       "title": "Laptop Lenovo V15 G4 IRU cu procesor Intel® Core™ i5-13420H pana la 4.6 GHz, 15.6\", Full HD, IPS, 8GB DDR4 RAM, 512GB SSD, Intel® UHD Graphics, No OS, Business Black, 3y Carry-in",
@@ -10118,12 +10131,17 @@
           "date": "2026-09-17",
           "price": 3038.79,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-18",
+          "price": 3057.09,
+          "stock_status": "in_stock"
         }
       ],
       "seller": null,
       "is_marketplace": null,
       "all_time_low": 2956.41,
-      "all_time_high": 3038.79,
+      "all_time_high": 3057.09,
       "first_seen": "2026-09-11"
     },
     "https://www.emag.ro/laptop-15-6-lenovo-v15-g4-amd-ryzen-5-7520u-6mb-4-3ghz-16gb-ddr5-512gb-ssd-radeon-610m-amn-fhd-4m-win-11-pro-black-82yu01aege/pd/DCWZ882BM/": {
@@ -10815,6 +10833,22 @@
       "is_marketplace": null,
       "all_time_low": 4197.99,
       "all_time_high": 4197.99,
+      "first_seen": "2026-09-18"
+    },
+    "https://www.emag.ro/laptop-lenovo-v15-g5-irl-intel-core-i3-1315u-15-6inch-8gb-ddr5-5200-ssd-512gb-no-os-negru-5901443360742/pd/D7NCPQ2BM/": {
+      "title": "Laptop Lenovo V15 G5 IRL Intel Core i3-1315U 15.6inch 8GB DDR5 5200 SSD 512GB No OS Negru",
+      "site": "emag",
+      "history": [
+        {
+          "date": "2026-09-18",
+          "price": 2664.99,
+          "stock_status": "in_stock"
+        }
+      ],
+      "seller": null,
+      "is_marketplace": null,
+      "all_time_low": 2664.99,
+      "all_time_high": 2664.99,
       "first_seen": "2026-09-18"
     }
   }
