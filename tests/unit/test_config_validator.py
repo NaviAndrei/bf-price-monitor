@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import pytest
 
@@ -64,3 +65,53 @@ def test_negative_target_price_raises_with_path_in_message(tmp_path):
         validate_watchlist(path)
     message = str(exc_info.value)
     assert "target_price" in message
+
+
+def test_unknown_field_in_legacy_watch_entry_rejected(tmp_path):
+    path = write_watchlist(
+        tmp_path,
+        [{"site": "emag", "query": "laptop lenovo v15", "extra_field": "nope"}],
+    )
+    with pytest.raises(ValueError) as exc_info:
+        validate_watchlist(path)
+    assert "extra_field" in str(exc_info.value)
+
+
+def test_misspelled_target_price_rejected_with_key_in_message(tmp_path):
+    path = write_watchlist(
+        tmp_path,
+        [{"site": "emag", "query": "laptop lenovo v15", "targer_price": 2500.0}],
+    )
+    with pytest.raises(ValueError) as exc_info:
+        validate_watchlist(path)
+    message = str(exc_info.value)
+    assert "targer_price" in message
+    assert "watchlist[0]" in message
+
+
+def test_unknown_field_in_modern_watch_entry_rejected(tmp_path):
+    path = write_watchlist(
+        tmp_path,
+        {
+            "watches": [
+                {
+                    "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                    "query": "laptop lenovo v15",
+                    "drop_rule": "percentage",
+                    "drop_threshold": 5.0,
+                    "cadence_minutes": 120,
+                    "extra_field": "nope",
+                }
+            ]
+        },
+    )
+    with pytest.raises(ValueError) as exc_info:
+        validate_watchlist(path)
+    assert "extra_field" in str(exc_info.value)
+
+
+def test_production_watchlist_file_still_loads():
+    production_path = Path(__file__).parents[2] / "data" / "watchlist.json"
+    validate_watchlist(production_path)
+    watches = load_watchlist(production_path)
+    assert len(watches) == 4
