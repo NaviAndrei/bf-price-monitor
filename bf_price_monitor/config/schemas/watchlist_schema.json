@@ -19,7 +19,8 @@
         "site": { "type": "string", "minLength": 1 },
         "query": { "type": "string", "minLength": 1 },
         "target_price": { "type": "number", "exclusiveMinimum": 0 },
-        "min_drop_percent": { "type": "number", "exclusiveMinimum": 0 }
+        "min_drop_percent": { "type": "number", "exclusiveMinimum": 0 },
+        "atl_policy": { "$ref": "#/definitions/atlPolicy" }
       },
       "additionalProperties": false
     },
@@ -49,9 +50,14 @@
         "target_price": { "type": "number", "exclusiveMinimum": 0 },
         "drop_rule": { "type": "string", "enum": ["percentage", "absolute"] },
         "drop_threshold": { "type": "number", "exclusiveMinimum": 0 },
-        "cadence_minutes": { "type": "integer", "minimum": 5, "maximum": 1440 }
+        "cadence_minutes": { "type": "integer", "minimum": 5, "maximum": 1440 },
+        "atl_policy": { "$ref": "#/definitions/atlPolicy" }
       },
       "additionalProperties": false
+    },
+    "atlPolicy": {
+      "type": "string",
+      "enum": ["conservative", "off", "aggressive"]
     }
   }
 }

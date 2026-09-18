@@ -1,6 +1,7 @@
 import json
 from datetime import date, timedelta
 
+import pytest
 import scrape
 from scrape import (
     canonicalize_url,
@@ -126,9 +127,159 @@ def test_drop_meeting_both_floors_alerts():
 
 
 def test_all_time_low_override_bypasses_micro_drop_floor():
-    # Only a 1 RON, 1% drop, but still a genuine new all-time low — the
-    # override must fire even though it wouldn't clear either floor alone.
+    # Only a 1 RON, 1% drop, but still a genuine new all-time low — under
+    # the default "aggressive" policy the override must fire even though
+    # it wouldn't clear either floor alone.
     assert should_alert(100.0, 99.0, "in_stock", all_time_low=100.0) is True
+
+
+# --- atl_policy matrix (T-10) ---
+#
+# "aggressive" is the default and reproduces every pre-T-10 assertion above
+# (all_time_low bypasses the micro-drop floor, target_price, and
+# min_drop_percent unconditionally) since no existing watchlist entry sets
+# atl_policy explicitly. "conservative" and "off" are opt-in policies that
+# narrow the override; they must never change what "aggressive" does.
+
+
+def test_atl_policy_default_is_aggressive():
+    # Omitting atl_policy entirely must behave identically to passing
+    # atl_policy="aggressive" explicitly — this is what keeps every
+    # existing watchlist entry's behavior stable.
+    without_policy = should_alert(100.0, 99.0, "in_stock", all_time_low=100.0)
+    with_explicit_aggressive = should_alert(
+        100.0, 99.0, "in_stock", all_time_low=100.0, atl_policy="aggressive"
+    )
+    assert without_policy is with_explicit_aggressive is True
+
+
+def test_atl_aggressive_fires_despite_unmet_target_price():
+    assert (
+        should_alert(
+            100.0,
+            99.0,
+            "in_stock",
+            target_price=50.0,
+            all_time_low=100.0,
+            atl_policy="aggressive",
+        )
+        is True
+    )
+
+
+def test_atl_conservative_fires_when_it_clears_micro_drop_floor():
+    # 200 -> 190 is a 10 RON / 5% drop: clears the micro-drop floor, so the
+    # new-low override fires under "conservative" even with an unmet
+    # target_price.
+    assert (
+        should_alert(
+            200.0,
+            190.0,
+            "in_stock",
+            target_price=50.0,
+            all_time_low=200.0,
+            atl_policy="conservative",
+        )
+        is True
+    )
+
+
+def test_atl_conservative_suppressed_when_it_fails_micro_drop_floor():
+    # Only a 1 RON, 1% new low: under "conservative" the override does not
+    # apply, and the drop is too small to pass the normal gates either.
+    assert (
+        should_alert(
+            100.0, 99.0, "in_stock", all_time_low=100.0, atl_policy="conservative"
+        )
+        is False
+    )
+
+
+def test_atl_conservative_still_respects_target_price_when_floor_unmet():
+    # Same 1 RON new low as above, this time with a target_price that also
+    # isn't met — confirms the fallthrough to normal gates, not just the
+    # floor check in isolation.
+    assert (
+        should_alert(
+            100.0,
+            99.0,
+            "in_stock",
+            target_price=50.0,
+            all_time_low=100.0,
+            atl_policy="conservative",
+        )
+        is False
+    )
+
+
+def test_atl_off_ignores_new_low_and_respects_min_drop_percent():
+    # A genuine new all-time low, but atl_policy="off" means it's judged
+    # purely on min_drop_percent like any other drop. 100 -> 90 is a 10%
+    # drop, threshold is 50%, so it must be suppressed.
+    assert (
+        should_alert(
+            100.0,
+            90.0,
+            "in_stock",
+            min_drop_percent=50.0,
+            all_time_low=100.0,
+            atl_policy="off",
+        )
+        is False
+    )
+
+
+def test_atl_off_still_alerts_when_normal_gates_pass():
+    # Same new all-time low, but this time min_drop_percent is met on its
+    # own merits — "off" doesn't suppress alerts, it just removes the
+    # override shortcut.
+    assert (
+        should_alert(
+            100.0,
+            90.0,
+            "in_stock",
+            min_drop_percent=5.0,
+            all_time_low=100.0,
+            atl_policy="off",
+        )
+        is True
+    )
+
+
+def test_atl_off_suppressed_by_unmet_target_price():
+    assert (
+        should_alert(
+            100.0,
+            90.0,
+            "in_stock",
+            target_price=50.0,
+            all_time_low=100.0,
+            atl_policy="off",
+        )
+        is False
+    )
+
+
+def test_atl_policy_no_atl_condition_regular_rules_unchanged():
+    # new_price isn't below all_time_low at all — atl_policy must be
+    # irrelevant in every branch since the override never applies.
+    for policy in ("aggressive", "conservative", "off"):
+        assert (
+            should_alert(
+                100.0,
+                90.0,
+                "in_stock",
+                min_drop_percent=5.0,
+                all_time_low=80.0,
+                atl_policy=policy,
+            )
+            is True
+        )
+
+
+def test_atl_policy_invalid_value_raises():
+    with pytest.raises(ValueError):
+        should_alert(100.0, 90.0, "in_stock", all_time_low=100.0, atl_policy="bogus")
 
 
 def test_title_matches_query_rejects_unrelated_product():

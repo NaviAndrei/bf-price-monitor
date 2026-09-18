@@ -10,6 +10,7 @@ import uuid
 from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 from pathlib import Path
+from typing import Literal
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 import requests
@@ -573,6 +574,9 @@ SCRAPERS = {
 }
 
 
+AtlPolicy = Literal["conservative", "off", "aggressive"]
+
+
 def should_alert(
     prev_price: float | None,
     new_price: float,
@@ -580,19 +584,15 @@ def should_alert(
     target_price: float | None = None,
     min_drop_percent: float | None = None,
     all_time_low: float | None = None,
+    atl_policy: AtlPolicy = "aggressive",
 ) -> bool:
     # A deal monitor only cares about savings: price increases and
     # unchanged prices never alert, regardless of thresholds.
     if prev_price is None or new_price >= prev_price or stock_status == "out_of_stock":
         return False
 
-    # An all-time low is always worth surfacing, even if it's a smaller drop
-    # than min_drop_percent or hasn't reached target_price yet. Sourced from
-    # the persistent entry["all_time_low"] field (pre-update) rather than
-    # min(past_prices), since past_prices is now bounded to a 90-day rolling
-    # window and would miss a true record low set further back than that.
-    if all_time_low is not None and new_price < all_time_low:
-        return True
+    if atl_policy not in ("conservative", "off", "aggressive"):
+        raise ValueError(f"Unknown atl_policy: {atl_policy!r}")
 
     # Below the all-time-low override, a "drop" of a few lei on a
     # three-figure item isn't a deal worth a notification — it's noise from
@@ -603,15 +603,32 @@ def should_alert(
     # through — neither is the "false micro-drop" this guards against.
     drop_val = prev_price - new_price
     drop_percent = (drop_val / prev_price) * 100
-    if drop_val < 5.0 or drop_percent < 2.0:
-        return False
+    passes_micro_drop_floor = drop_val >= 5.0 and drop_percent >= 2.0
 
+    # An all-time low is sourced from the persistent entry["all_time_low"]
+    # field (pre-update) rather than min(past_prices), since past_prices is
+    # now bounded to a 90-day rolling window and would miss a true record
+    # low set further back than that.
+    is_new_all_time_low = all_time_low is not None and new_price < all_time_low
+
+    # "aggressive" is the historical default: an all-time low always
+    # alerts, bypassing the micro-drop floor, target_price, and
+    # min_drop_percent entirely. "conservative" still lets an all-time low
+    # override target_price/min_drop_percent, but only once it clears the
+    # micro-drop floor — a 1 RON new low on a three-figure item is still
+    # noise. "off" removes the override altogether, so an all-time low is
+    # judged by the normal gates below like any other drop.
+    if is_new_all_time_low and atl_policy == "aggressive":
+        return True
+    if is_new_all_time_low and atl_policy == "conservative" and passes_micro_drop_floor:
+        return True
+
+    if not passes_micro_drop_floor:
+        return False
     if target_price is not None and new_price > target_price:
         return False
-    if min_drop_percent is not None:
-        drop_percent = ((prev_price - new_price) / prev_price) * 100
-        if drop_percent < min_drop_percent:
-            return False
+    if min_drop_percent is not None and drop_percent < min_drop_percent:
+        return False
     return True
 
 
@@ -770,6 +787,7 @@ def main():
                 target_price=item.get("target_price"),
                 min_drop_percent=item.get("min_drop_percent"),
                 all_time_low=prior_all_time_low,
+                atl_policy=item.get("atl_policy", "aggressive"),
             ):
                 thirty_day_cutoff = today_date - timedelta(days=30)
                 recent_prices = [
