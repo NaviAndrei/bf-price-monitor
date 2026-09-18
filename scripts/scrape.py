@@ -7,7 +7,7 @@ import re
 import sys
 import time
 import uuid
-from datetime import date, timedelta
+from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 from pathlib import Path
 
@@ -543,6 +543,24 @@ def update_lifetime_stats(entry: dict, new_price: float, today_str: str) -> dict
     return entry
 
 
+def record_observation(
+    entry: dict, today: str, observed_at: str, price: float, stock_status: str
+) -> None:
+    # Appends every scrape as its own observation — no same-day dedup — so a
+    # site checked more than once in a day (the 2-hour cron cadence, or a
+    # manual re-run) keeps each price point instead of only the first.
+    # `date` stays for the existing daily-summary/extrema/chart consumers,
+    # which only ever group or sort by calendar date.
+    entry["history"].append(
+        {
+            "date": today,
+            "observed_at": observed_at,
+            "price": price,
+            "stock_status": stock_status,
+        }
+    )
+
+
 def prune_history(
     history: list[dict], reference_date: date, max_days: int = 90, min_entries: int = 2
 ) -> list[dict]:
@@ -569,8 +587,10 @@ def main():
         sys.exit(1)
     history = load_history()
     alerts = []
-    today_date = date.today()
+    now_utc = datetime.now(UTC)
+    today_date = now_utc.date()
     today = today_date.isoformat()
+    observed_at = now_utc.isoformat()
     run_id = str(uuid.uuid4())
 
     for item in watchlist:
@@ -599,9 +619,6 @@ def main():
             if "reference_price" in r:
                 entry["reference_price"] = r["reference_price"]
 
-            if entry["history"] and entry["history"][-1]["date"] == today:
-                continue  # already recorded today (e.g. two queries matched the same product)
-
             prior_history = list(entry["history"])
             past_prices = [h["price"] for h in prior_history]
             prev_price = past_prices[-1] if past_prices else None
@@ -610,9 +627,7 @@ def main():
 
             update_lifetime_stats(entry, r["price"], today)
 
-            entry["history"].append(
-                {"date": today, "price": r["price"], "stock_status": stock_status}
-            )
+            record_observation(entry, today, observed_at, r["price"], stock_status)
             entry["history"] = prune_history(entry["history"], today_date)
 
             # Structure-only validation (T-01): confirms every real observation

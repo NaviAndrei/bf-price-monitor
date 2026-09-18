@@ -1,7 +1,10 @@
+import json
 from datetime import date, timedelta
 
+import scrape
 from scrape import (
     prune_history,
+    record_observation,
     should_alert,
     title_matches_query,
     update_lifetime_stats,
@@ -221,3 +224,100 @@ def test_update_lifetime_stats_new_entry_defaults_first_seen_to_today():
     assert entry["all_time_low"] == 200.0
     assert entry["all_time_high"] == 200.0
     assert entry["first_seen"] == "2026-01-01"
+
+
+def test_record_observation_stores_utc_timestamp_alongside_date():
+    entry = {"title": "Product", "site": "emag", "history": []}
+    record_observation(
+        entry, "2026-01-01", "2026-01-01T10:00:00+00:00", 100.0, "in_stock"
+    )
+    assert entry["history"] == [
+        {
+            "date": "2026-01-01",
+            "observed_at": "2026-01-01T10:00:00+00:00",
+            "price": 100.0,
+            "stock_status": "in_stock",
+        }
+    ]
+
+
+def _watchlist_entry(**overrides):
+    result = {
+        "title": "Laptop Lenovo V15",
+        "price": 2999.99,
+        "url": "https://www.emag.ro/laptop-lenovo-v15/pd/ABC123/",
+        "stock_status": "in_stock",
+        "seller": None,
+        "is_marketplace": None,
+    }
+    result.update(overrides)
+    return result
+
+
+def test_two_runs_same_date_produce_two_observations_with_utc_timestamps(
+    tmp_path, monkeypatch
+):
+    # Regression test for T-05: the old "already recorded today" skip meant a
+    # second run on the same calendar date (e.g. the 2-hour cron cadence, or
+    # a manual re-run) silently dropped its observation. Two full main() runs
+    # in the same run_id-scoped moment must now both persist.
+    watchlist_file = tmp_path / "watchlist.json"
+    watchlist_file.write_text(
+        json.dumps([{"site": "emag", "query": "laptop lenovo v15"}]),
+        encoding="utf-8",
+    )
+    history_file = tmp_path / "price_history.json"
+    alerts_file = tmp_path / "alerts.json"
+
+    monkeypatch.setattr(scrape, "WATCHLIST_FILE", watchlist_file)
+    monkeypatch.setattr(scrape, "HISTORY_FILE", history_file)
+    monkeypatch.setattr(scrape, "ALERTS_FILE", alerts_file)
+    monkeypatch.setattr(
+        scrape, "SCRAPERS", {"emag": lambda query: [_watchlist_entry()]}
+    )
+    monkeypatch.setattr(scrape.time, "sleep", lambda *_: None)
+
+    scrape.main()
+    scrape.main()
+
+    products = json.loads(history_file.read_text(encoding="utf-8"))["products"]
+    history = next(iter(products.values()))["history"]
+
+    assert len(history) == 2
+    dates = {h["date"] for h in history}
+    assert len(dates) == 1  # both runs landed on the same calendar date
+
+    timestamps = [h["observed_at"] for h in history]
+    assert len(set(timestamps)) == 2  # each run recorded its own instant
+    for ts in timestamps:
+        assert ts.endswith("+00:00")  # timezone-aware UTC, not naive local time
+
+
+def test_daily_summary_and_lifetime_extrema_still_work_with_multiple_same_day_entries():
+    # Regression test: consumers that group/derive stats by calendar date
+    # (update_lifetime_stats, prune_history) must keep working even when a
+    # single day now holds more than one observation.
+    entry = {
+        "title": "Product",
+        "site": "emag",
+        "history": [
+            {
+                "date": "2026-01-01",
+                "observed_at": "2026-01-01T08:00:00+00:00",
+                "price": 100.0,
+                "stock_status": "in_stock",
+            }
+        ],
+    }
+    update_lifetime_stats(entry, 100.0, "2026-01-01")
+    record_observation(
+        entry, "2026-01-01", "2026-01-01T10:00:00+00:00", 90.0, "in_stock"
+    )
+    update_lifetime_stats(entry, 90.0, "2026-01-01")
+
+    assert entry["all_time_low"] == 90.0
+    assert entry["all_time_high"] == 100.0
+    assert [h["price"] for h in entry["history"]] == [100.0, 90.0]
+
+    pruned = prune_history(entry["history"], date(2026, 1, 1))
+    assert [h["price"] for h in pruned] == [100.0, 90.0]
