@@ -98,11 +98,13 @@ does). Whichever fields are set must both pass for an alert to fire. An
 recorded for that product, even if `target_price` hasn't been reached yet
 or `min_drop_percent` isn't met.
 
-### 3. Local testing (Windows/WSL)
+### 3. Installing
 
 Dependencies are managed via [uv](https://docs.astral.sh/uv/) and locked in
-`uv.lock`; `pyproject.toml` is the canonical dependency source (`requirements.txt`
-is kept only for the self-hosted `monitor.yml` workflow's `pip install` step).
+`uv.lock`; `pyproject.toml` is the canonical dependency source. Two install
+paths exist depending on what you're doing:
+
+**Dev / CI — via uv:**
 
 ```bash
 uv sync --extra dev          # installs locked deps, incl. Playwright + dev tools
@@ -118,6 +120,20 @@ regenerate it with:
 ```bash
 uv lock
 ```
+
+**Production runner — via pip (what `monitor.yml` does):**
+
+```bash
+pip install -r requirements.txt
+```
+
+`requirements.txt` is generated from `uv.lock` (`uv export --no-dev
+--no-hashes --format requirements-txt`) so every dependency is pinned to the
+exact version uv resolved — not the version ranges pip would otherwise
+resolve independently. It isn't hash-verified: pip's hash-checking mode
+can't install `bf_price_monitor` itself from a local directory, which this
+file also has to do in the same `pip install` step. Regenerate it after any
+`uv.lock` change so the two stay in sync.
 
 For the Ollama fallback to work locally, install [Ollama](https://ollama.com)
 and pull the model referenced by `OLLAMA_MODEL` in `scripts/analyze.py`

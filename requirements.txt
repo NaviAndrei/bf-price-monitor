@@ -1,12 +1,102 @@
-# DEPRECATED: pyproject.toml is now the canonical dependency source
-# (see `uv sync`). This file exists only because .github/workflows/monitor.yml
-# installs via `pip install -r requirements.txt` and is out of scope to change
-# here. The `.` line installs bf_price_monitor itself (non-editable) so its
-# config/domain modules stay importable during that scheduled run.
+# This file is generated from uv.lock via:
+#    uv export --no-dev --no-hashes --format requirements-txt -o requirements.txt
+# then editing the `-e .` line below to `.`, and dropping --hash pins:
+# pip's hash-verification mode refuses any local directory source (editable
+# or not — "Can't verify hashes for these file:// requirements because they
+# point to directories"), and monitor.yml installs bf_price_monitor itself
+# from this same file in one `pip install -r requirements.txt` step, so the
+# two are mutually exclusive here. Every third-party dependency below is
+# still pinned to the exact version locked in uv.lock.
 .
-requests>=2.31
-beautifulsoup4>=4.12
-huggingface_hub>=0.24
-playwright>=1.45
-playwright-stealth>=1.0.6
-pytest>=8
+annotated-types==0.8.0
+    # via pydantic
+anyio==4.15.1
+    # via httpx
+attrs==26.1.0
+    # via
+    #   jsonschema
+    #   referencing
+beautifulsoup4==4.15.0
+    # via bf-price-monitor
+certifi==2026.7.22
+    # via
+    #   httpcore
+    #   httpx
+    #   requests
+charset-normalizer==3.5.1
+    # via requests
+click==8.5.0
+    # via huggingface-hub
+colorama==0.4.6 ; sys_platform == 'win32'
+    # via tqdm
+filelock==4.0.0
+    # via huggingface-hub
+fsspec==2026.7.0
+    # via huggingface-hub
+greenlet==3.5.6
+    # via playwright
+h11==0.16.0
+    # via httpcore
+hf-xet==1.6.0 ; platform_machine == 'AMD64' or platform_machine == 'aarch64' or platform_machine == 'amd64' or platform_machine == 'arm64' or platform_machine == 'x86_64'
+    # via huggingface-hub
+httpcore==1.0.9
+    # via httpx
+httpx==0.28.1
+    # via huggingface-hub
+huggingface-hub==1.31.0
+    # via bf-price-monitor
+idna==3.19
+    # via
+    #   anyio
+    #   httpx
+    #   requests
+jsonschema==4.26.0
+    # via bf-price-monitor
+jsonschema-specifications==2025.9.1
+    # via jsonschema
+packaging==26.3
+    # via huggingface-hub
+playwright==1.63.0
+    # via
+    #   bf-price-monitor
+    #   playwright-stealth
+playwright-stealth==2.0.3
+    # via bf-price-monitor
+pydantic==2.13.5
+    # via bf-price-monitor
+pydantic-core==2.46.5
+    # via pydantic
+pyee==13.0.1
+    # via playwright
+pyyaml==6.0.3
+    # via huggingface-hub
+referencing==0.37.0
+    # via
+    #   jsonschema
+    #   jsonschema-specifications
+requests==2.34.2
+    # via bf-price-monitor
+rpds-py==2026.6.3
+    # via
+    #   jsonschema
+    #   referencing
+soupsieve==2.9.2
+    # via beautifulsoup4
+structlog==26.1.0
+    # via bf-price-monitor
+tqdm==4.70.1
+    # via huggingface-hub
+typing-extensions==4.16.0
+    # via
+    #   anyio
+    #   beautifulsoup4
+    #   huggingface-hub
+    #   pydantic
+    #   pydantic-core
+    #   pyee
+    #   referencing
+    #   typing-inspection
+typing-inspection==0.4.4
+    # via pydantic
+urllib3==2.8.0
+    # via requests
