@@ -1,4 +1,5 @@
 import json
+import uuid
 
 import notify
 import pytest
@@ -121,10 +122,11 @@ def _sequenced_post(items):
 
 @pytest.fixture(autouse=True)
 def _isolate_dlq_and_sleep(monkeypatch, tmp_path):
-    # T-11 tests must never write to the real data/dlq.jsonl, and the
-    # backoff schedule (up to ~30s/attempt) would make the suite crawl if
-    # time.sleep actually ran.
+    # T-11/T-12 tests must never write to the real data/dlq.jsonl or
+    # data/alert_outbox.jsonl, and the backoff schedule (up to ~30s/attempt)
+    # would make the suite crawl if time.sleep actually ran.
     monkeypatch.setattr(notify, "DLQ_FILE", tmp_path / "dlq.jsonl")
+    monkeypatch.setattr(notify, "OUTBOX_FILE", tmp_path / "alert_outbox.jsonl")
     monkeypatch.setattr(notify.time, "sleep", lambda *_: None)
 
 
@@ -133,6 +135,31 @@ def _read_dlq_records():
         return []
     lines = notify.DLQ_FILE.read_text(encoding="utf-8").strip().splitlines()
     return [json.loads(line) for line in lines]
+
+
+def _read_outbox_records():
+    if not notify.OUTBOX_FILE.exists():
+        return []
+    lines = notify.OUTBOX_FILE.read_text(encoding="utf-8").strip().splitlines()
+    return [json.loads(line) for line in lines]
+
+
+@pytest.fixture
+def _full_pipeline_env(monkeypatch, tmp_path):
+    """Isolates the file paths and env vars notify.main() reads, so T-12
+    tests can drive main() end-to-end without touching real data/ files."""
+    monkeypatch.setattr(notify, "FORMATTED_FILE", tmp_path / "formatted_alerts.json")
+    monkeypatch.setattr(notify, "PRICE_HISTORY_FILE", tmp_path / "price_history.json")
+    monkeypatch.setattr(
+        notify, "SCRAPE_HEALTH_ALERTS_FILE", tmp_path / "scrape_health_alerts.json"
+    )
+    monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "testtoken")
+    monkeypatch.setenv("TELEGRAM_CHAT_ID", "12345")
+    notify.PRICE_HISTORY_FILE.write_text(json.dumps({"products": {}}), encoding="utf-8")
+    return tmp_path
+
+
+DEAL_ALERT = {**BASE_ALERT, "query": "laptop lenovo v15"}
 
 
 def test_send_with_retry_429_with_retry_after_header_retries_then_succeeds(
@@ -309,3 +336,272 @@ def test_dlq_record_has_required_fields_and_types(monkeypatch):
     assert record["final_status_code"] == 404
     assert isinstance(record["failure_reason"], str)
     assert record["alert_payload"]["title"] == "T"
+
+
+# --- T-12: transactional alert outbox ---------------------------------------
+
+
+def test_outbox_pending_written_before_send_attempt(
+    monkeypatch, tmp_path, _full_pipeline_env
+):
+    (tmp_path / "formatted_alerts.json").write_text(
+        json.dumps([DEAL_ALERT]), encoding="utf-8"
+    )
+
+    def _post(url, json=None, timeout=None):
+        records = _read_outbox_records()
+        assert records, "no PENDING record on disk when send was attempted"
+        assert records[-1]["status"] == "PENDING"
+        return _FakeResponse(200)
+
+    monkeypatch.setattr(notify.requests, "post", _post)
+
+    notify.main()
+
+    records = _read_outbox_records()
+    assert records[-1]["status"] == "SENT"
+
+
+def test_outbox_sent_written_after_successful_send(
+    monkeypatch, tmp_path, _full_pipeline_env
+):
+    (tmp_path / "formatted_alerts.json").write_text(
+        json.dumps([DEAL_ALERT]), encoding="utf-8"
+    )
+    post = _sequenced_post([_FakeResponse(200)])
+    monkeypatch.setattr(notify.requests, "post", post)
+
+    notify.main()
+
+    records = _read_outbox_records()
+    assert [r["status"] for r in records] == ["PENDING", "SENT"]
+    assert records[0]["event_id"] == records[1]["event_id"]
+    assert records[0]["source"] == "deal"
+
+
+def test_outbox_dead_letter_written_after_dlq(
+    monkeypatch, tmp_path, _full_pipeline_env
+):
+    (tmp_path / "formatted_alerts.json").write_text(
+        json.dumps([DEAL_ALERT]), encoding="utf-8"
+    )
+    post = _sequenced_post([_FakeResponse(403, text="Forbidden")])
+    monkeypatch.setattr(notify.requests, "post", post)
+
+    notify.main()
+
+    records = _read_outbox_records()
+    assert [r["status"] for r in records] == ["PENDING", "DEAD_LETTER"]
+    assert records[-1]["error_log"] is not None
+    assert len(_read_dlq_records()) == 1
+
+
+def test_replay_fires_for_pending_older_than_grace_window(monkeypatch, tmp_path):
+    event_id = "evt-old"
+    old_created = (
+        notify.datetime.now(notify.UTC) - notify.timedelta(minutes=10)
+    ).isoformat()
+    notify._write_outbox_record(
+        event_id,
+        "health",
+        {"text": "old alert"},
+        {"text": "old alert"},
+        "PENDING",
+        old_created,
+        0,
+        "scrape_health",
+    )
+    post = _sequenced_post([_FakeResponse(200)])
+    monkeypatch.setattr(notify.requests, "post", post)
+
+    effective = notify._replay_pending_outbox(
+        "https://api.telegram.org/botX/sendMessage", "12345"
+    )
+
+    assert effective[event_id]["status"] == "SENT"
+    assert post.call_count() == 1
+    records = _read_outbox_records()
+    assert records[-1]["status"] == "SENT"
+    assert records[-1]["event_id"] == event_id
+
+
+def test_replay_does_not_fire_for_pending_within_grace_window(monkeypatch, tmp_path):
+    event_id = "evt-fresh"
+    recent_created = (
+        notify.datetime.now(notify.UTC) - notify.timedelta(minutes=1)
+    ).isoformat()
+    notify._write_outbox_record(
+        event_id,
+        "health",
+        {"text": "fresh"},
+        {"text": "fresh"},
+        "PENDING",
+        recent_created,
+        0,
+        "scrape_health",
+    )
+    post = _sequenced_post([_FakeResponse(200)])
+    monkeypatch.setattr(notify.requests, "post", post)
+
+    effective = notify._replay_pending_outbox(
+        "https://api.telegram.org/botX/sendMessage", "12345"
+    )
+
+    assert effective[event_id]["status"] == "PENDING"
+    assert post.call_count() == 0
+    records = _read_outbox_records()
+    assert len(records) == 1
+
+
+def test_duplicate_skip_for_already_sent_health_alert(
+    monkeypatch, tmp_path, _full_pipeline_env
+):
+    message = "⚠️ test health alert"
+    (tmp_path / "scrape_health_alerts.json").write_text(
+        json.dumps([message]), encoding="utf-8"
+    )
+    (tmp_path / "formatted_alerts.json").write_text(json.dumps([]), encoding="utf-8")
+
+    event_id = notify._health_event_id(message)
+    now = notify.datetime.now(notify.UTC).isoformat()
+    notify._write_outbox_record(
+        event_id,
+        "health",
+        {"text": message},
+        {"text": message},
+        "SENT",
+        now,
+        1,
+        "scrape_health",
+    )
+
+    post = _sequenced_post([])  # any call raises IndexError -> test failure
+    monkeypatch.setattr(notify.requests, "post", post)
+
+    notify.main()
+
+    assert post.call_count() == 0
+    records = _read_outbox_records()
+    assert len(records) == 1  # untouched: no new PENDING/SENT record appended
+
+
+def test_event_id_stable_across_pending_and_terminal_records(
+    monkeypatch, tmp_path, _full_pipeline_env
+):
+    (tmp_path / "formatted_alerts.json").write_text(
+        json.dumps([DEAL_ALERT]), encoding="utf-8"
+    )
+    post = _sequenced_post([_FakeResponse(200)])
+    monkeypatch.setattr(notify.requests, "post", post)
+
+    notify.main()
+
+    expected_event_id = str(
+        uuid.uuid5(uuid.NAMESPACE_URL, f"alert-decision:{DEAL_ALERT['url']}")
+    )
+    records = _read_outbox_records()
+    assert {r["event_id"] for r in records} == {expected_event_id}
+
+    # A second scheduled run for the same alert must derive the identical
+    # event_id and then skip it as an exact-match duplicate (already SENT).
+    post2 = _sequenced_post([])
+    monkeypatch.setattr(notify.requests, "post", post2)
+    notify.main()
+
+    assert post2.call_count() == 0
+    records_after = _read_outbox_records()
+    assert all(r["event_id"] == expected_event_id for r in records_after)
+    assert len(records_after) == 2  # no new record appended by the second run
+
+
+def test_outbox_missing_or_empty_file_is_noop(monkeypatch, tmp_path):
+    assert not notify.OUTBOX_FILE.exists()
+    effective = notify._replay_pending_outbox(
+        "https://api.telegram.org/botX/sendMessage", "12345"
+    )
+    assert effective == {}
+
+    notify.OUTBOX_FILE.write_text("", encoding="utf-8")
+    effective_empty = notify._replay_pending_outbox(
+        "https://api.telegram.org/botX/sendMessage", "12345"
+    )
+    assert effective_empty == {}
+
+
+def test_replayed_event_not_resent_in_normal_loop_same_run(
+    monkeypatch, tmp_path, _full_pipeline_env
+):
+    (tmp_path / "formatted_alerts.json").write_text(
+        json.dumps([DEAL_ALERT]), encoding="utf-8"
+    )
+
+    event_id = str(
+        uuid.uuid5(uuid.NAMESPACE_URL, f"alert-decision:{DEAL_ALERT['url']}")
+    )
+    old_created = (
+        notify.datetime.now(notify.UTC) - notify.timedelta(minutes=10)
+    ).isoformat()
+    send_payload = {
+        "text": notify.format_telegram_message(DEAL_ALERT),
+        "parse_mode": "HTML",
+        "reply_markup": notify.build_inline_keyboard(DEAL_ALERT),
+    }
+    alert_payload = {
+        "id": event_id,
+        "evidence_urls": [DEAL_ALERT["url"]],
+    }
+    notify._write_outbox_record(
+        event_id,
+        "deal",
+        alert_payload,
+        send_payload,
+        "PENDING",
+        old_created,
+        0,
+        DEAL_ALERT["site"],
+    )
+
+    # Only one response queued: if the normal per-alert loop tried to resend
+    # the just-replayed event, the second post() call runs out of items and
+    # raises IndexError, failing the test.
+    post = _sequenced_post([_FakeResponse(200)])
+    monkeypatch.setattr(notify.requests, "post", post)
+
+    notify.main()
+
+    assert post.call_count() == 1
+    records = [r for r in _read_outbox_records() if r["event_id"] == event_id]
+    assert [r["status"] for r in records] == ["PENDING", "SENT"]
+
+
+def test_replay_uses_site_field_for_store_label(monkeypatch, tmp_path):
+    # alert_payload deliberately carries no "site" key (an AlertDecision
+    # dump never has one) — the store label used for the replay send, and
+    # therefore for the DLQ record if it fails, must come from the
+    # top-level "site" field written at PENDING time, not a fallback.
+    event_id = "evt-store-label"
+    old_created = (
+        notify.datetime.now(notify.UTC) - notify.timedelta(minutes=10)
+    ).isoformat()
+    notify._write_outbox_record(
+        event_id,
+        "deal",
+        {"id": event_id, "evidence_urls": ["https://www.emag.ro/some-product/"]},
+        {"text": "deal alert"},
+        "PENDING",
+        old_created,
+        0,
+        "emag",
+    )
+    post = _sequenced_post([_FakeResponse(403, text="Forbidden")])
+    monkeypatch.setattr(notify.requests, "post", post)
+
+    notify._replay_pending_outbox("https://api.telegram.org/botX/sendMessage", "12345")
+
+    dlq_records = _read_dlq_records()
+    assert len(dlq_records) == 1
+    assert dlq_records[0]["store"] == "emag"
+
+    outbox_records = _read_outbox_records()
+    assert outbox_records[-1]["status"] == "DEAD_LETTER"
+    assert outbox_records[-1]["site"] == "emag"

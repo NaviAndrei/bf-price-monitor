@@ -15,3 +15,7 @@ Tests: 103 passed (96 existing unchanged + 7 new), ruff check and ruff format cl
 ## T-11 (#20): bounded notifier retries + dead-letter queue
 Replaced the unbounded 429-only retry loop in notify.py with `_send_with_retry`: max 4 attempts, capped exponential backoff + jitter, 429/5xx/network errors retried, permanent 4xx dead-lettered immediately to data/dlq.jsonl. sendPhoto stays a single best-effort attempt that falls back to the retried sendMessage path.
 Tests: 111 passed (103 existing unchanged + 8 new), ruff check/format and mypy --strict on bf_price_monitor/ clean. DLQ file confirmed not written by the test suite.
+
+## T-12 (#18): transactional alert outbox with replay-on-restart
+Added data/alert_outbox.jsonl: a durable PENDING record is written before every send attempt (deal and health alerts), with a terminal SENT/DEAD_LETTER record appended after resolution. Append-only, latest-record-wins status; deterministic event IDs (uuid5 of alert URL for deals, SHA-256 content hash for health); `_replay_pending_outbox()` resends PENDING records older than a 5-minute grace window at startup; already-SENT events are skipped on replay and in the normal loop.
+Tests: 121 passed (111 existing unchanged + 10 new), ruff check/format and mypy --strict on bf_price_monitor/ clean, no data/ writes during tests. Commit: 448dd06.
