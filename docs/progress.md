@@ -19,3 +19,7 @@ Tests: 111 passed (103 existing unchanged + 8 new), ruff check/format and mypy -
 ## T-12 (#18): transactional alert outbox with replay-on-restart
 Added data/alert_outbox.jsonl: a durable PENDING record is written before every send attempt (deal and health alerts), with a terminal SENT/DEAD_LETTER record appended after resolution. Append-only, latest-record-wins status; deterministic event IDs (uuid5 of alert URL for deals, SHA-256 content hash for health); `_replay_pending_outbox()` resends PENDING records older than a 5-minute grace window at startup; already-SENT events are skipped on replay and in the normal loop.
 Tests: 121 passed (111 existing unchanged + 10 new), ruff check/format and mypy --strict on bf_price_monitor/ clean, no data/ writes during tests. Commit: 448dd06.
+
+## T-13 (#22): alert dedup with per-watch cooldown windows
+notify.py now suppresses a deal alert whose `dedup_key` (sha256 of url+price+site, "same offer") matches a SENT outbox record within the watch's cooldown window, logging `COOLDOWN SKIP`; this runs after T-12's exact-event dedup and is time-bounded/re-armable, unlike T-12's permanent already-SENT check. `cooldown_hours` is read per-site from data/watchlist.json (min across matching entries, default 24h); watchlist_schema.json's legacy item definition now allows the field. Old outbox records with no `dedup_key` can never suppress.
+Tests: 128 passed (121 existing unchanged + 7 new), ruff check/format and mypy --strict on bf_price_monitor/ clean, no data/ writes during tests.

@@ -19,8 +19,13 @@ from bf_price_monitor.domain import AlertDecision
 FORMATTED_FILE = Path("data/formatted_alerts.json")
 PRICE_HISTORY_FILE = Path("data/price_history.json")
 SCRAPE_HEALTH_ALERTS_FILE = Path("data/scrape_health_alerts.json")
+WATCHLIST_FILE = Path("data/watchlist.json")
 DLQ_FILE = Path("data/dlq.jsonl")
 OUTBOX_FILE = Path("data/alert_outbox.jsonl")
+
+# T-13: cooldown window applied when a watch entry has no cooldown_hours of
+# its own.
+DEFAULT_COOLDOWN_HOURS = 24
 
 # T-12: a PENDING outbox record older than this is assumed to belong to a
 # writer process that has already died (crash, kill, restart) rather than
@@ -271,13 +276,17 @@ def _write_outbox_record(
     attempt_count: int,
     site: str,
     error_log: str | None = None,
+    dedup_key: str | None = None,
 ) -> None:
     """Appends one status record for event_id. The outbox is append-only:
     the effective status of an event is whichever record for its event_id
     was written last (see _load_outbox_effective). site is the store label
     (e.g. "emag", "scrape_health") used for the DLQ/log label if a replay
     of this event later fails — stored top-level since alert_payload for
-    deal alerts is an AlertDecision dump with no site field of its own."""
+    deal alerts is an AlertDecision dump with no site field of its own.
+    dedup_key (T-13) is the "same offer" identity used for cooldown-window
+    suppression; None for health alerts and for any record written before
+    T-13, which can never match a later dedup_key lookup."""
     _append_outbox_record(
         {
             "event_id": event_id,
@@ -293,6 +302,7 @@ def _write_outbox_record(
             "attempt_count": attempt_count,
             "site": site,
             "error_log": error_log,
+            "dedup_key": dedup_key,
         }
     )
 
@@ -352,6 +362,7 @@ def _replay_pending_outbox(send_message_url: str, chat_id: str) -> dict[str, dic
             record.get("attempt_count", 0) + 1,
             store,
             None if ok else "replay send failed after retries",
+            dedup_key=record.get("dedup_key"),
         )
         effective[event_id] = {**record, "status": status}
         print(f"REPLAYED: event {event_id} -> {status}", file=sys.stderr)
@@ -413,6 +424,59 @@ def _send_health_alerts(
         time.sleep(1.1)  # Telegram allows ~1 message/second per chat
 
 
+def _deal_dedup_key(alert: dict) -> str:
+    # T-13: "same offer" identity (url+price+site), distinct from T-12's
+    # event_id (uuid5 of url alone, "same decision instance"). Used only for
+    # cooldown-window suppression, which is time-bounded and re-armable once
+    # the window expires — unlike T-12's permanent already-SENT dedup.
+    raw = f"{alert['url']}:{alert['new_price']}:{alert['site']}"
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()
+
+
+def _load_cooldown_by_site() -> dict[str, float]:
+    """Maps site -> the most conservative (minimum) cooldown_hours among
+    that site's watchlist entries. Reads the raw watchlist dict directly
+    rather than a validated Watch model, since the modern Watch-model
+    schema isn't the format in production use. Missing file or missing
+    cooldown_hours on an entry simply leaves that site unconstrained here;
+    the caller falls back to DEFAULT_COOLDOWN_HOURS."""
+    if not WATCHLIST_FILE.exists():
+        return {}
+    watchlist = json.load(open(WATCHLIST_FILE, encoding="utf-8"))
+    if isinstance(watchlist, dict):
+        watchlist = watchlist.get("watches", [])
+    by_site: dict[str, float] = {}
+    for entry in watchlist:
+        cooldown_hours = entry.get("cooldown_hours")
+        site = entry.get("site")
+        if cooldown_hours is None or site is None:
+            continue
+        if site not in by_site or cooldown_hours < by_site[site]:
+            by_site[site] = cooldown_hours
+    return by_site
+
+
+def _find_cooldown_block(
+    dedup_key: str,
+    cooldown_hours: float,
+    outbox_effective: dict[str, dict],
+    now: datetime,
+) -> dict | None:
+    """Returns the blocking SENT record if dedup_key was sent within
+    cooldown_hours of now, else None. Records without a dedup_key (None)
+    never match, since dedup_key is always a non-empty hash — this is how
+    pre-T-13 outbox records are guaranteed to never suppress anything."""
+    for record in outbox_effective.values():
+        if record.get("dedup_key") != dedup_key:
+            continue
+        if record["status"] != "SENT":
+            continue
+        sent_at = datetime.fromisoformat(record["last_attempt_at_utc"])
+        if now - sent_at < timedelta(hours=cooldown_hours):
+            return record
+    return None
+
+
 def main():
     bot_token = os.environ["TELEGRAM_BOT_TOKEN"]
     chat_id = os.environ["TELEGRAM_CHAT_ID"]
@@ -433,6 +497,7 @@ def main():
 
     price_history = json.load(open(PRICE_HISTORY_FILE, encoding="utf-8"))
     products = price_history.get("products", {})
+    cooldown_by_site = _load_cooldown_by_site()
 
     for alert in alerts:
         # Structure-only validation (T-01): every alert reaching this point
@@ -473,6 +538,22 @@ def main():
         effective_record = outbox_effective.get(event_id)
         if effective_record and effective_record["status"] == "SENT":
             print(f"DUPLICATE SKIP: event {event_id}", file=sys.stderr)
+            continue
+
+        # T-13: same-offer cooldown, checked after T-12's exact-event dedup
+        # above and before the PENDING write below.
+        dedup_key = _deal_dedup_key(alert)
+        cooldown_hours = cooldown_by_site.get(alert["site"], DEFAULT_COOLDOWN_HOURS)
+        blocking_record = _find_cooldown_block(
+            dedup_key, cooldown_hours, outbox_effective, datetime.now(UTC)
+        )
+        if blocking_record:
+            print(
+                f"COOLDOWN SKIP: dedup_key={dedup_key} "
+                f"last_sent={blocking_record['last_attempt_at_utc']} "
+                f"cooldown={cooldown_hours}h",
+                file=sys.stderr,
+            )
             continue
 
         message = format_telegram_message(alert)
@@ -528,6 +609,7 @@ def main():
                 created_at,
                 0,
                 alert["site"],
+                dedup_key=dedup_key,
             )
             ok = _send_with_retry(
                 send_message_url,
@@ -547,6 +629,7 @@ def main():
                 1,
                 alert["site"],
                 None if ok else "delivery failed after retries",
+                dedup_key=dedup_key,
             )
 
         time.sleep(1.1)  # Telegram allows ~1 message/second per chat

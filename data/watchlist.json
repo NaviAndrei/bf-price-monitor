@@ -1,6 +1,6 @@
 [
-  { "site": "emag", "query": "laptop lenovo v15", "target_price": 2500.0 },
-  { "site": "pcgarage", "query": "laptop asus vivobook", "min_drop_percent": 5.0 },
-  { "site": "flanco", "query": "laptop asus vivobook" },
-  { "site": "emag", "query": "iphone 15" }
+  { "site": "emag", "query": "laptop lenovo v15", "target_price": 2500.0, "cooldown_hours": 24 },
+  { "site": "pcgarage", "query": "laptop asus vivobook", "min_drop_percent": 5.0, "cooldown_hours": 24 },
+  { "site": "flanco", "query": "laptop asus vivobook", "cooldown_hours": 24 },
+  { "site": "emag", "query": "iphone 15", "cooldown_hours": 24 }
 ]

@@ -20,7 +20,8 @@
         "query": { "type": "string", "minLength": 1 },
         "target_price": { "type": "number", "exclusiveMinimum": 0 },
         "min_drop_percent": { "type": "number", "exclusiveMinimum": 0 },
-        "atl_policy": { "$ref": "#/definitions/atlPolicy" }
+        "atl_policy": { "$ref": "#/definitions/atlPolicy" },
+        "cooldown_hours": { "type": "number", "exclusiveMinimum": 0 }
       },
       "additionalProperties": false
     },

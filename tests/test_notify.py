@@ -153,6 +153,7 @@ def _full_pipeline_env(monkeypatch, tmp_path):
     monkeypatch.setattr(
         notify, "SCRAPE_HEALTH_ALERTS_FILE", tmp_path / "scrape_health_alerts.json"
     )
+    monkeypatch.setattr(notify, "WATCHLIST_FILE", tmp_path / "watchlist.json")
     monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "testtoken")
     monkeypatch.setenv("TELEGRAM_CHAT_ID", "12345")
     notify.PRICE_HISTORY_FILE.write_text(json.dumps({"products": {}}), encoding="utf-8")
@@ -605,3 +606,232 @@ def test_replay_uses_site_field_for_store_label(monkeypatch, tmp_path):
     outbox_records = _read_outbox_records()
     assert outbox_records[-1]["status"] == "DEAD_LETTER"
     assert outbox_records[-1]["site"] == "emag"
+
+
+# --- T-13: alert dedup + per-watch cooldown windows -------------------------
+
+
+def _seed_outbox_record(**overrides):
+    """Writes a raw outbox record directly via _append_outbox_record,
+    bypassing _write_outbox_record's auto-stamped last_attempt_at_utc so
+    tests can seed an exact historical SENT timestamp."""
+    now = notify.datetime.now(notify.UTC).isoformat()
+    record = {
+        "event_id": "evt-seed",
+        "source": "deal",
+        "alert_payload": {},
+        "send_payload": {"text": "seed"},
+        "channel": "telegram",
+        "status": "SENT",
+        "created_at_utc": now,
+        "last_attempt_at_utc": now,
+        "attempt_count": 1,
+        "site": "emag",
+        "error_log": None,
+        "dedup_key": None,
+    }
+    record.update(overrides)
+    notify._append_outbox_record(record)
+    return record
+
+
+def test_cooldown_skip_suppresses_same_deal_within_window(
+    monkeypatch, tmp_path, _full_pipeline_env, capsys
+):
+    (tmp_path / "formatted_alerts.json").write_text(
+        json.dumps([DEAL_ALERT]), encoding="utf-8"
+    )
+    dedup_key = notify._deal_dedup_key(DEAL_ALERT)
+    last_sent = (
+        notify.datetime.now(notify.UTC) - notify.timedelta(hours=1)
+    ).isoformat()
+    _seed_outbox_record(
+        event_id="evt-prior-deal",
+        dedup_key=dedup_key,
+        last_attempt_at_utc=last_sent,
+        site=DEAL_ALERT["site"],
+    )
+
+    post = _sequenced_post([])  # any call -> IndexError -> test failure
+    monkeypatch.setattr(notify.requests, "post", post)
+
+    notify.main()
+
+    assert post.call_count() == 0
+    records = _read_outbox_records()
+    assert len(records) == 1  # only the seeded record; nothing new appended
+    assert "COOLDOWN SKIP" in capsys.readouterr().err
+
+
+def test_cooldown_expired_allows_resend(monkeypatch, tmp_path, _full_pipeline_env):
+    (tmp_path / "formatted_alerts.json").write_text(
+        json.dumps([DEAL_ALERT]), encoding="utf-8"
+    )
+    dedup_key = notify._deal_dedup_key(DEAL_ALERT)
+    last_sent = (
+        notify.datetime.now(notify.UTC) - notify.timedelta(hours=25)
+    ).isoformat()
+    _seed_outbox_record(
+        event_id="evt-prior-deal",
+        dedup_key=dedup_key,
+        last_attempt_at_utc=last_sent,
+        site=DEAL_ALERT["site"],
+    )
+
+    post = _sequenced_post([_FakeResponse(200)])
+    monkeypatch.setattr(notify.requests, "post", post)
+
+    notify.main()
+
+    assert post.call_count() == 1
+    records = _read_outbox_records()
+    assert records[-1]["status"] == "SENT"
+    assert records[-1]["dedup_key"] == dedup_key
+
+
+def test_different_deal_not_suppressed_by_unrelated_dedup_key(
+    monkeypatch, tmp_path, _full_pipeline_env
+):
+    (tmp_path / "formatted_alerts.json").write_text(
+        json.dumps([DEAL_ALERT]), encoding="utf-8"
+    )
+    other_alert = {**DEAL_ALERT, "url": "https://www.emag.ro/other-product/pd/XYZ/"}
+    other_dedup_key = notify._deal_dedup_key(other_alert)
+    last_sent = (
+        notify.datetime.now(notify.UTC) - notify.timedelta(hours=1)
+    ).isoformat()
+    _seed_outbox_record(
+        event_id="evt-other-deal",
+        dedup_key=other_dedup_key,
+        last_attempt_at_utc=last_sent,
+        site=DEAL_ALERT["site"],
+    )
+
+    post = _sequenced_post([_FakeResponse(200)])
+    monkeypatch.setattr(notify.requests, "post", post)
+
+    notify.main()
+
+    assert post.call_count() == 1
+    records = _read_outbox_records()
+    assert records[-1]["status"] == "SENT"
+
+
+def test_custom_cooldown_hours_boundary(monkeypatch, tmp_path, _full_pipeline_env):
+    (tmp_path / "formatted_alerts.json").write_text(
+        json.dumps([DEAL_ALERT]), encoding="utf-8"
+    )
+    notify.WATCHLIST_FILE.write_text(
+        json.dumps(
+            [{"site": "emag", "query": "laptop lenovo v15", "cooldown_hours": 2}]
+        ),
+        encoding="utf-8",
+    )
+    dedup_key = notify._deal_dedup_key(DEAL_ALERT)
+
+    last_sent_within = (
+        notify.datetime.now(notify.UTC) - notify.timedelta(hours=1, minutes=55)
+    ).isoformat()
+    _seed_outbox_record(
+        event_id="evt-within",
+        dedup_key=dedup_key,
+        last_attempt_at_utc=last_sent_within,
+        site=DEAL_ALERT["site"],
+    )
+    post_within = _sequenced_post([])
+    monkeypatch.setattr(notify.requests, "post", post_within)
+    notify.main()
+    assert post_within.call_count() == 0
+
+    notify.OUTBOX_FILE.write_text("", encoding="utf-8")
+    last_sent_expired = (
+        notify.datetime.now(notify.UTC) - notify.timedelta(hours=2, minutes=5)
+    ).isoformat()
+    _seed_outbox_record(
+        event_id="evt-expired",
+        dedup_key=dedup_key,
+        last_attempt_at_utc=last_sent_expired,
+        site=DEAL_ALERT["site"],
+    )
+    post_expired = _sequenced_post([_FakeResponse(200)])
+    monkeypatch.setattr(notify.requests, "post", post_expired)
+    notify.main()
+    assert post_expired.call_count() == 1
+
+
+def test_no_prior_outbox_state_always_sends(monkeypatch, tmp_path, _full_pipeline_env):
+    (tmp_path / "formatted_alerts.json").write_text(
+        json.dumps([DEAL_ALERT]), encoding="utf-8"
+    )
+
+    post = _sequenced_post([_FakeResponse(200)])
+    monkeypatch.setattr(notify.requests, "post", post)
+
+    notify.main()
+
+    assert post.call_count() == 1
+    records = _read_outbox_records()
+    assert records[-1]["status"] == "SENT"
+    assert records[-1]["dedup_key"] == notify._deal_dedup_key(DEAL_ALERT)
+
+
+def test_outbox_record_missing_dedup_key_never_suppresses(
+    monkeypatch, tmp_path, _full_pipeline_env
+):
+    (tmp_path / "formatted_alerts.json").write_text(
+        json.dumps([DEAL_ALERT]), encoding="utf-8"
+    )
+    last_sent = (
+        notify.datetime.now(notify.UTC) - notify.timedelta(hours=1)
+    ).isoformat()
+    _seed_outbox_record(
+        event_id="evt-legacy",
+        last_attempt_at_utc=last_sent,
+        site=DEAL_ALERT["site"],
+    )
+    # Simulate a genuinely pre-T-13 record where the field never existed,
+    # rather than merely being present with value None.
+    raw = json.loads(notify.OUTBOX_FILE.read_text(encoding="utf-8").strip())
+    del raw["dedup_key"]
+    notify.OUTBOX_FILE.write_text(json.dumps(raw) + "\n", encoding="utf-8")
+
+    post = _sequenced_post([_FakeResponse(200)])
+    monkeypatch.setattr(notify.requests, "post", post)
+
+    notify.main()
+
+    assert post.call_count() == 1
+    records = _read_outbox_records()
+    assert records[-1]["status"] == "SENT"
+
+
+def test_cooldown_uses_last_attempt_at_utc_not_created_at_utc(
+    monkeypatch, tmp_path, _full_pipeline_env
+):
+    (tmp_path / "formatted_alerts.json").write_text(
+        json.dumps([DEAL_ALERT]), encoding="utf-8"
+    )
+    dedup_key = notify._deal_dedup_key(DEAL_ALERT)
+    # created_at_utc is far outside any cooldown window, but
+    # last_attempt_at_utc (the actual send time) is recent — suppression
+    # must key off last_attempt_at_utc, or this alert would wrongly send.
+    old_created = (
+        notify.datetime.now(notify.UTC) - notify.timedelta(days=10)
+    ).isoformat()
+    recent_sent = (
+        notify.datetime.now(notify.UTC) - notify.timedelta(hours=1)
+    ).isoformat()
+    _seed_outbox_record(
+        event_id="evt-retry-after-days",
+        dedup_key=dedup_key,
+        created_at_utc=old_created,
+        last_attempt_at_utc=recent_sent,
+        site=DEAL_ALERT["site"],
+    )
+
+    post = _sequenced_post([])  # any call -> IndexError -> test failure
+    monkeypatch.setattr(notify.requests, "post", post)
+
+    notify.main()
+
+    assert post.call_count() == 0
