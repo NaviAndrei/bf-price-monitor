@@ -1,5 +1,5 @@
 import json
-from datetime import date, timedelta
+from datetime import UTC, date, datetime, timedelta
 
 import pytest
 import scrape
@@ -11,6 +11,21 @@ from scrape import (
     title_matches_query,
     update_lifetime_stats,
 )
+
+
+@pytest.fixture(autouse=True)
+def _isolate_health_and_failure_logs(monkeypatch, tmp_path):
+    # T-09: main() now appends to scrape_health.jsonl and (re)writes
+    # scrape_health_alerts.json on every run, on top of T-07's
+    # extraction_failures.jsonl — all three redirected here so no test in
+    # this file can leak a write to the project's real data/ files.
+    monkeypatch.setattr(scrape, "SCRAPE_HEALTH_FILE", tmp_path / "scrape_health.jsonl")
+    monkeypatch.setattr(
+        scrape, "SCRAPE_HEALTH_ALERTS_FILE", tmp_path / "scrape_health_alerts.json"
+    )
+    monkeypatch.setattr(
+        scrape, "EXTRACTION_FAILURES_FILE", tmp_path / "extraction_failures.jsonl"
+    )
 
 
 def test_price_decrease_no_thresholds_alerts():
@@ -636,3 +651,204 @@ def test_load_history_merges_pre_existing_tracking_param_duplicates(
     assert entry["all_time_high"] == 3099.0
     assert entry["first_seen"] == "2026-01-01"
     assert [h["price"] for h in entry["history"]] == [3099.0, 2999.0]
+
+
+# --- T-09: per-store health metrics & zero-match regression alerting -------
+
+
+def _configure_run(tmp_path, monkeypatch, watchlist, scrapers):
+    watchlist_file = tmp_path / "watchlist.json"
+    watchlist_file.write_text(json.dumps(watchlist), encoding="utf-8")
+    monkeypatch.setattr(scrape, "WATCHLIST_FILE", watchlist_file)
+    monkeypatch.setattr(scrape, "HISTORY_FILE", tmp_path / "price_history.json")
+    monkeypatch.setattr(scrape, "ALERTS_FILE", tmp_path / "alerts.json")
+    monkeypatch.setattr(scrape, "SCRAPERS", scrapers)
+    monkeypatch.setattr(scrape.time, "sleep", lambda *_: None)
+
+
+def _health_records():
+    lines = scrape.SCRAPE_HEALTH_FILE.read_text(encoding="utf-8").strip().splitlines()
+    return [json.loads(line) for line in lines]
+
+
+def _health_alerts():
+    return json.loads(scrape.SCRAPE_HEALTH_ALERTS_FILE.read_text(encoding="utf-8"))
+
+
+def test_health_record_written_per_store_per_run_with_correct_fields(
+    tmp_path, monkeypatch
+):
+    _configure_run(
+        tmp_path,
+        monkeypatch,
+        [{"site": "emag", "query": "q"}, {"site": "pcgarage", "query": "q"}],
+        {
+            "emag": lambda query: [_watchlist_entry()],
+            "pcgarage": lambda query: [],
+        },
+    )
+
+    scrape.main()
+
+    records = {r["store"]: r for r in _health_records()}
+    assert set(records) == {"emag", "pcgarage"}
+
+    emag_record = records["emag"]
+    assert emag_record["watches_requested"] == 1
+    assert emag_record["products_parsed"] == 1
+    assert emag_record["matched_count"] == 0  # no prior price, should_alert() is False
+    assert isinstance(emag_record["parse_failures"], int)
+    assert isinstance(emag_record["challenge_detected"], bool)
+    assert isinstance(emag_record["latency_seconds"], float)
+    assert isinstance(emag_record["run_id"], str) and emag_record["run_id"]
+    assert emag_record["run_started_utc"].endswith("+00:00")
+    assert emag_record["last_known_good_utc"] is not None
+
+    pcgarage_record = records["pcgarage"]
+    assert pcgarage_record["products_parsed"] == 0
+    assert pcgarage_record["last_known_good_utc"] is None  # never succeeded yet
+
+
+def test_zero_match_alert_does_not_fire_on_single_zero_run(tmp_path, monkeypatch):
+    _configure_run(
+        tmp_path,
+        monkeypatch,
+        [{"site": "emag", "query": "q"}, {"site": "pcgarage", "query": "q"}],
+        {
+            "emag": lambda query: [],
+            "pcgarage": lambda query: [
+                _watchlist_entry(url="https://pcgarage.example/1")
+            ],
+        },
+    )
+
+    scrape.main()
+
+    assert _health_alerts() == []
+
+
+def test_zero_match_alert_fires_after_two_consecutive_zero_runs_with_healthy_store(
+    tmp_path, monkeypatch
+):
+    _configure_run(
+        tmp_path,
+        monkeypatch,
+        [{"site": "emag", "query": "q"}, {"site": "pcgarage", "query": "q"}],
+        {
+            "emag": lambda query: [],
+            "pcgarage": lambda query: [
+                _watchlist_entry(url="https://pcgarage.example/1")
+            ],
+        },
+    )
+
+    scrape.main()
+    assert _health_alerts() == []  # first zero run: not enough evidence yet
+
+    scrape.main()
+    alerts = _health_alerts()
+    assert any(
+        "SCRAPER BREAKDOWN" in a and "eMAG" in a and "0 items" in a for a in alerts
+    )
+
+
+def test_zero_match_alert_does_not_fire_when_all_stores_return_zero(
+    tmp_path, monkeypatch
+):
+    _configure_run(
+        tmp_path,
+        monkeypatch,
+        [{"site": "emag", "query": "q"}, {"site": "pcgarage", "query": "q"}],
+        {"emag": lambda query: [], "pcgarage": lambda query: []},
+    )
+
+    scrape.main()
+    scrape.main()
+
+    assert _health_alerts() == []
+
+
+def test_quarantine_skips_drifted_store_on_next_run(tmp_path, monkeypatch):
+    calls = {"emag": 0}
+
+    def emag_scraper(query):
+        calls["emag"] += 1
+        return []
+
+    _configure_run(
+        tmp_path,
+        monkeypatch,
+        [{"site": "emag", "query": "q"}, {"site": "pcgarage", "query": "q"}],
+        {
+            "emag": emag_scraper,
+            "pcgarage": lambda query: [
+                _watchlist_entry(url="https://pcgarage.example/1")
+            ],
+        },
+    )
+
+    scrape.main()  # zero run #1 for emag
+    scrape.main()  # zero run #2 for emag -> quarantined, alert fires
+    assert calls["emag"] == 2
+
+    scrape.main()  # emag should now be skipped entirely
+    assert calls["emag"] == 2
+
+    records = [r for r in _health_records() if r["store"] == "emag"]
+    assert len(records) == 2  # no new health record written for a skipped store
+
+
+def test_dead_man_check_fires_when_last_known_good_over_24h(tmp_path, monkeypatch):
+    _configure_run(
+        tmp_path,
+        monkeypatch,
+        [{"site": "emag", "query": "q"}],
+        {"emag": lambda query: []},
+    )
+
+    stale_timestamp = (datetime.now(UTC) - timedelta(hours=30)).isoformat()
+    scrape.SCRAPE_HEALTH_FILE.parent.mkdir(parents=True, exist_ok=True)
+    with open(scrape.SCRAPE_HEALTH_FILE, "a", encoding="utf-8") as f:
+        f.write(
+            json.dumps(
+                {
+                    "store": "emag",
+                    "run_id": "prev-run",
+                    "run_started_utc": stale_timestamp,
+                    "watches_requested": 1,
+                    "products_parsed": 1,
+                    "matched_count": 0,
+                    "parse_failures": 0,
+                    "challenge_detected": False,
+                    "latency_seconds": 1.0,
+                    "last_known_good_utc": stale_timestamp,
+                }
+            )
+            + "\n"
+        )
+
+    scrape.main()
+
+    alerts = _health_alerts()
+    assert any("DEAD-MAN CHECK" in a and "eMAG" in a for a in alerts)
+    assert not any("SCRAPER BREAKDOWN" in a for a in alerts)  # single store, no drift
+
+
+def test_challenge_counter_propagates_from_fetch_to_health_record(
+    tmp_path, monkeypatch
+):
+    def emag_scraper(query):
+        scrape._record_challenge("emag")
+        return []
+
+    _configure_run(
+        tmp_path,
+        monkeypatch,
+        [{"site": "emag", "query": "q"}],
+        {"emag": emag_scraper},
+    )
+
+    scrape.main()
+
+    record = _health_records()[0]
+    assert record["challenge_detected"] is True

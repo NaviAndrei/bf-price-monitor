@@ -104,7 +104,46 @@ WATCHLIST_FILE = Path("data/watchlist.json")
 HISTORY_FILE = Path("data/price_history.json")
 ALERTS_FILE = Path("data/alerts.json")
 EXTRACTION_FAILURES_FILE = Path("data/extraction_failures.jsonl")
+SCRAPE_HEALTH_FILE = Path("data/scrape_health.jsonl")
+SCRAPE_HEALTH_ALERTS_FILE = Path("data/scrape_health_alerts.json")
 HISTORY_SCHEMA_VERSION = 1
+
+# T-09: a store with zero matches for two consecutive runs while at least one
+# other store succeeded in the same run is "Critical Selector Drift" (a
+# broken selector/site redesign) rather than a transient network blip.
+DEAD_MAN_THRESHOLD_HOURS = 24
+STORE_DISPLAY_NAMES = {
+    "emag": "eMAG",
+    "pcgarage": "PC Garage",
+    "flanco": "Flanco",
+    "altex": "Altex",
+}
+
+
+class _RunState:
+    # Run-scoped signals that fetch()/fetch_with_browser() and
+    # log_extraction_failure() report up to main() without changing any of
+    # those functions' parameters or return shapes (T-07/T-08 own that
+    # contract). Reset at the top of every main() call, so leftover state
+    # from a prior run/test never leaks into the next one.
+    def __init__(self) -> None:
+        self.run_id = ""
+        self.challenge_counts: dict[str, int] = {}
+        self.failure_counts: dict[str, int] = {}
+
+    def reset(self, run_id: str) -> None:
+        self.run_id = run_id
+        self.challenge_counts = {}
+        self.failure_counts = {}
+
+
+_run_state = _RunState()
+
+
+def _record_challenge(site_name: str) -> None:
+    _run_state.challenge_counts[site_name] = (
+        _run_state.challenge_counts.get(site_name, 0) + 1
+    )
 
 
 def load_history() -> dict:
@@ -354,9 +393,11 @@ def log_extraction_failure(store: str, url: str, query: str, reason: str) -> Non
         "query": query,
         "timestamp_utc": datetime.now(UTC).isoformat(),
         "failure_reason": reason,
+        "run_id": _run_state.run_id,
     }
     with open(EXTRACTION_FAILURES_FILE, "a", encoding="utf-8") as f:
         f.write(json.dumps(record, ensure_ascii=False) + "\n")
+    _run_state.failure_counts[store] = _run_state.failure_counts.get(store, 0) + 1
 
 
 # Retailer-added tracking/session params that don't change product identity —
@@ -463,6 +504,7 @@ def fetch_with_browser(url: str, site_name: str) -> str | None:
         print(
             f"[{site_name}] still blocked by bot-challenge after Playwright wait, skipping this run"
         )
+        _record_challenge(site_name)
         return None
     return html
 
@@ -492,6 +534,8 @@ def fetch(url: str, site_name: str) -> str | None:
         print(
             f"[{site_name}] hit a bot-challenge page (status {r.status_code}), skipping this run"
         )
+        if is_challenge_page(r.text):
+            _record_challenge(site_name)
         return None
     if r.status_code != 200:
         print(f"[{site_name}] unexpected status {r.status_code}, skipping this run")
@@ -880,6 +924,64 @@ def prune_history(
     return kept
 
 
+def _read_health_records() -> list[dict]:
+    if not SCRAPE_HEALTH_FILE.exists():
+        return []
+    records = []
+    for line in SCRAPE_HEALTH_FILE.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if line:
+            records.append(json.loads(line))
+    return records
+
+
+def _previous_record(records: list[dict], store: str) -> dict | None:
+    # scrape_health.jsonl is append-only, so the last matching line is
+    # always that store's most recent run.
+    for rec in reversed(records):
+        if rec["store"] == store:
+            return rec
+    return None
+
+
+def _append_health_records(records: list[dict]) -> None:
+    if not records:
+        return
+    SCRAPE_HEALTH_FILE.parent.mkdir(parents=True, exist_ok=True)
+    with open(SCRAPE_HEALTH_FILE, "a", encoding="utf-8") as f:
+        for rec in records:
+            f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+
+
+def _quarantined_stores(records: list[dict]) -> set[str]:
+    # Critical Selector Drift: a store's last two recorded runs both parsed
+    # zero products while at least one other store succeeded in one of those
+    # same runs — distinguishing a broken selector/site redesign from a
+    # network-wide outage, where every store would show zero. Re-derived from
+    # scrape_health.jsonl on every call rather than persisted separately, so
+    # there is no separate quarantine state machine to keep in sync (T-09
+    # decision: quarantine is a query over history, not a stored flag).
+    by_store: dict[str, list[dict]] = {}
+    for rec in records:
+        by_store.setdefault(rec["store"], []).append(rec)
+
+    quarantined = set()
+    for store, store_records in by_store.items():
+        last_two = store_records[-2:]
+        if len(last_two) < 2 or any(r["products_parsed"] != 0 for r in last_two):
+            continue
+        run_ids = {r["run_id"] for r in last_two}
+        other_store_succeeded = any(
+            rec["store"] != store
+            and rec["run_id"] in run_ids
+            and rec["products_parsed"] > 0
+            for rec in records
+        )
+        if other_store_succeeded:
+            quarantined.add(store)
+    return quarantined
+
+
 def main():
     try:
         watchlist = load_watchlist(WATCHLIST_FILE)
@@ -893,20 +995,48 @@ def main():
     today = today_date.isoformat()
     observed_at = now_utc.isoformat()
     run_id = str(uuid.uuid4())
+    run_started_utc = now_utc.isoformat()
+    _run_state.reset(run_id)
+
+    health_records_before = _read_health_records()
+    quarantined_before = _quarantined_stores(health_records_before)
+    per_store: dict[str, dict] = {}
 
     for item in watchlist:
-        scraper = SCRAPERS.get(item["site"])
-        if not scraper:
-            print(f"Unknown site '{item['site']}' in watchlist, skipping")
+        site = item["site"]
+        stats = per_store.setdefault(
+            site,
+            {
+                "watches_requested": 0,
+                "products_parsed": 0,
+                "matched_count": 0,
+                "latency_seconds": 0.0,
+            },
+        )
+        stats["watches_requested"] += 1
+
+        if site in quarantined_before:
+            print(
+                f"[{site}] skipped: quarantined after Critical Selector Drift "
+                "(zero matches for 2 consecutive runs while other stores succeeded)"
+            )
             continue
 
+        scraper = SCRAPERS.get(site)
+        if not scraper:
+            print(f"Unknown site '{site}' in watchlist, skipping")
+            continue
+
+        item_started = time.monotonic()
         try:
             results = scraper(item["query"])
         except Exception as e:
             print(
-                f"[{item['site']}] scrape failed after retries ({e.__class__.__name__}: {e}), skipping"
+                f"[{site}] scrape failed after retries ({e.__class__.__name__}: {e}), skipping"
             )
             results = []
+        stats["latency_seconds"] += time.monotonic() - item_started
+        stats["products_parsed"] += len(results)
         time.sleep(random.uniform(3, 7))  # polite delay between requests
 
         for r in results:
@@ -977,6 +1107,7 @@ def main():
                 all_time_low=prior_all_time_low,
                 atl_policy=item.get("atl_policy", "aggressive"),
             ):
+                stats["matched_count"] += 1
                 thirty_day_cutoff = today_date - timedelta(days=30)
                 recent_prices = [
                     h["price"]
@@ -1008,6 +1139,74 @@ def main():
                         "all_time_high": entry["all_time_high"],
                     }
                 )
+
+    new_health_records = []
+    for site, stats in per_store.items():
+        if site in quarantined_before or site not in SCRAPERS:
+            continue
+        prev = _previous_record(health_records_before, site)
+        last_known_good_utc = (
+            run_started_utc
+            if stats["products_parsed"] > 0
+            else (prev["last_known_good_utc"] if prev else None)
+        )
+        new_health_records.append(
+            {
+                "store": site,
+                "run_id": run_id,
+                "run_started_utc": run_started_utc,
+                "watches_requested": stats["watches_requested"],
+                "products_parsed": stats["products_parsed"],
+                "matched_count": stats["matched_count"],
+                "parse_failures": _run_state.failure_counts.get(site, 0),
+                "challenge_detected": _run_state.challenge_counts.get(site, 0) > 0,
+                "latency_seconds": round(stats["latency_seconds"], 3),
+                "last_known_good_utc": last_known_good_utc,
+            }
+        )
+    _append_health_records(new_health_records)
+
+    quarantined_after = _quarantined_stores(health_records_before + new_health_records)
+    newly_quarantined = sorted(quarantined_after - quarantined_before)
+
+    health_alerts: list[str] = []
+    for store in newly_quarantined:
+        display = STORE_DISPLAY_NAMES.get(store, store.title())
+        health_alerts.append(
+            f"🚨 SCRAPER BREAKDOWN: {display} returned 0 items across all watchlist "
+            "queries! Possible website redesign or bot-wall."
+        )
+
+    stale_stores = [
+        rec["store"]
+        for rec in new_health_records
+        if rec["last_known_good_utc"] is not None
+        and (
+            now_utc - datetime.fromisoformat(rec["last_known_good_utc"])
+        ).total_seconds()
+        > DEAD_MAN_THRESHOLD_HOURS * 3600
+    ]
+    if stale_stores:
+        stale_display = ", ".join(
+            STORE_DISPLAY_NAMES.get(s, s.title()) for s in stale_stores
+        )
+        print(
+            f"WARNING: dead-man check — no successful scrape for {stale_display} "
+            f"in over {DEAD_MAN_THRESHOLD_HOURS}h",
+            file=sys.stderr,
+        )
+        health_alerts.append(
+            f"⚠️ DEAD-MAN CHECK: no successful scrape for {stale_display} in over "
+            f"{DEAD_MAN_THRESHOLD_HOURS}h. Site may be down or fully blocked."
+        )
+
+    SCRAPE_HEALTH_ALERTS_FILE.parent.mkdir(parents=True, exist_ok=True)
+    json.dump(
+        health_alerts,
+        open(SCRAPE_HEALTH_ALERTS_FILE, "w", encoding="utf-8"),
+        indent=2,
+        ensure_ascii=False,
+    )
 
     save_history(history)
     json.dump(

@@ -16,6 +16,7 @@ from bf_price_monitor.domain import AlertDecision
 
 FORMATTED_FILE = Path("data/formatted_alerts.json")
 PRICE_HISTORY_FILE = Path("data/price_history.json")
+SCRAPE_HEALTH_ALERTS_FILE = Path("data/scrape_health_alerts.json")
 
 VERDICT_BADGES = {
     "GENUINE_DEAL": ("\U0001F7E2", "OFERTĂ REALĂ"),
@@ -135,11 +136,28 @@ def _post_with_retry(url: str, payload: dict) -> requests.Response:
         return r
 
 
+def _send_health_alerts(send_message_url: str, chat_id: str) -> None:
+    # T-09: per-store health alerts (Critical Selector Drift, dead-man
+    # checks) are written by scrape.py to a handoff file rather than sent
+    # directly, since TELEGRAM_BOT_TOKEN/TELEGRAM_CHAT_ID are only injected
+    # into this step of monitor.yml, not the scrape step. Sent here, ahead of
+    # the deal-alert early-return below, so a run with zero price-drop deals
+    # still delivers a pending health alert.
+    if not SCRAPE_HEALTH_ALERTS_FILE.exists():
+        return
+    health_alerts = json.load(open(SCRAPE_HEALTH_ALERTS_FILE, encoding="utf-8"))
+    for message in health_alerts:
+        _post_with_retry(send_message_url, {"chat_id": chat_id, "text": message})
+        time.sleep(1.1)  # Telegram allows ~1 message/second per chat
+
+
 def main():
     bot_token = os.environ["TELEGRAM_BOT_TOKEN"]
     chat_id = os.environ["TELEGRAM_CHAT_ID"]
     send_message_url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
     send_photo_url = f"https://api.telegram.org/bot{bot_token}/sendPhoto"
+
+    _send_health_alerts(send_message_url, chat_id)
 
     alerts = json.load(open(FORMATTED_FILE, encoding="utf-8"))
     if not alerts:
