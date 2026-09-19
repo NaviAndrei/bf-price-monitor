@@ -103,6 +103,7 @@ MAX_FETCH_ATTEMPTS = 1 + len(RETRY_BACKOFFS)
 WATCHLIST_FILE = Path("data/watchlist.json")
 HISTORY_FILE = Path("data/price_history.json")
 ALERTS_FILE = Path("data/alerts.json")
+EXTRACTION_FAILURES_FILE = Path("data/extraction_failures.jsonl")
 HISTORY_SCHEMA_VERSION = 1
 
 
@@ -193,6 +194,169 @@ def parse_price(raw: str) -> float | None:
         return float(cleaned)
     except ValueError:
         return None
+
+
+# T-07: layered extraction, tried in the order CLAUDE.md specifies —
+# JSON-LD structured data, then semantic HTML attributes, then the existing
+# CSS selectors (kept below, untouched, as the final structured fallback).
+# One shared implementation per layer rather than per-store logic, since the
+# schema.org/microdata/OG conventions these layers read are the same across
+# every store's Shopify/WooCommerce/Magento-class markup.
+
+
+def _parse_semantic_price_value(raw: str | None) -> float | None:
+    if not raw:
+        return None
+    raw = raw.strip()
+    # schema.org/microdata price values are usually plain decimals
+    # ("1798.99"); parse_price()'s Romanian "1.234,56" rules would mis-read
+    # that as 179899.0, so a plain float is tried first and Romanian-format
+    # text (e.g. a data-price copied straight from the visible label) falls
+    # back to parse_price().
+    try:
+        return float(raw)
+    except ValueError:
+        return parse_price(raw)
+
+
+def extract_semantic_price(card) -> float | None:
+    # Second layer: stable semantic markers that survive a CSS class rename,
+    # scoped to the individual card (a listing page has one price per
+    # product, so this must not read page-wide Open Graph tags meant for a
+    # single-product page).
+    for selector, attr in (
+        ('[itemprop="price"]', "content"),
+        ("[data-price]", "data-price"),
+    ):
+        el = card.select_one(selector)
+        if el is None:
+            continue
+        raw = el.get(attr) or el.get_text(strip=True)
+        price = _parse_semantic_price_value(raw)
+        if price is not None:
+            return price
+    return None
+
+
+def _flatten_jsonld_nodes(data) -> list[dict]:
+    # Unwraps the handful of shapes real sites use: a bare Product object, a
+    # list of top-level objects, an @graph wrapper, or an ItemList whose
+    # itemListElement entries each carry (or point at) a Product.
+    nodes: list[dict] = []
+    top_level = data if isinstance(data, list) else [data]
+    for item in top_level:
+        if not isinstance(item, dict):
+            continue
+        nodes.append(item)
+        graph = item.get("@graph")
+        if isinstance(graph, list):
+            nodes.extend(n for n in graph if isinstance(n, dict))
+        if item.get("@type") == "ItemList":
+            for element in item.get("itemListElement") or []:
+                if not isinstance(element, dict):
+                    continue
+                inner = element.get("item", element)
+                if isinstance(inner, dict):
+                    nodes.append(inner)
+    return nodes
+
+
+def _jsonld_node_to_product(node: dict) -> dict | None:
+    if node.get("@type") != "Product":
+        return None
+    offer = node.get("offers")
+    if isinstance(offer, list):
+        offer = offer[0] if offer else None
+    if not isinstance(offer, dict):
+        return None
+    price = _parse_semantic_price_value(
+        str(offer["price"]) if offer.get("price") is not None else None
+    )
+    availability = offer.get("availability") or ""
+    in_stock = None
+    if isinstance(availability, str):
+        if "OutOfStock" in availability or "SoldOut" in availability:
+            in_stock = False
+        elif "InStock" in availability or "LimitedAvailability" in availability:
+            in_stock = True
+    return {
+        "name": node.get("name"),
+        "url": node.get("url") or offer.get("url"),
+        "price": price,
+        "in_stock": in_stock,
+    }
+
+
+def extract_jsonld_products(soup: BeautifulSoup) -> list[dict]:
+    # First layer: schema.org Product/Offer markup, read once per page
+    # rather than per card since <script type="application/ld+json"> tags
+    # sit outside any individual product card in the DOM.
+    products = []
+    for script in soup.find_all("script", type="application/ld+json"):
+        try:
+            data = json.loads(script.string or "")
+        except (json.JSONDecodeError, TypeError):
+            continue
+        for node in _flatten_jsonld_nodes(data):
+            product = _jsonld_node_to_product(node)
+            if product is not None:
+                products.append(product)
+    return products
+
+
+def match_jsonld_product(products: list[dict], title: str, url: str) -> dict | None:
+    # Matched by canonical URL first (the reliable identity key elsewhere in
+    # this module), falling back to an exact case-insensitive name match for
+    # markup where the JSON-LD entry's url differs from the visible link
+    # (e.g. a canonical product URL vs. a tracking-param listing link).
+    for product in products:
+        if product.get("url") and canonicalize_url(product["url"]) == canonicalize_url(
+            url
+        ):
+            return product
+    normalized_title = title.strip().lower()
+    for product in products:
+        if (product.get("name") or "").strip().lower() == normalized_title:
+            return product
+    return None
+
+
+def resolve_layered_price(
+    card, jsonld_products: list[dict], title: str, url: str
+) -> float | None:
+    # Tries JSON-LD then semantic attributes; the caller still owns the CSS
+    # selector attempt (its final, store-specific fallback) and the AI-stub/
+    # failure-capture step once every layer here returns None.
+    matched = match_jsonld_product(jsonld_products, title, url)
+    if matched is not None and matched.get("price") is not None:
+        return matched["price"]
+    return extract_semantic_price(card)
+
+
+def extract_with_ai(query: str, url: str) -> None:
+    # Tier-4 (optional/placeholder) per Issue #17 and CLAUDE.md's extraction
+    # hierarchy: Sprint 1 scope is a stub only. rule_verdict's deterministic
+    # primacy applies here too — this must never produce a price that
+    # bypasses the JSON-LD/semantic/CSS layers above it.
+    print(f"AI extraction not implemented (query={query!r}, url={url})")
+
+
+def log_extraction_failure(store: str, url: str, query: str, reason: str) -> None:
+    # Every layer (JSON-LD, semantic, CSS, AI stub) failed for a candidate
+    # card — recorded so a fully broken selector set is visible instead of
+    # silently indistinguishable from "no matching products this run".
+    # HTML is intentionally not persisted here (may contain no PII in
+    # practice, but keeping this log lean and out of scope for redaction).
+    EXTRACTION_FAILURES_FILE.parent.mkdir(parents=True, exist_ok=True)
+    record = {
+        "store": store,
+        "url": url,
+        "query": query,
+        "timestamp_utc": datetime.now(UTC).isoformat(),
+        "failure_reason": reason,
+    }
+    with open(EXTRACTION_FAILURES_FILE, "a", encoding="utf-8") as f:
+        f.write(json.dumps(record, ensure_ascii=False) + "\n")
 
 
 # Retailer-added tracking/session params that don't change product identity —
@@ -369,23 +533,31 @@ def scrape_emag_listing(query: str) -> list[dict]:
     if not html:
         return []
     soup = BeautifulSoup(html, "html.parser")
+    jsonld_products = extract_jsonld_products(soup)
     results = []
     for card in soup.select(".card-item"):
         title_el = card.select_one(".card-v2-title")
         price_el = card.select_one(".product-new-price")
-        if not (title_el and price_el and title_el.get("href")):
+        if not (title_el and title_el.get("href")):
             continue
         title_text = title_el.get_text(strip=True)
         if not title_matches_query(title_text, query):
             continue
-        price = parse_price(price_el.get_text(strip=True))
+        card_url = title_el["href"]
+        price = resolve_layered_price(card, jsonld_products, title_text, card_url)
+        if price is None and price_el:
+            price = parse_price(price_el.get_text(strip=True))
         if price is None:
+            extract_with_ai(query, card_url)
+            log_extraction_failure(
+                "emag", card_url, query, "no price found in any extraction layer"
+            )
             continue
         results.append(
             {
                 "title": title_text,
                 "price": price,
-                "url": title_el["href"],
+                "url": card_url,
                 "stock_status": emag_stock_status(card),
                 # eMAG's search/listing page carries no seller identity
                 # anywhere in the card markup (verified live 2026-09-10:
@@ -438,23 +610,31 @@ def scrape_pcgarage_listing(query: str) -> list[dict]:
     if not html:
         return []
     soup = BeautifulSoup(html, "html.parser")
+    jsonld_products = extract_jsonld_products(soup)
     results = []
     for card in soup.select(".product_box"):
         title_el = card.select_one(".product_box_name a")
         price_el = card.select_one(".product_box_price_container p.price")
-        if not (title_el and price_el and title_el.get("href")):
+        if not (title_el and title_el.get("href")):
             continue
         title_text = title_el.get_text(strip=True)
         if not title_matches_query(title_text, query):
             continue
-        price = parse_price(price_el.get_text(strip=True))
+        card_url = title_el["href"]
+        price = resolve_layered_price(card, jsonld_products, title_text, card_url)
+        if price is None and price_el:
+            price = parse_price(price_el.get_text(strip=True))
         if price is None:
+            extract_with_ai(query, card_url)
+            log_extraction_failure(
+                "pcgarage", card_url, query, "no price found in any extraction layer"
+            )
             continue
         results.append(
             {
                 "title": title_text,
                 "price": price,
-                "url": title_el["href"],
+                "url": card_url,
                 "stock_status": pcgarage_stock_status(card),
                 # PC Garage sells first-party only, no marketplace program.
                 "seller": "PC Garage",
@@ -509,6 +689,7 @@ def scrape_flanco_listing(query: str) -> list[dict]:
     if not html:
         return []
     soup = BeautifulSoup(html, "html.parser")
+    jsonld_products = extract_jsonld_products(soup)
     results = []
     for card in soup.select("li.product-item"):
         title_el = card.select_one(".product-item-link")
@@ -522,18 +703,25 @@ def scrape_flanco_listing(query: str) -> list[dict]:
         # must always be computed from our own recorded history in
         # data/price_history.json, never from this field.
         reference_el = card.select_one(".pretVechi .pricePrp .price")
-        if not (title_el and price_el and title_el.get("href")):
+        if not (title_el and title_el.get("href")):
             continue
         title_text = title_el.get_text(strip=True)
         if not title_matches_query(title_text, query):
             continue
-        price = parse_price(price_el.get_text(strip=True))
+        card_url = title_el["href"]
+        price = resolve_layered_price(card, jsonld_products, title_text, card_url)
+        if price is None and price_el:
+            price = parse_price(price_el.get_text(strip=True))
         if price is None:
+            extract_with_ai(query, card_url)
+            log_extraction_failure(
+                "flanco", card_url, query, "no price found in any extraction layer"
+            )
             continue
         result = {
             "title": title_text,
             "price": price,
-            "url": title_el["href"],
+            "url": card_url,
             "stock_status": flanco_stock_status(card),
             # Flanco sells first-party only, no marketplace program.
             "seller": "Flanco",
