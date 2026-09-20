@@ -15,15 +15,21 @@ on:
     - cron: "0 */2 * * *"
   workflow_dispatch:
 
-permissions:
-  contents: write
+# Deny-all by default; each job below grants back only what its own steps
+# need (T-14, #21). GitHub Actions permissions are set per job, not per
+# step, so the single previous job -- which only needed `contents: write`
+# for its last step -- is split in two: everything before the commit runs
+# read-only, and only the persistence job gets write access.
+permissions: {}
 
 concurrency:
   group: monitor
   cancel-in-progress: false
 jobs:
-  monitor:
+  scrape-analyze-notify:
     runs-on: self-hosted
+    permissions:
+      contents: read
     env:
       PYTHON: C:\Program Files\Python312\python.exe
       # Pinned explicitly, same reasoning as PYTHON above: the runner service
@@ -33,29 +39,71 @@ jobs:
       # rather than relying on whichever account's per-profile default wins.
       PLAYWRIGHT_BROWSERS_PATH: C:\actions-runner\ms-playwright-cache
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           fetch-depth: 0
+          # This job never pushes, so the checkout token (already read-only
+          # via the job's `permissions` block) shouldn't even be left sitting
+          # in .git/config for the rest of the job to find.
+          persist-credentials: false
 
+      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5.4.2
+        with:
+          version: "latest"
+
+      # uv sync installs from uv.lock with hash verification (uv.lock records
+      # a sha256 per sdist/wheel) and installs the local bf_price_monitor
+      # package directly from this checkout -- unlike pip's --require-hashes,
+      # it doesn't refuse a local directory source, so both the pinned
+      # third-party deps and the project itself go through one verified path.
+      # --python pins the venv to the same interpreter NETWORK SERVICE can
+      # see; every later `uv run` reuses that venv without re-specifying it.
       - name: Install dependencies
-        run: "& \"$env:PYTHON\" -m pip install -r requirements.txt"
+        run: uv sync --frozen --python "$env:PYTHON"
 
       - name: Install Playwright browser
-        run: "& \"$env:PYTHON\" -m playwright install chromium"
+        run: uv run playwright install chromium
 
       - name: Scrape prices
-        run: "& \"$env:PYTHON\" scripts/scrape.py"
+        run: uv run scripts/scrape.py
 
       - name: Analyze alerts
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        run: "& \"$env:PYTHON\" scripts/analyze.py"
+        run: uv run scripts/analyze.py
 
       - name: Send Telegram alerts
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: "& \"$env:PYTHON\" scripts/notify.py"
+        run: uv run scripts/notify.py
+
+      # This job has no write permission, so the updated data files can only
+      # leave it via an artifact -- the persist job below downloads this
+      # instead of trusting a shared runner filesystem between jobs.
+      - name: Upload updated data files
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: price-data
+          path: |
+            data/price_history.json
+            data/watchlist.json
+          retention-days: 1
+
+  persist:
+    needs: scrape-analyze-notify
+    runs-on: self-hosted
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: price-data
+          path: data
 
       - name: Commit updated price history
         run: |
