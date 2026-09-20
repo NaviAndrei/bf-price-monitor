@@ -1,0 +1,16 @@
+title = "bf-price-monitor Gitleaks configuration"
+
+# Extend gitleaks' built-in ruleset (covers Telegram bot tokens and
+# Hugging Face `hf_` tokens already -- verified against
+# https://github.com/gitleaks/gitleaks/blob/v8.30.1/config/gitleaks.toml)
+# and add the one secret shape this repo uses that isn't in the defaults:
+# a Healthchecks.io ping URL (https://hc-ping.com/<uuid>), which is a
+# capability URL -- anyone holding it can spoof successful monitor runs.
+[extend]
+useDefault = true
+
+[[rules]]
+id = "healthchecksio-ping-url"
+description = "Healthchecks.io ping URL -- a bare capability URL; anyone holding it can spoof or spam this project's dead-man switch"
+regex = '''hc-ping\.com/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}'''
+keywords = ["hc-ping"]

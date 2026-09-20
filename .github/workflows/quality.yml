@@ -67,3 +67,12 @@ jobs:
         run: uv run mypy bf_price_monitor/
       - name: Test + coverage
         run: uv run pytest --cov=bf_price_monitor --cov-report=term-missing --cov-fail-under=70
+
+      # T-17 (#25): runs the same Gitleaks hook and .gitleaks.toml config
+      # developers run locally via `pre-commit run --all-files`, so CI and
+      # the local pre-commit hook can never drift out of sync with each
+      # other. Scans the full history reachable from this checkout, not
+      # just the diff, so a secret introduced in an earlier unscanned
+      # commit still fails the build.
+      - name: Secret scan (pre-commit / Gitleaks)
+        run: uv run pre-commit run --all-files --show-diff-on-failure

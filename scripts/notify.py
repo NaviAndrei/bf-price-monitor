@@ -4,6 +4,7 @@ import html
 import json
 import os
 import random
+import re
 import sys
 import time
 import urllib.parse
@@ -175,6 +176,25 @@ def _sleep_before_retry(attempt: int, retry_after: float | None) -> None:
     time.sleep(delay)
 
 
+# A urllib3/requests connection error stringifies the failing URL verbatim,
+# and our Telegram URLs carry the bot token in the path (Telegram's own API
+# shape, not ours to change) -- redact known secret shapes before any such
+# string reaches a log line or the on-disk DLQ.
+_SECRET_PATTERNS = [
+    re.compile(r"bot[0-9]{5,16}:[A-Za-z0-9_-]{34,36}"),
+    re.compile(r"hf_[A-Za-z0-9]{20,}"),
+    re.compile(
+        r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
+    ),
+]
+
+
+def _redact_secrets(text: str) -> str:
+    for pattern in _SECRET_PATTERNS:
+        text = pattern.sub("[REDACTED]", text)
+    return text
+
+
 def _response_failure_reason(response: requests.Response) -> str:
     try:
         return response.json().get("description", response.text[:200])
@@ -220,7 +240,7 @@ def _send_with_retry(
         try:
             r = requests.post(url, json=payload, timeout=15)
         except requests.RequestException as e:
-            reason = f"{e.__class__.__name__}: {e}"
+            reason = _redact_secrets(f"{e.__class__.__name__}: {e}")
             if attempt < MAX_ATTEMPTS:
                 _sleep_before_retry(attempt, None)
                 continue
