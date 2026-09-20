@@ -121,19 +121,20 @@ regenerate it with:
 uv lock
 ```
 
-**Production runner — via pip (what `monitor.yml` does):**
+**Production runner — via uv (what `monitor.yml` does):**
 
 ```bash
-pip install -r requirements.txt
+uv sync --frozen
 ```
 
-`requirements.txt` is generated from `uv.lock` (`uv export --no-dev
---no-hashes --format requirements-txt`) so every dependency is pinned to the
-exact version uv resolved — not the version ranges pip would otherwise
-resolve independently. It isn't hash-verified: pip's hash-checking mode
-can't install `bf_price_monitor` itself from a local directory, which this
-file also has to do in the same `pip install` step. Regenerate it after any
-`uv.lock` change so the two stay in sync.
+`--frozen` refuses to install if `uv.lock` is out of date with
+`pyproject.toml`, and installs every dependency using the sha256 hashes
+already recorded in `uv.lock` — including `bf_price_monitor` itself, which
+uv can install from this local checkout directly, unlike pip's
+`--require-hashes` mode, which refuses any local directory source. This
+replaced a `pip install -r requirements.txt` step, kept for a time as
+`requirements.txt`, a `uv.lock`-derived, pinned-but-unverified fallback for
+environments without `uv` — see the note in that file if you still need it.
 
 For the Ollama fallback to work locally, install [Ollama](https://ollama.com)
 and pull the model referenced by `OLLAMA_MODEL` in `scripts/analyze.py`
