@@ -12,7 +12,51 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-      - uses: astral-sh/setup-uv@e58605a9b6da7c637471fab8847a5e5a6b8df081 # v5
+
+      # T-15 (#23): a floating tag (`@v4`) or branch (`@main`) can be
+      # repointed by the action owner after the fact with no diff in this
+      # repo -- a full 40-char commit SHA cannot. This fails the build
+      # before a new unpinned `uses:` line can reach master.
+      - name: Enforce SHA-pinned Actions
+        run: |
+          set -euo pipefail
+          fail=0
+          while IFS= read -r -d '' file; do
+            line_no=0
+            while IFS= read -r line; do
+              line_no=$((line_no + 1))
+              # Local actions (./path) and Docker actions (docker://image) don't
+              # use the owner/repo@ref shape this check targets -- local actions
+              # are already pinned by this repo's own commit, and Docker image
+              # pinning (by digest) is a separate concern from this check.
+              if [[ "$line" =~ uses:[[:space:]]*(\.\/|docker://) ]]; then
+                continue
+              fi
+              if [[ "$line" =~ uses:[[:space:]]*([A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+)@([A-Za-z0-9_.-]+) ]]; then
+                ref="${BASH_REMATCH[2]}"
+                # Known limitation: this checks the ref's *shape* (40 lowercase
+                # hex chars), not that it resolves to a real commit -- a
+                # 40-char hex *branch name* would pass. That's an intentional
+                # trade-off: resolving each SHA against the GitHub API on every
+                # CI run would be slow and network-dependent. Actual resolvability
+                # is verified manually when a pin is added or updated.
+                if ! [[ "$ref" =~ ^[0-9a-f]{40}$ ]]; then
+                  echo "::error file=$file,line=$line_no::Action not pinned to a full 40-character SHA: ${line#"${line%%[![:space:]]*}"}"
+                  fail=1
+                fi
+              fi
+            done < "$file"
+          done < <(find .github/workflows -type f \( -name '*.yml' -o -name '*.yaml' \) -print0)
+
+          if [[ "$fail" -ne 0 ]]; then
+            echo ""
+            echo "One or more 'uses:' references in .github/workflows are not pinned to a full 40-character commit SHA."
+            echo "Pin them like: uses: owner/repo@0123456789abcdef0123456789abcdef01234567 # vX.Y.Z"
+            exit 1
+          fi
+          echo "All Action references are pinned to full 40-character SHAs."
+
+      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5.4.2
         with:
           version: "latest"
       - name: Install deps
