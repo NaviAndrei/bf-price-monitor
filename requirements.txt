@@ -1,12 +1,17 @@
+# TODO(T-15, #23): monitor.yml now installs via `uv sync --frozen` (hash-
+# verified against uv.lock) instead of this file. Kept only as a manual
+# pip fallback for environments without uv; no workflow reads it anymore.
+# Regenerate after any uv.lock change if you still rely on it, or delete it
+# once you're confident nothing outside CI needs the pip path.
+#
 # This file is generated from uv.lock via:
 #    uv export --no-dev --no-hashes --format requirements-txt -o requirements.txt
 # then editing the `-e .` line below to `.`, and dropping --hash pins:
 # pip's hash-verification mode refuses any local directory source (editable
 # or not — "Can't verify hashes for these file:// requirements because they
-# point to directories"), and monitor.yml installs bf_price_monitor itself
-# from this same file in one `pip install -r requirements.txt` step, so the
-# two are mutually exclusive here. Every third-party dependency below is
-# still pinned to the exact version locked in uv.lock.
+# point to directories"), which is why it was never hash-verified even when
+# monitor.yml did use it. Every third-party dependency below is still pinned
+# to the exact version locked in uv.lock.
 .
 annotated-types==0.8.0
     # via pydantic
