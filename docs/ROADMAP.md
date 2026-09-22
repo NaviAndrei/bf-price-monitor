@@ -3,7 +3,7 @@
 | Sprint | Status | Due | Notes |
 |---|---|---|---|
 | 0-2 | Closed | — | Foundations, correctness, notification reliability |
-| 3 | Active | 09-27 | Security P0, 1/6 sub-issues done |
+| 3 | Active | 09-27 | Security P0, 5/6 sub-issues done |
 | 4 | Not started | 09-29 | SQLite storage migration |
 | 5 | Not started | 09-30 | Performance/AI guardrails |
 | 6 | Not started | 10-01 | Features MVP |

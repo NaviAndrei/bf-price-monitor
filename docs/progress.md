@@ -30,13 +30,13 @@ Tests: 128 passed unchanged, ruff check/format clean, Gitleaks scan of full repo
 
 # bf-price-monitor — Current Handoff
 
-## Sprint 3 (Security P0, due 2026-09-27) — 3/6 code-complete
+## Sprint 3 (Security P0, due 2026-09-27) — 5/6 code-complete
 - [x] T-14 (#21) split read/write permissions — landed via earlier commit
 - [x] T-15 (#23) SHA-pin actions + lockfile installs — landed via earlier commit
 - [x] T-17 (#25) secret scanning/rotation/log redaction — pushed as 04254cf/505e043/8a1b5fd, issue closed, Quality Gate run 35717633185 passed
 - [ ] T-16 (#26) harden self-hosted runner
 - [x] T-18 (#24) immutable runner environment — pushed as ae4a012, issue closed, verified end-to-end on the real runner (see entry below)
-- [ ] T-46 (#35) runner outage runbook
+- [x] T-35 (#46) runner outage runbook — see entry below
 
 ## 2026-09-22 Price Monitor outage — closed loop
 Two independent, previously-conflated failures, both now resolved:
@@ -64,6 +64,11 @@ retry-budget push) completed successfully in 2m2s, including a fresh
 Added lockfile-fingerprinted caching to monitor.yml's scrape-analyze-notify job: `UV_PROJECT_ENVIRONMENT` points uv's venv at a runner-local path outside the job workspace (`C:\actions-runner\cache\bf-monitor\venv`), keyed against a SHA-256 hash of uv.lock stored in a sibling `env.marker` file. A hit (marker present, matches fingerprint, venv directory exists) skips `Install dependencies` and `Install Playwright browser` entirely and every downstream `uv run` call uses `--no-sync`; any missing/mismatched signal falls back to a full rebuild. `PLAYWRIGHT_BROWSERS_PATH` was left unchanged. No new `uses:` lines; all Action refs remain full 40-char SHAs; T-14's read/write job split untouched.
 Verified end-to-end on the real self-hosted runner, not just simulated: cold run 35775660052 built the venv and browser and logged `runner cache: miss (fingerprint 0bb10822f4ff, setup 10.6s)`; warm run 35776218557 skipped both install steps (confirmed `skipped` conclusion via `gh run view --json jobs`) and logged `runner cache: hit (fingerprint 0bb10822f4ff, setup 2.5s)` with no network/package downloads. Both runs' persist jobs committed and pushed price data successfully.
 Tests: 128 passed unchanged, ruff check clean. Commit: ae4a012. Issue #24 closed.
+
+## T-35 (#46): runner outage contingency runbook
+Added `docs/runbooks/RUNNER_OUTAGE.md` (trigger criteria, diagnostic checklist, local fallback execution, temporary cloud runner failover, recovery and rollback) and `scripts/run_emergency_local.ps1` (preflight-checks Python 3.11+ and uv, verifies TELEGRAM_BOT_TOKEN/TELEGRAM_CHAT_ID are set without echoing values, warns-only on missing HF_TOKEN, then runs `uv sync --frozen` → Playwright Chromium install → scrape.py → analyze.py → notify.py with a distinct exit code per failure point). Deliberately out of scope: the issue's proxy/cloud-burst scraping blueprint.
+Verified via `-Help` and `-DryRun` (both the missing-secrets and present-secrets paths); not yet exercised as a full live run with real secrets on a non-runner machine — that rehearsal is still pending before #46 can be closed.
+Tests: 128 passed unchanged, ruff check clean. Committed together with this progress.md entry (see `git log docs/runbooks/RUNNER_OUTAGE.md` for the SHA).
 
 ## Blocked / gating
 - T-31 (P0) Black Friday go/no-go review — blocked on Sprint 3-5 completion
