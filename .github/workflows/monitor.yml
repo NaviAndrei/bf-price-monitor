@@ -38,6 +38,11 @@ jobs:
       # install step and the scrape step must agree on one fixed location
       # rather than relying on whichever account's per-profile default wins.
       PLAYWRIGHT_BROWSERS_PATH: C:\actions-runner\ms-playwright-cache
+      # T-18 (#24): points uv's project venv at a runner-local path outside
+      # the job workspace, so it survives across scheduled runs instead of
+      # being rebuilt from scratch every time. `uv sync`/`uv run` both read
+      # this when invoked from the project root.
+      UV_PROJECT_ENVIRONMENT: C:\actions-runner\cache\bf-monitor\venv
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -47,9 +52,40 @@ jobs:
           # in .git/config for the rest of the job to find.
           persist-credentials: false
 
+      # T-18 (#24): the fingerprint is a SHA-256 of uv.lock, which already
+      # pins the Playwright package version (and therefore its browser
+      # revision) alongside every other dependency -- one hash covers both
+      # cache-invalidation triggers required by the issue.
+      - name: Compute environment fingerprint
+        id: fingerprint
+        run: |
+          $start = [datetime]::UtcNow
+          Write-Output "start_epoch_ms=$([int64](($start - [datetime]'1970-01-01').TotalMilliseconds))" >> $env:GITHUB_OUTPUT
+          $hash = (Get-FileHash -Algorithm SHA256 -Path uv.lock).Hash.ToLower()
+          Write-Output "fingerprint=$hash" >> $env:GITHUB_OUTPUT
+
       - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
         with:
           version: "latest"
+
+      # T-18 (#24): a hit requires both the marker's stored fingerprint to
+      # match today's uv.lock hash AND the venv directory to actually exist
+      # -- either check failing alone falls back to a miss (full rebuild)
+      # rather than trusting a marker that outlived its environment.
+      - name: Check runner-local environment cache
+        id: cache_check
+        run: |
+          $cacheDir = Split-Path $env:UV_PROJECT_ENVIRONMENT -Parent
+          $markerPath = Join-Path $cacheDir "env.marker"
+          $fp = "${{ steps.fingerprint.outputs.fingerprint }}"
+          $hit = "false"
+          if ((Test-Path $markerPath) -and (Test-Path $env:UV_PROJECT_ENVIRONMENT)) {
+            $stored = (Get-Content $markerPath -Raw -ErrorAction SilentlyContinue)
+            if ($stored -and $stored.Trim() -eq $fp) {
+              $hit = "true"
+            }
+          }
+          Write-Output "hit=$hit" >> $env:GITHUB_OUTPUT
 
       # uv sync installs from uv.lock with hash verification (uv.lock records
       # a sha256 per sdist/wheel) and installs the local bf_price_monitor
@@ -59,27 +95,54 @@ jobs:
       # --python pins the venv to the same interpreter NETWORK SERVICE can
       # see; every later `uv run` reuses that venv without re-specifying it.
       - name: Install dependencies
+        if: steps.cache_check.outputs.hit != 'true'
         env:
           UV_HTTP_RETRIES: "8"
           UV_HTTP_TIMEOUT: "180"
         run: uv sync --frozen --python "$env:PYTHON"
 
       - name: Install Playwright browser
-        run: uv run playwright install chromium
+        if: steps.cache_check.outputs.hit != 'true'
+        run: uv run --no-sync playwright install chromium
+
+      # T-18 (#24): only refreshed after a real miss's install+browser steps
+      # both succeeded (a step failure stops the job before reaching this
+      # one), so the marker can never point at a partially-built environment.
+      - name: Update environment cache marker
+        if: steps.cache_check.outputs.hit != 'true'
+        run: |
+          $cacheDir = Split-Path $env:UV_PROJECT_ENVIRONMENT -Parent
+          New-Item -ItemType Directory -Force -Path $cacheDir | Out-Null
+          Set-Content -Path (Join-Path $cacheDir "env.marker") -Value "${{ steps.fingerprint.outputs.fingerprint }}" -NoNewline
+
+      - name: Report environment cache status
+        if: always()
+        run: |
+          $status = if ("${{ steps.cache_check.outputs.hit }}" -eq "true") { "hit" } else { "miss" }
+          $fp = "${{ steps.fingerprint.outputs.fingerprint }}"
+          $fpPrefix = if ($fp.Length -ge 12) { $fp.Substring(0, 12) } else { $fp }
+          $startMs = "${{ steps.fingerprint.outputs.start_epoch_ms }}"
+          if ($startMs) {
+            $nowMs = [int64]((([datetime]::UtcNow) - [datetime]'1970-01-01').TotalMilliseconds)
+            $elapsedSec = [math]::Round(($nowMs - [int64]$startMs) / 1000, 1)
+            Write-Output "runner cache: $status (fingerprint $fpPrefix, setup ${elapsedSec}s)"
+          } else {
+            Write-Output "runner cache: $status (fingerprint $fpPrefix, setup time unavailable)"
+          }
 
       - name: Scrape prices
-        run: uv run scripts/scrape.py
+        run: uv run --no-sync scripts/scrape.py
 
       - name: Analyze alerts
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        run: uv run scripts/analyze.py
+        run: uv run --no-sync scripts/analyze.py
 
       - name: Send Telegram alerts
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: uv run scripts/notify.py
+        run: uv run --no-sync scripts/notify.py
 
       # This job has no write permission, so the updated data files can only
       # leave it via an artifact -- the persist job below downloads this
