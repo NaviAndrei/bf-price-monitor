@@ -36,3 +36,7 @@
 - **Action pinning:** All GitHub Actions references must be pinned to 40-character commit SHAs, never floating version tags (e.g., `actions/checkout@b4ffde... # v4.1.7`).
 - **Secrets hygiene:** Never log full URLs containing tokens or webhook secrets. Mask tokens and UUIDs in log output. Never commit `.env` or temporary databases.
 - **Resilient waits:** Never use fixed `time.sleep()` for network or selector waits in Playwright. Use auto-waiting bounded locators (`page.locator().wait_for()`).
+
+## Roadmap source
+Roadmap lives in GitHub milestones/issues, not a standalone file. See docs/ROADMAP.md
+for the last-synced snapshot and docs/progress.md for the active sprint handoff.
