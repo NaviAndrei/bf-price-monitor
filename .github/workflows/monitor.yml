@@ -59,6 +59,9 @@ jobs:
       # --python pins the venv to the same interpreter NETWORK SERVICE can
       # see; every later `uv run` reuses that venv without re-specifying it.
       - name: Install dependencies
+        env:
+          UV_HTTP_RETRIES: "8"
+          UV_HTTP_TIMEOUT: "180"
         run: uv sync --frozen --python "$env:PYTHON"
 
       - name: Install Playwright browser
