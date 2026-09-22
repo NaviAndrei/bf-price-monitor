@@ -156,6 +156,13 @@ jobs:
             data/watchlist.json
           retention-days: 1
 
+      # T-16 (#26): runs even if scrape/analyze/notify failed, so a crashed
+      # or timed-out run never leaves an orphaned Chromium process or stale
+      # temp profile behind for the next scheduled run to inherit.
+      - name: Runner cleanup
+        if: always()
+        run: pwsh scripts/runner_cleanup.ps1
+
   persist:
     needs: scrape-analyze-notify
     runs-on: self-hosted

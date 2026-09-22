@@ -42,3 +42,11 @@ Implemented T-35 Runner Outage Contingency Runbook and emergency execution
 harness (`scripts/run_emergency_local.ps1`). Validated Python >=3.11 floor
 per pyproject.toml and verified graceful degradation when HF_TOKEN is
 absent.
+
+## 2026-09-23 — T-16 Self-Hosted Runner Hardening
+Implemented T-16 Self-Hosted Runner Hardening. Added
+`scripts/runner_cleanup.ps1` with -DryRun for terminating zombie
+Playwright processes and clearing %TEMP% debris older than 24 hours.
+Added `docs/runbooks/RUNNER_SETUP.md` documenting DACL removal of
+Authenticated Users Modify rights and least-privilege service account
+guidance. Added post-job cleanup step to monitor.yml.
