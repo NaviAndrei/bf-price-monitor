@@ -35,7 +35,7 @@ Tests: 128 passed unchanged, ruff check/format clean, Gitleaks scan of full repo
 - [x] T-15 (#23) SHA-pin actions + lockfile installs — landed via earlier commit
 - [x] T-17 (#25) secret scanning/rotation/log redaction — pushed as 04254cf/505e043/8a1b5fd, issue closed, Quality Gate run 35717633185 passed
 - [ ] T-16 (#26) harden self-hosted runner
-- [ ] T-18 (#24) immutable runner environment — **re-prioritized ahead of T-16** (see docs/DECISIONS.md)
+- [x] T-18 (#24) immutable runner environment — pushed as ae4a012, issue closed, verified end-to-end on the real runner (see entry below)
 - [ ] T-46 (#35) runner outage runbook
 
 ## 2026-09-22 Price Monitor outage — closed loop
@@ -59,6 +59,11 @@ Pipeline confirmed alive independent of the DNS mitigation: scheduled run
 35729797194 (2026-09-22T12:52:05Z, after the setup-uv fix but before the
 retry-budget push) completed successfully in 2m2s, including a fresh
 `data/price_history.json` commit (46d27e6).
+
+## T-18 (#24): cached/immutable runner environment
+Added lockfile-fingerprinted caching to monitor.yml's scrape-analyze-notify job: `UV_PROJECT_ENVIRONMENT` points uv's venv at a runner-local path outside the job workspace (`C:\actions-runner\cache\bf-monitor\venv`), keyed against a SHA-256 hash of uv.lock stored in a sibling `env.marker` file. A hit (marker present, matches fingerprint, venv directory exists) skips `Install dependencies` and `Install Playwright browser` entirely and every downstream `uv run` call uses `--no-sync`; any missing/mismatched signal falls back to a full rebuild. `PLAYWRIGHT_BROWSERS_PATH` was left unchanged. No new `uses:` lines; all Action refs remain full 40-char SHAs; T-14's read/write job split untouched.
+Verified end-to-end on the real self-hosted runner, not just simulated: cold run 35775660052 built the venv and browser and logged `runner cache: miss (fingerprint 0bb10822f4ff, setup 10.6s)`; warm run 35776218557 skipped both install steps (confirmed `skipped` conclusion via `gh run view --json jobs`) and logged `runner cache: hit (fingerprint 0bb10822f4ff, setup 2.5s)` with no network/package downloads. Both runs' persist jobs committed and pushed price data successfully.
+Tests: 128 passed unchanged, ruff check clean. Commit: ae4a012. Issue #24 closed.
 
 ## Blocked / gating
 - T-31 (P0) Black Friday go/no-go review — blocked on Sprint 3-5 completion
