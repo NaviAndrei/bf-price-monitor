@@ -27,3 +27,45 @@ Tests: 128 passed (121 existing unchanged + 7 new), ruff check/format and mypy -
 ## T-17 (#25): secret scanning, rotation runbook, log scrubbing
 Added .gitleaks.toml (extends default ruleset + custom Healthchecks.io ping-URL rule) and .pre-commit-config.yaml (gitleaks v8.30.1), plus a matching "Secret scan (pre-commit / Gitleaks)" step in quality.yml so local and CI share one config. Added docs/security/secret-rotation-runbook.md covering HF_TOKEN, TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, HEALTHCHECK_URL individually. Audited scrape.py, analyze.py, notify.py for secret-leaking logs: only notify.py's `_send_with_retry` had a real leak path (a network exception's stringified URL can embed the Telegram bot token), now redacted via `_redact_secrets` before it reaches stderr or data/dlq.jsonl. scrape.py and analyze.py needed no changes.
 Tests: 128 passed unchanged, ruff check/format clean, Gitleaks scan of full repo clean (no `.gitleaksignore` needed). Commit: e7899a7 (not pushed).
+
+# bf-price-monitor — Current Handoff
+
+## Sprint 3 (Security P0, due 2026-09-27) — 3/6 code-complete
+- [x] T-14 (#21) split read/write permissions — landed via earlier commit
+- [x] T-15 (#23) SHA-pin actions + lockfile installs — landed via earlier commit
+- [x] T-17 (#25) secret scanning/rotation/log redaction — pushed as 04254cf/505e043/8a1b5fd, issue closed, Quality Gate run 35717633185 passed
+- [ ] T-16 (#26) harden self-hosted runner
+- [ ] T-18 (#24) immutable runner environment — **re-prioritized ahead of T-16** (see docs/DECISIONS.md)
+- [ ] T-46 (#35) runner outage runbook
+
+## 2026-09-22 Price Monitor outage — closed loop
+Two independent, previously-conflated failures, both now resolved:
+1. **setup-uv libuv crash** — 6 consecutive scheduled runs (2026-09-21T07:18Z
+   through 2026-09-22T06:54:44Z) crashed in astral-sh/setup-uv with a libuv
+   assertion (`!(handle->flags & UV_HANDLE_CLOSING)`). Fixed by Dependabot
+   PR #53, bumping setup-uv to v10.1.0, merged 10:04Z. Confirmed fixed by a
+   manual `workflow_dispatch` run (35718553433) where the setup-uv step
+   passed cleanly.
+2. **DNS resolution failure fetching Playwright from files.pythonhosted.org**
+   — surfaced one step later in that same manual run, a distinct failure
+   from #1. 10/10 nslookup attempts against the failing domain and a control
+   domain both succeeded when tested directly, so classified as transient/
+   rare rather than reproducible. Mitigated by raising `UV_HTTP_RETRIES` to
+   `"8"` and `UV_HTTP_TIMEOUT` to `"180"`, scoped to the "Install
+   dependencies" step only (commit edee65d, merged as 1086639, pushed
+   2026-09-22T14:46Z). Quality Gate run 35742703488 on that merge passed.
+
+Pipeline confirmed alive independent of the DNS mitigation: scheduled run
+35729797194 (2026-09-22T12:52:05Z, after the setup-uv fix but before the
+retry-budget push) completed successfully in 2m2s, including a fresh
+`data/price_history.json` commit (46d27e6).
+
+## Blocked / gating
+- T-31 (P0) Black Friday go/no-go review — blocked on Sprint 3-5 completion
+
+## Last session action items
+- New issue #54 filed (unrelated tech debt): Quality Gate runs ruff check but not ruff format --check
+- Watch item: PC-A1208's VPN adapter route-metric anomaly (see docs/DECISIONS.md) — not fixed, revisit only if DNS errors recur
+
+## Sprints completed
+Sprint 0 (foundations), Sprint 1 (correctness), Sprint 2 (notification reliability) — all closed, no action needed.
