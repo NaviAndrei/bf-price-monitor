@@ -224,7 +224,9 @@ def main():
         indent=2,
         ensure_ascii=False,
     )
-    print(f"Analyzed {len(alerts)} alert(s) into {len(formatted_alerts)} formatted record(s)")
+    print(
+        f"Analyzed {len(alerts)} alert(s) into {len(formatted_alerts)} formatted record(s)"
+    )
 
 
 if __name__ == "__main__":
