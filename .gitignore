@@ -8,6 +8,9 @@ __pycache__/
 .pytest_cache/
 data/alerts.json
 data/formatted_alerts.json
+data/price_history.db
+data/price_history.db-wal
+data/price_history.db-shm
 .remember/
 .vscode/
 .claude/settings.local.json

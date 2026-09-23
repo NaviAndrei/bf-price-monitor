@@ -61,3 +61,13 @@ bug; proper cross-retailer identity is T-37/T-38 scope.
 New convention introduced: _derive_sku() extracts SKU from URL path segments
 in scripts/migrate_history_to_sqlite.py — T-38's SKU extraction work should
 either reuse or explicitly supersede this.
+
+## 2026-09-23: data/price_history.db is git-ignored by design. It is
+runner-local, regenerable state (via migrate_history_to_sqlite.py from
+data/price_history.json), not a git-tracked artifact — matches T-18's
+precedent of treating the venv cache as persistent-but-untracked runner
+state. data/price_history.json remains the git-tracked source of truth
+and disaster-recovery backup during the SQLite transition period.
+Until T-37 fully cuts scrape.py over to SQLite-only writes, both files
+will exist in parallel; JSON continues to be updated by the existing
+pipeline and committed by monitor.yml's persist job as before.
