@@ -75,8 +75,33 @@ Tests: 128 passed unchanged, ruff check clean. Committed together with this prog
 Added `scripts/runner_cleanup.ps1` (idempotent, `-DryRun`-capable: terminates orphaned Chromium/chrome processes older than 30 minutes, purges `%TEMP%` debris older than 24 hours, reports without touching the T-18 venv cache) and a post-job "Runner cleanup" step (`if: always()`) in monitor.yml's `scrape-analyze-notify` job. Added `docs/runbooks/RUNNER_SETUP.md`: documents the DACL gap found on inspection (`Authenticated Users` held Modify on both `C:\actions-runner` and its cache subdirectory) with the `icacls` commands to revoke it and re-scope to the runner's own group/SYSTEM/Administrators, least-privilege service account guidance (`NETWORK SERVICE` satisfies non-admin but isn't a dedicated isolated account), ASR/Exploit Protection recommendations, and a full reinstall/disaster-recovery procedure.
 Tests: 128 passed unchanged, ruff check clean, monitor.yml YAML validated and all `uses:` refs still full 40-char SHAs. Commit: see `git log scripts/runner_cleanup.ps1` for the SHA.
 
+## T-19 (#28): SQLite storage layer
+Added `bf_price_monitor/storage/sqlite.py`: three-table schema (canonical_products,
+offers, price_observations) with WAL mode, foreign keys, and idempotent
+upserts in `record_observation` (ON CONFLICT on `(retailer, sku)` and
+`(offer_id, scraped_at)`). Product/offer IDs derived via `uuid5(NAMESPACE_URL, ...)`
+from title and retailer+sku respectively.
+Tests: 139 passed (128 existing + 11 new in `tests/unit/test_sqlite_storage.py`).
+
+## T-20 (#27): history migration script (JSON to SQLite) with verification
+Added `scripts/migrate_history_to_sqlite.py` (CLI with --source/--target/--dry-run,
+per-product exception isolation) and `scripts/verify_migration.py` (independent
+verifier — recomputes expected counts from source JSON without importing the
+migration script, checks PRAGMA integrity_check/foreign_key_check, and
+sample-verifies 10 random products).
+Verified against a disposable test-copy database only: 294 products / 3,150
+source observations migrated to 3,148 target rows (delta of 2 is expected and
+verified — two eMAG listings were re-slugged mid-monitoring under the same
+retailer product code, so they correctly collapse into one offer). Idempotency
+proven by running the migration twice against the same test copy with
+identical row counts both times (291 products, 292 offers, 3,148 observations).
+Tests: 139 passed unchanged, ruff check clean.
+**Not yet run against the real `data/price_history.db`** — this commit ships
+the scripts only; the production migration run is a separate, explicit
+decision.
+
 ## Next active focus: Sprint 4 (Storage Migration to SQLite, due 2026-09-29)
-Issues: #6 (Parent), #28 (T-19), #27 (T-20).
+Issues: #6 (Parent), #28 (T-19, complete), #27 (T-20, complete).
 
 ## Blocked / gating
 - T-31 (P0) Black Friday go/no-go review — blocked on Sprint 3-5 completion

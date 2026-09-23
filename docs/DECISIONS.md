@@ -50,3 +50,14 @@ Playwright processes and clearing %TEMP% debris older than 24 hours.
 Added `docs/runbooks/RUNNER_SETUP.md` documenting DACL removal of
 Authenticated Users Modify rights and least-privilege service account
 guidance. Added post-job cleanup step to monitor.yml.
+
+## 2026-09-23: T-20 migration confirmed stock_status mapping matches scrape.py's
+should_alert() semantics exactly (out_of_stock blocks alerts; all other values,
+including missing, are alert-eligible) — no behavior drift introduced.
+Known inherited limitation from T-19: canonical_products uses title-based
+identity, so near-duplicate titles across retailers can collapse into one
+product row (291 products vs 292 offers in the migrated dataset). Not a T-20
+bug; proper cross-retailer identity is T-37/T-38 scope.
+New convention introduced: _derive_sku() extracts SKU from URL path segments
+in scripts/migrate_history_to_sqlite.py — T-38's SKU extraction work should
+either reuse or explicitly supersede this.
