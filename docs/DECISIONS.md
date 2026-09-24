@@ -104,3 +104,21 @@ to Watch/modernWatchItem/scrape.py is deferred as its own follow-up task
 — not done as part of this migration to avoid scope creep under
 time pressure. The migration script and modern schema are NOT safe to
 promote to the live watchlist until that follow-up lands.
+
+## 2026-09-24 — Session retrospective: recurring risks for future sessions
+Three patterns worth carrying forward from T-37/#48 Phase 2, to avoid
+repeating the same near-misses on future migration/schema tasks:
+1. The ruff auto-fix hook silently strips import-only edits added before
+   their usage lands in the same session — verify with a real test run
+   (NameError, not just a clean diff) rather than trusting the diff alone.
+2. Schema-valid is not the same as production-safe. Validate output
+   programmatically against validate_watchlist() (or equivalent) before
+   approving a migration for promotion — printed/eyeballed JSON caught
+   neither the Decimal-string encoding bug nor the missing `enabled`
+   property; only an actual validator run did.
+3. Schema/model validation alone won't catch a field a downstream
+   consumer (e.g. scrape.py's item["site"] read) depends on but the
+   schema never declared. Grep actual runtime usage of a field before
+   assuming a migration is "1:1, no behavior loss" — the site/retailer
+   gap (#56) would have crashed production despite passing schema
+   validation cleanly.
