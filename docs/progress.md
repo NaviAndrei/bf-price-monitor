@@ -119,6 +119,10 @@ intact. Option B (multi-retailer fan-out + seller_policy enforcement)
 investigated and deferred to #57 (T-40) rather than attempted here.
 Tests: 139 passed, ruff check clean. Commit: f29a282.
 
+## T-40 (#57) Phase 3: seller_policy "trusted" gate on is_marketplace
+Implemented Option 1 of the seller_policy semantics options (first-party-verified gate): a "trusted" watch now skips alerting unless the matched listing's `is_marketplace` is `False`. eMAG's listings always report `is_marketplace: None` (robots.txt blocks the only page with real seller text), so a "trusted" watch on eMAG never alerts — a deliberate, visible degradation, surfaced via a new `policy_blocked_count` stat in scrape_health.jsonl rather than silently looking like "no price drop." Option 3 (per-Watch seller allowlist) rejected: no retailer exposes a real per-listing seller to allowlist against today. The fan-out rewrite (multiple retailers per watch) remains out of scope and untouched.
+Tests: 153 passed (3 new, TDD — shown failing before the gate was added), ruff check clean. Commit: 56a89fc.
+
 ## Next active focus: Sprint 4 (Storage Migration to SQLite, due 2026-09-29)
 Issues: #6 (Parent), #28 (T-19, complete), #27 (T-20, complete).
 

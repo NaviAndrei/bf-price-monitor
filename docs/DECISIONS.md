@@ -81,6 +81,29 @@ New convention introduced: _derive_sku() extracts SKU from URL path segments
 in scripts/migrate_history_to_sqlite.py — T-38's SKU extraction work should
 either reuse or explicitly supersede this.
 
+## 2026-09-24 — T-40 (#57) Phase 3: seller_policy "trusted" = is_marketplace is False
+Of the three seller_policy options scoped on #57, implemented Option 1
+(first-party-verified gate) and explicitly rejected Option 3 (per-Watch
+seller allowlist): no retailer today exposes a real per-listing seller to
+allowlist against — eMAG's listing page reports `seller: None` on every
+card (robots.txt disallows /product/, the only page with real seller text),
+and PC Garage/Flanco are unconditionally first-party with no marketplace
+program, so their cards are hardcoded `seller`/`is_marketplace: False` in
+scrape.py. A per-seller allowlist would have nothing real to match against
+until a retailer with actual per-listing marketplace sellers exists.
+`seller_policy`'s type (`Literal["any", "trusted"]`) is therefore unchanged;
+"trusted" now means the gate at scrape.py's alert-append site (next to
+`should_alert()`) skips the alert unless `is_marketplace is False`. This is
+a deliberate, visible degradation for eMAG, not a bug: a "trusted" watch on
+eMAG will never alert until eMAG's seller identity becomes resolvable some
+other way. A new `policy_blocked_count` stat, surfaced per store next to
+`matched_count` in scrape_health.jsonl, makes that silence visible instead
+of indistinguishable from "no price drop happened."
+T-40's remaining scope — fan-out across multiple retailers per watch
+(Phase 1's Option B main()-loop rewrite) — is explicitly NOT part of this
+change and was not implemented. #57 is being closed for the seller_policy
+piece only; the fan-out rewrite is tracked as a fresh issue if still wanted.
+
 ## 2026-09-23: data/price_history.db is git-ignored by design. It is
 runner-local, regenerable state (via migrate_history_to_sqlite.py from
 data/price_history.json), not a git-tracked artifact — matches T-18's
