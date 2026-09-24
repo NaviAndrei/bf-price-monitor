@@ -1016,6 +1016,7 @@ def main():
                 "watches_requested": 0,
                 "products_parsed": 0,
                 "matched_count": 0,
+                "policy_blocked_count": 0,
                 "latency_seconds": 0.0,
             },
         )
@@ -1133,6 +1134,18 @@ def main():
                 all_time_low=prior_all_time_low,
                 atl_policy=item.get("atl_policy", "aggressive"),
             ):
+                # T-40 (#57): "trusted" means first-party-verified only.
+                # eMAG's listing page never reports a seller (robots.txt
+                # blocks the only page that would), so is_marketplace is
+                # always None there — a "trusted" watch correctly never
+                # alerts on eMAG until that becomes resolvable some other
+                # way, rather than guessing.
+                if (
+                    item.get("seller_policy") == "trusted"
+                    and r.get("is_marketplace") is not False
+                ):
+                    stats["policy_blocked_count"] += 1
+                    continue
                 stats["matched_count"] += 1
                 thirty_day_cutoff = today_date - timedelta(days=30)
                 recent_prices = [
@@ -1184,6 +1197,7 @@ def main():
                 "watches_requested": stats["watches_requested"],
                 "products_parsed": stats["products_parsed"],
                 "matched_count": stats["matched_count"],
+                "policy_blocked_count": stats["policy_blocked_count"],
                 "parse_failures": _run_state.failure_counts.get(site, 0),
                 "challenge_detected": _run_state.challenge_counts.get(site, 0) > 0,
                 "latency_seconds": round(stats["latency_seconds"], 3),

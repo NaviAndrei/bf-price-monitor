@@ -852,3 +852,163 @@ def test_challenge_counter_propagates_from_fetch_to_health_record(
 
     record = _health_records()[0]
     assert record["challenge_detected"] is True
+
+
+# --- T-40 (#57): seller_policy "trusted" gate on is_marketplace ------------
+
+
+def _seed_prior_price(history_file, key, prior_price, site):
+    history_file.write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "products": {
+                    key: {
+                        "title": "Laptop Lenovo V15",
+                        "site": site,
+                        "all_time_low": prior_price,
+                        "all_time_high": prior_price,
+                        "first_seen": "2026-01-01",
+                        "history": [
+                            {
+                                "date": "2026-01-01",
+                                "observed_at": "2026-01-01T09:00:00+00:00",
+                                "price": prior_price,
+                                "stock_status": "in_stock",
+                            }
+                        ],
+                    }
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+
+def _alerts(alerts_file):
+    return json.loads(alerts_file.read_text(encoding="utf-8"))
+
+
+def test_trusted_watch_alerts_on_first_party_listing(tmp_path, monkeypatch):
+    # Modern watchlist format: seller_policy is only declared in
+    # modernWatchItem, matching data/watchlist.json's actual shape since
+    # #56 promoted it (legacyWatchItem has no seller_policy property).
+    watchlist_file = tmp_path / "watchlist.json"
+    watchlist_file.write_text(
+        json.dumps(
+            {
+                "watches": [
+                    {
+                        "id": "babebbc9-2a56-5d0c-b57c-9ca8ad44d7b4",
+                        "site": "pcgarage",
+                        "query": "q",
+                        "seller_policy": "trusted",
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    history_file = tmp_path / "price_history.json"
+    alerts_file = tmp_path / "alerts.json"
+    url = "https://www.pcgarage.ro/laptop-lenovo-v15/"
+    _seed_prior_price(history_file, canonicalize_url(url), 2999.99, "pcgarage")
+
+    monkeypatch.setattr(scrape, "WATCHLIST_FILE", watchlist_file)
+    monkeypatch.setattr(scrape, "HISTORY_FILE", history_file)
+    monkeypatch.setattr(scrape, "ALERTS_FILE", alerts_file)
+    monkeypatch.setattr(
+        scrape,
+        "SCRAPERS",
+        {
+            "pcgarage": lambda query: [
+                _watchlist_entry(
+                    url=url, price=2499.99, seller="PC Garage", is_marketplace=False
+                )
+            ]
+        },
+    )
+    monkeypatch.setattr(scrape.time, "sleep", lambda *_: None)
+
+    scrape.main()
+
+    assert len(_alerts(alerts_file)) == 1
+
+    record = _health_records()[0]
+    assert record["policy_blocked_count"] == 0
+
+
+def test_trusted_watch_blocks_emag_listing_with_unknown_marketplace_status(
+    tmp_path, monkeypatch
+):
+    watchlist_file = tmp_path / "watchlist.json"
+    watchlist_file.write_text(
+        json.dumps(
+            {
+                "watches": [
+                    {
+                        "id": "2db088f5-a629-5b44-b01b-b75e3ee88e42",
+                        "site": "emag",
+                        "query": "q",
+                        "seller_policy": "trusted",
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    history_file = tmp_path / "price_history.json"
+    alerts_file = tmp_path / "alerts.json"
+    url = "https://www.emag.ro/laptop-lenovo-v15/pd/ABC123/"
+    _seed_prior_price(history_file, canonicalize_url(url), 2999.99, "emag")
+
+    monkeypatch.setattr(scrape, "WATCHLIST_FILE", watchlist_file)
+    monkeypatch.setattr(scrape, "HISTORY_FILE", history_file)
+    monkeypatch.setattr(scrape, "ALERTS_FILE", alerts_file)
+    monkeypatch.setattr(
+        scrape,
+        "SCRAPERS",
+        {"emag": lambda query: [_watchlist_entry(url=url, price=2499.99)]},
+    )
+    monkeypatch.setattr(scrape.time, "sleep", lambda *_: None)
+
+    scrape.main()
+
+    assert _alerts(alerts_file) == []
+
+    record = _health_records()[0]
+    assert record["policy_blocked_count"] == 1
+    assert record["matched_count"] == 0
+
+
+def test_any_policy_watch_alerts_regardless_of_marketplace_status(
+    tmp_path, monkeypatch
+):
+    # Default seller_policy ("any"), unset entirely — current behavior must
+    # be unchanged: an eMAG listing with is_marketplace=None still alerts.
+    watchlist_file = tmp_path / "watchlist.json"
+    watchlist_file.write_text(
+        json.dumps([{"site": "emag", "query": "q"}]),
+        encoding="utf-8",
+    )
+    history_file = tmp_path / "price_history.json"
+    alerts_file = tmp_path / "alerts.json"
+    url = "https://www.emag.ro/laptop-lenovo-v15/pd/ABC123/"
+    _seed_prior_price(history_file, canonicalize_url(url), 2999.99, "emag")
+
+    monkeypatch.setattr(scrape, "WATCHLIST_FILE", watchlist_file)
+    monkeypatch.setattr(scrape, "HISTORY_FILE", history_file)
+    monkeypatch.setattr(scrape, "ALERTS_FILE", alerts_file)
+    monkeypatch.setattr(
+        scrape,
+        "SCRAPERS",
+        {"emag": lambda query: [_watchlist_entry(url=url, price=2499.99)]},
+    )
+    monkeypatch.setattr(scrape.time, "sleep", lambda *_: None)
+
+    scrape.main()
+
+    assert len(_alerts(alerts_file)) == 1
+
+    record = _health_records()[0]
+    assert record["policy_blocked_count"] == 0
