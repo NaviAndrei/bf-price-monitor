@@ -1,17 +1,5 @@
 """Migrate data/watchlist.json's legacy flat-array format to the modern Watch-model shape.
 
-NOT SAFE TO RUN FOR REAL AGAINST PRODUCTION YET. Watch/modernWatchItem have
-no field for the legacy `site` key, so every migrated entry loses its
-retailer identity entirely. scrape.py's main() reads item["site"]
-unconditionally to pick the retailer adapter per watch and to disambiguate
-entries that share a query but target different retailers (e.g. the two
-"laptop asus vivobook" entries, tracked on pcgarage and flanco
-respectively). Promoting this script's output to data/watchlist.json as
-currently defined will crash the next scrape run with KeyError: 'site'.
-Adding site support to Watch/modernWatchItem/scrape.py is deferred as its
-own follow-up task; see docs/DECISIONS.md (2026-09-24) for the full
-finding.
-
 Read-only against the source JSON. `owner` and `seller_policy` are NOT
 present anywhere in the legacy format — this script introduces them as new
 values (DEFAULT_WATCH_OWNER / DEFAULT_SELLER_POLICY below), it does not
@@ -19,7 +7,9 @@ derive them from existing data. `target_price` and `min_drop_percent` are
 carried over so should_alert()'s existing dual-gate behavior (target_price
 OR min_drop_percent) is preserved exactly; `cooldown_hours` is NOT carried
 over or mapped to `cadence_minutes` — cadence keeps the Watch model's own
-default. `site` is NOT carried over — see the warning above.
+default. `site` is carried over 1:1 (see #56 / docs/DECISIONS.md
+2026-09-24) so scrape.py's item["site"] adapter-selection read keeps
+working against a promoted modern-format watchlist.
 
 `id` is a deterministic uuid5 of "{site}:{query}", matching the same
 derivation notify.py already uses for watch_id in AlertDecision — so a
@@ -54,6 +44,7 @@ def convert(entry: dict) -> Watch:
     return Watch(
         id=_watch_id(site, query),
         owner=DEFAULT_WATCH_OWNER,
+        site=site,
         query=query,
         target_price=entry.get("target_price"),
         min_drop_percent=entry.get("min_drop_percent"),

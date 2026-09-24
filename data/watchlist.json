@@ -1,6 +1,46 @@
-[
-  { "site": "emag", "query": "laptop lenovo v15", "target_price": 2500.0, "cooldown_hours": 24 },
-  { "site": "pcgarage", "query": "laptop asus vivobook", "min_drop_percent": 5.0, "cooldown_hours": 24 },
-  { "site": "flanco", "query": "laptop asus vivobook", "cooldown_hours": 24 },
-  { "site": "emag", "query": "iphone 15", "cooldown_hours": 24 }
-]
+{
+  "watches": [
+    {
+      "id": "babebbc9-2a56-5d0c-b57c-9ca8ad44d7b4",
+      "owner": "NaviAndrei",
+      "site": "emag",
+      "query": "laptop lenovo v15",
+      "target_price": 2500.0,
+      "track_all_time_low": true,
+      "seller_policy": "any",
+      "cadence_minutes": 120,
+      "enabled": true
+    },
+    {
+      "id": "4d24a18d-89d8-59f0-8798-68babdceb715",
+      "owner": "NaviAndrei",
+      "site": "pcgarage",
+      "query": "laptop asus vivobook",
+      "min_drop_percent": 5.0,
+      "track_all_time_low": true,
+      "seller_policy": "any",
+      "cadence_minutes": 120,
+      "enabled": true
+    },
+    {
+      "id": "ba36f3c8-f2ac-5cd9-9bed-a5828741ff66",
+      "owner": "NaviAndrei",
+      "site": "flanco",
+      "query": "laptop asus vivobook",
+      "track_all_time_low": true,
+      "seller_policy": "any",
+      "cadence_minutes": 120,
+      "enabled": true
+    },
+    {
+      "id": "2db088f5-a629-5b44-b01b-b75e3ee88e42",
+      "owner": "NaviAndrei",
+      "site": "emag",
+      "query": "iphone 15",
+      "track_all_time_low": true,
+      "seller_policy": "any",
+      "cadence_minutes": 120,
+      "enabled": true
+    }
+  ]
+}

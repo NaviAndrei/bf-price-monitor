@@ -37,6 +37,7 @@ def test_valid_modern_watchlist_passes(tmp_path):
             "watches": [
                 {
                     "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                    "site": "emag",
                     "query": "laptop lenovo v15",
                     "target_price": 2500.0,
                     "drop_rule": "percentage",

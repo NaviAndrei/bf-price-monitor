@@ -13,6 +13,7 @@ class Watch(BaseModel):
 
     id: UUID = Field(default_factory=uuid4)
     owner: str = "NaviAndrei"
+    site: str
     query: str | None = None
     direct_url: HttpUrl | None = None
     target_price: Decimal | None = None

@@ -20,6 +20,7 @@ from bf_price_monitor.domain import (
 def test_watch_happy_path():
     watch = Watch(
         owner="ivan",
+        site="emag",
         query="laptop lenovo v15",
         drop_rule="percentage",
         drop_threshold=Decimal("5"),
@@ -34,6 +35,7 @@ def test_watch_negative_drop_threshold_raises():
     with pytest.raises(ValidationError):
         Watch(
             owner="ivan",
+            site="emag",
             query="laptop lenovo v15",
             drop_rule="percentage",
             drop_threshold=Decimal("-5"),

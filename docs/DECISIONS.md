@@ -122,3 +122,17 @@ repeating the same near-misses on future migration/schema tasks:
    assuming a migration is "1:1, no behavior loss" — the site/retailer
    gap (#56) would have crashed production despite passing schema
    validation cleanly.
+
+## 2026-09-24: #56 resolved via Option A (site field added to
+Watch/modernWatchItem, scrape.py's existing one-site-per-watch loop
+unchanged). Option B (fan-out across SCRAPERS registry per query,
+filtered by seller_policy) was investigated and found feasible at the
+adapter-registry level, but requires: (a) a new seller_policy semantics
+decision — no "trusted retailer" concept exists anywhere in the codebase
+today, (b) rewriting main()'s per-watch single-site tagging into
+per-offer tagging across history/SQLite/alerts, (c) an unchecked
+notify.py/analyze.py assumption of one-alert-per-watch-per-run that
+needs verification before Option B is safe. Deferred to a new issue,
+not attempted under Sprint 4's deadline. seller_policy and
+Offer.retailer remain declared-but-unwired in the live path until that
+future work lands.
