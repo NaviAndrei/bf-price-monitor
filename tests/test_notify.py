@@ -1,3 +1,4 @@
+import hashlib
 import json
 import uuid
 
@@ -102,6 +103,12 @@ class _FakeResponse:
 
     def json(self):
         return self._json_data
+
+    def raise_for_status(self):
+        # Only the sendPhoto path calls this; _send_with_retry branches on
+        # status_code directly.
+        if self.status_code >= 400:
+            raise requests.HTTPError(f"HTTP {self.status_code}")
 
 
 def _sequenced_post(items):
@@ -497,14 +504,20 @@ def test_event_id_stable_across_pending_and_terminal_records(
 
     notify.main()
 
+    # T-41: price-aware derivation (previously uuid5 of the URL alone),
+    # recomputed here rather than via notify's helpers so a drift in either
+    # the key or the id derivation fails this test.
+    dedup_key = hashlib.sha256(
+        f"{DEAL_ALERT['url']}:{DEAL_ALERT['new_price']}:{DEAL_ALERT['site']}".encode()
+    ).hexdigest()
     expected_event_id = str(
-        uuid.uuid5(uuid.NAMESPACE_URL, f"alert-decision:{DEAL_ALERT['url']}")
+        uuid.uuid5(uuid.NAMESPACE_URL, f"alert-decision:{dedup_key}")
     )
     records = _read_outbox_records()
     assert {r["event_id"] for r in records} == {expected_event_id}
 
     # A second scheduled run for the same alert must derive the identical
-    # event_id and then skip it as an exact-match duplicate (already SENT).
+    # event_id and then skip it (SENT within the cooldown window).
     post2 = _sequenced_post([])
     monkeypatch.setattr(notify.requests, "post", post2)
     notify.main()
@@ -536,9 +549,14 @@ def test_replayed_event_not_resent_in_normal_loop_same_run(
         json.dumps([DEAL_ALERT]), encoding="utf-8"
     )
 
-    event_id = str(
-        uuid.uuid5(uuid.NAMESPACE_URL, f"alert-decision:{DEAL_ALERT['url']}")
-    )
+    # T-41: price-aware id (previously uuid5 of the URL alone). The seeded
+    # PENDING also carries its dedup_key, as every deal record now does —
+    # which is what exercises the replay step's in-memory SENT record
+    # against the live loop's cooldown check.
+    dedup_key = hashlib.sha256(
+        f"{DEAL_ALERT['url']}:{DEAL_ALERT['new_price']}:{DEAL_ALERT['site']}".encode()
+    ).hexdigest()
+    event_id = str(uuid.uuid5(uuid.NAMESPACE_URL, f"alert-decision:{dedup_key}"))
     old_created = (
         notify.datetime.now(notify.UTC) - notify.timedelta(minutes=10)
     ).isoformat()
@@ -560,6 +578,7 @@ def test_replayed_event_not_resent_in_normal_loop_same_run(
         old_created,
         0,
         DEAL_ALERT["site"],
+        dedup_key=dedup_key,
     )
 
     # Only one response queued: if the normal per-alert loop tried to resend
@@ -835,3 +854,129 @@ def test_cooldown_uses_last_attempt_at_utc_not_created_at_utc(
     notify.main()
 
     assert post.call_count() == 0
+
+
+# --- T-41 (#58): unified outbox + price-aware dedup -------------------------
+# These drive notify.main() end-to-end with no seeded outbox records, so
+# every event_id/dedup_key comes from the production derivation itself.
+
+
+def _write_formatted(tmp_path, alerts):
+    (tmp_path / "formatted_alerts.json").write_text(
+        json.dumps(alerts), encoding="utf-8"
+    )
+
+
+def _enable_photo_path(alert):
+    # generate_quickchart_url needs >= 3 history points to return a chart,
+    # which is what routes main() onto the sendPhoto branch.
+    history = [
+        {"date": "2026-09-01", "price": 100.0},
+        {"date": "2026-09-02", "price": 95.0},
+        {"date": "2026-09-03", "price": 90.0},
+    ]
+    notify.PRICE_HISTORY_FILE.write_text(
+        json.dumps({"products": {alert["url"]: {"history": history}}}),
+        encoding="utf-8",
+    )
+
+
+def _age_outbox_records(hours):
+    """Shifts every record's timestamps back by `hours`, simulating the
+    passage of time between two scheduled runs."""
+    records = _read_outbox_records()
+    delta = notify.timedelta(hours=hours)
+    for record in records:
+        for field in ("created_at_utc", "last_attempt_at_utc"):
+            if record.get(field):
+                shifted = notify.datetime.fromisoformat(record[field]) - delta
+                record[field] = shifted.isoformat()
+    notify.OUTBOX_FILE.write_text(
+        "".join(json.dumps(r) + "\n" for r in records), encoding="utf-8"
+    )
+
+
+def test_realert_on_new_lower_price_same_url(monkeypatch, tmp_path, _full_pipeline_env):
+    # Bug A: event_id was uuid5(url) and SENT was a permanent skip, so a
+    # further price drop on an already-alerted URL could never alert again.
+    _write_formatted(tmp_path, [DEAL_ALERT])
+    monkeypatch.setattr(notify.requests, "post", _sequenced_post([_FakeResponse(200)]))
+    notify.main()
+
+    _write_formatted(tmp_path, [{**DEAL_ALERT, "new_price": 70.0}])
+    post2 = _sequenced_post([_FakeResponse(200)])
+    monkeypatch.setattr(notify.requests, "post", post2)
+    notify.main()
+
+    assert post2.call_count() == 1
+
+
+def test_cooldown_expiry_rearms_same_price(monkeypatch, tmp_path, _full_pipeline_env):
+    # Bug A: once the cooldown window has passed, the same deal must be
+    # allowed to alert again — the cooldown is the only suppression.
+    _write_formatted(tmp_path, [DEAL_ALERT])
+    monkeypatch.setattr(notify.requests, "post", _sequenced_post([_FakeResponse(200)]))
+    notify.main()
+
+    _age_outbox_records(hours=notify.DEFAULT_COOLDOWN_HOURS + 1)
+    post2 = _sequenced_post([_FakeResponse(200)])
+    monkeypatch.setattr(notify.requests, "post", post2)
+    notify.main()
+
+    assert post2.call_count() == 1
+
+
+def test_photo_path_writes_pending_before_send(
+    monkeypatch, tmp_path, _full_pipeline_env
+):
+    # Bug B: a successful sendPhoto previously wrote no outbox record at
+    # all, so a crash mid-send left no trace and nothing could dedup it.
+    _write_formatted(tmp_path, [DEAL_ALERT])
+    _enable_photo_path(DEAL_ALERT)
+    calls = []
+
+    def _post(url, json=None, timeout=None):
+        calls.append(
+            (url.rsplit("/", 1)[-1], [r["status"] for r in _read_outbox_records()])
+        )
+        return _FakeResponse(200)
+
+    monkeypatch.setattr(notify.requests, "post", _post)
+    notify.main()
+
+    assert calls == [("sendPhoto", ["PENDING"])]
+    records = _read_outbox_records()
+    assert [r["status"] for r in records] == ["PENDING", "SENT"]
+    assert records[-1]["dedup_key"] == notify._deal_dedup_key(DEAL_ALERT)
+
+
+def test_photo_path_second_run_within_cooldown_skipped(
+    monkeypatch, tmp_path, _full_pipeline_env
+):
+    # Bug B: with no outbox record from the photo path, the next scheduled
+    # run re-sent the identical deal.
+    _write_formatted(tmp_path, [DEAL_ALERT])
+    _enable_photo_path(DEAL_ALERT)
+    monkeypatch.setattr(notify.requests, "post", _sequenced_post([_FakeResponse(200)]))
+    notify.main()
+
+    post2 = _sequenced_post([])  # any call -> IndexError -> test failure
+    monkeypatch.setattr(notify.requests, "post", post2)
+    notify.main()
+
+    assert post2.call_count() == 0
+
+
+def test_same_deal_twice_in_one_run_sent_once(
+    monkeypatch, tmp_path, _full_pipeline_env
+):
+    # Bug C: the in-memory effective map was never updated inside the main
+    # loop, so the same offer matched by two watches went out twice.
+    _write_formatted(tmp_path, [DEAL_ALERT, {**DEAL_ALERT, "query": "lenovo v15 16gb"}])
+    post = _sequenced_post([_FakeResponse(200)])
+    monkeypatch.setattr(notify.requests, "post", post)
+
+    notify.main()
+
+    assert post.call_count() == 1
+    assert [r["status"] for r in _read_outbox_records()] == ["PENDING", "SENT"]

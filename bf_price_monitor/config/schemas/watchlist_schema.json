@@ -57,6 +57,7 @@
         "track_all_time_low": { "type": "boolean" },
         "seller_policy": { "type": "string", "enum": ["any", "trusted"] },
         "cadence_minutes": { "type": "integer", "minimum": 5, "maximum": 1440 },
+        "cooldown_hours": { "type": "integer", "minimum": 1 },
         "atl_policy": { "$ref": "#/definitions/atlPolicy" },
         "enabled": { "type": "boolean" }
       },

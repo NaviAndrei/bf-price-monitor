@@ -23,6 +23,7 @@ class Watch(BaseModel):
     track_all_time_low: bool = True
     seller_policy: Literal["any", "trusted"] = "any"
     cadence_minutes: int = 120
+    cooldown_hours: int = Field(default=24, gt=0)
     quiet_hours_start: int | None = None
     quiet_hours_end: int | None = None
     enabled: bool = True

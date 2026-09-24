@@ -116,3 +116,21 @@ def test_production_watchlist_file_still_loads():
     validate_watchlist(production_path)
     watches = load_watchlist(production_path)
     assert len(watches) == 4
+
+
+def test_modern_watch_entry_accepts_cooldown_hours(tmp_path):
+    path = write_watchlist(
+        tmp_path,
+        {
+            "watches": [
+                {
+                    "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                    "site": "emag",
+                    "query": "laptop lenovo v15",
+                    "cooldown_hours": 6,
+                }
+            ]
+        },
+    )
+    validate_watchlist(path)
+    assert load_watchlist(path)[0]["cooldown_hours"] == 6

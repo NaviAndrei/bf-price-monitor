@@ -5,8 +5,9 @@ present anywhere in the legacy format — this script introduces them as new
 values (DEFAULT_WATCH_OWNER / DEFAULT_SELLER_POLICY below), it does not
 derive them from existing data. `target_price` and `min_drop_percent` are
 carried over so should_alert()'s existing dual-gate behavior (target_price
-OR min_drop_percent) is preserved exactly; `cooldown_hours` is NOT carried
-over or mapped to `cadence_minutes` — cadence keeps the Watch model's own
+OR min_drop_percent) is preserved exactly; `cooldown_hours` is carried
+over as-is (defaulting to DEFAULT_COOLDOWN_HOURS when absent, see #58) and
+is NOT mapped to `cadence_minutes` — cadence keeps the Watch model's own
 default. `site` is carried over 1:1 (see #56 / docs/DECISIONS.md
 2026-09-24) so scrape.py's item["site"] adapter-selection read keeps
 working against a promoted modern-format watchlist.
@@ -32,6 +33,7 @@ from bf_price_monitor.domain import Watch  # noqa: E402
 
 DEFAULT_WATCH_OWNER = "NaviAndrei"
 DEFAULT_SELLER_POLICY = "any"
+DEFAULT_COOLDOWN_HOURS = 24
 
 
 def _watch_id(site: str, query: str) -> uuid.UUID:
@@ -50,6 +52,7 @@ def convert(entry: dict) -> Watch:
         min_drop_percent=entry.get("min_drop_percent"),
         track_all_time_low=True,
         seller_policy=DEFAULT_SELLER_POLICY,
+        cooldown_hours=entry.get("cooldown_hours", DEFAULT_COOLDOWN_HOURS),
     )
 
 

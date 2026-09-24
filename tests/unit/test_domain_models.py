@@ -156,3 +156,13 @@ def test_delivery_attempt_happy_path():
         final_state="delivered",
     )
     assert attempt.final_state == "delivered"
+
+
+def test_watch_cooldown_hours_defaults_to_24():
+    assert Watch(site="emag", query="laptop lenovo v15").cooldown_hours == 24
+
+
+def test_watch_cooldown_hours_accepts_custom_and_rejects_non_positive():
+    assert Watch(site="emag", query="q", cooldown_hours=6).cooldown_hours == 6
+    with pytest.raises(ValidationError):
+        Watch(site="emag", query="q", cooldown_hours=0)

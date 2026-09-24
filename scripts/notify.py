@@ -297,8 +297,8 @@ def _write_outbox_record(
     site: str,
     error_log: str | None = None,
     dedup_key: str | None = None,
-) -> None:
-    """Appends one status record for event_id. The outbox is append-only:
+) -> dict:
+    """Appends one status record for event_id and returns it. The outbox is append-only:
     the effective status of an event is whichever record for its event_id
     was written last (see _load_outbox_effective). site is the store label
     (e.g. "emag", "scrape_health") used for the DLQ/log label if a replay
@@ -307,24 +307,24 @@ def _write_outbox_record(
     dedup_key (T-13) is the "same offer" identity used for cooldown-window
     suppression; None for health alerts and for any record written before
     T-13, which can never match a later dedup_key lookup."""
-    _append_outbox_record(
-        {
-            "event_id": event_id,
-            "source": source,
-            "alert_payload": alert_payload,
-            "send_payload": send_payload,
-            "channel": "telegram",
-            "status": status,
-            "created_at_utc": created_at_utc,
-            "last_attempt_at_utc": None
-            if status == "PENDING"
-            else datetime.now(UTC).isoformat(),
-            "attempt_count": attempt_count,
-            "site": site,
-            "error_log": error_log,
-            "dedup_key": dedup_key,
-        }
-    )
+    record = {
+        "event_id": event_id,
+        "source": source,
+        "alert_payload": alert_payload,
+        "send_payload": send_payload,
+        "channel": "telegram",
+        "status": status,
+        "created_at_utc": created_at_utc,
+        "last_attempt_at_utc": None
+        if status == "PENDING"
+        else datetime.now(UTC).isoformat(),
+        "attempt_count": attempt_count,
+        "site": site,
+        "error_log": error_log,
+        "dedup_key": dedup_key,
+    }
+    _append_outbox_record(record)
+    return record
 
 
 def _load_outbox_effective() -> dict[str, dict]:
@@ -372,7 +372,11 @@ def _replay_pending_outbox(send_message_url: str, chat_id: str) -> dict[str, dic
             alert_url=alert_url,
         )
         status = "SENT" if ok else "DEAD_LETTER"
-        _write_outbox_record(
+        # T-41: keep the record actually written (with its stamped
+        # last_attempt_at_utc) rather than the PENDING copy, whose None
+        # timestamp would crash the cooldown check now that replayed deal
+        # records share their dedup_key with the live alert loop.
+        effective[event_id] = _write_outbox_record(
             event_id,
             record["source"],
             record["alert_payload"],
@@ -384,7 +388,6 @@ def _replay_pending_outbox(send_message_url: str, chat_id: str) -> dict[str, dic
             None if ok else "replay send failed after retries",
             dedup_key=record.get("dedup_key"),
         )
-        effective[event_id] = {**record, "status": status}
         print(f"REPLAYED: event {event_id} -> {status}", file=sys.stderr)
 
     return effective
@@ -445,12 +448,19 @@ def _send_health_alerts(
 
 
 def _deal_dedup_key(alert: dict) -> str:
-    # T-13: "same offer" identity (url+price+site), distinct from T-12's
-    # event_id (uuid5 of url alone, "same decision instance"). Used only for
-    # cooldown-window suppression, which is time-bounded and re-armable once
-    # the window expires — unlike T-12's permanent already-SENT dedup.
+    # T-13: "same offer" identity (url+price+site), used for cooldown-window
+    # suppression. Since T-41 it is also the basis of the deal's outbox
+    # event_id (see _deal_event_id), so a genuine price change yields a new
+    # event instead of colliding with the URL's first-ever alert.
     raw = f"{alert['url']}:{alert['new_price']}:{alert['site']}"
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()
+
+
+def _deal_event_id(dedup_key: str) -> str:
+    # T-41: derived from the price-aware dedup_key, not the URL alone — a
+    # URL-only id plus a permanent already-SENT skip meant each URL could
+    # alert exactly once, ever.
+    return str(uuid.uuid5(uuid.NAMESPACE_URL, f"alert-decision:{dedup_key}"))
 
 
 def _load_cooldown_by_site() -> dict[str, float]:
@@ -518,8 +528,18 @@ def main():
     price_history = json.load(open(PRICE_HISTORY_FILE, encoding="utf-8"))
     products = price_history.get("products", {})
     cooldown_by_site = _load_cooldown_by_site()
+    seen_this_run: set[str] = set()
 
     for alert in alerts:
+        dedup_key = _deal_dedup_key(alert)
+        # T-41: the same offer can reach this loop more than once per run
+        # (e.g. matched by two watches); one delivery attempt per run is
+        # enough regardless of how that attempt ended.
+        if dedup_key in seen_this_run:
+            print(f"IN-RUN DUPLICATE SKIP: dedup_key={dedup_key}", file=sys.stderr)
+            continue
+        seen_this_run.add(dedup_key)
+
         # Structure-only validation (T-01): every alert reaching this point
         # already passed should_alert()'s filter in scrape.py, so verdict is
         # always "alert" here — this confirms the payload matches the
@@ -534,9 +554,7 @@ def main():
                     # default) so the same alert produces the same outbox
                     # event_id across separate runs — required for replay
                     # and dedup to actually match up after a restart.
-                    "id": uuid.uuid5(
-                        uuid.NAMESPACE_URL, f"alert-decision:{alert['url']}"
-                    ),
+                    "id": _deal_event_id(dedup_key),
                     "policy_version": "omnibus-v1",
                     "watch_id": uuid.uuid5(
                         uuid.NAMESPACE_URL, f"{alert['site']}:{alert['query']}"
@@ -556,13 +574,15 @@ def main():
 
         event_id = str(decision.id)
         effective_record = outbox_effective.get(event_id)
-        if effective_record and effective_record["status"] == "SENT":
-            print(f"DUPLICATE SKIP: event {event_id}", file=sys.stderr)
+        if effective_record and effective_record["status"] == "PENDING":
+            # Replay already resolved every PENDING past the grace window,
+            # so one still here is in flight from a concurrent run.
+            print(f"IN-FLIGHT SKIP: event {event_id}", file=sys.stderr)
             continue
 
-        # T-13: same-offer cooldown, checked after T-12's exact-event dedup
-        # above and before the PENDING write below.
-        dedup_key = _deal_dedup_key(alert)
+        # T-13: same-offer cooldown. Since T-41 this is the only cross-run
+        # suppression for deals: SENT blocks only within the window, and
+        # DEAD_LETTER is retried.
         cooldown_hours = cooldown_by_site.get(alert["site"], DEFAULT_COOLDOWN_HOURS)
         blocking_record = _find_cooldown_block(
             dedup_key, cooldown_hours, outbox_effective, datetime.now(UTC)
@@ -581,6 +601,30 @@ def main():
         product_history = products.get(alert["url"], {}).get("history", [])
         chart_url = generate_quickchart_url(
             product_history, alert["title"], alert.get("verdict")
+        )
+
+        # T-12/T-41: PENDING is written before either send attempt (photo or
+        # text) so a crash mid-send still leaves evidence this event was in
+        # flight; send_payload is the text message a later replay resends
+        # verbatim via sendMessage, since alert_payload (the AlertDecision
+        # dump) alone has no title/price/summary to reconstruct it from.
+        send_payload = {
+            "text": message,
+            "parse_mode": "HTML",
+            "reply_markup": keyboard,
+        }
+        alert_payload = decision.model_dump(mode="json")
+        created_at = datetime.now(UTC).isoformat()
+        outbox_effective[event_id] = _write_outbox_record(
+            event_id,
+            "deal",
+            alert_payload,
+            send_payload,
+            "PENDING",
+            created_at,
+            0,
+            alert["site"],
+            dedup_key=dedup_key,
         )
 
         # The chart is a best-effort enhancement, not a distinct delivery: a
@@ -608,49 +652,27 @@ def main():
                 )
 
         if not sent:
-            # T-12: PENDING is written before the send attempt so a crash
-            # mid-send still leaves evidence this event was in flight;
-            # send_payload is what a later replay resends verbatim, since
-            # alert_payload (the AlertDecision dump) alone has no title/
-            # price/summary to reconstruct the message from.
-            send_payload = {
-                "text": message,
-                "parse_mode": "HTML",
-                "reply_markup": keyboard,
-            }
-            alert_payload = decision.model_dump(mode="json")
-            created_at = datetime.now(UTC).isoformat()
-            _write_outbox_record(
-                event_id,
-                "deal",
-                alert_payload,
-                send_payload,
-                "PENDING",
-                created_at,
-                0,
-                alert["site"],
-                dedup_key=dedup_key,
-            )
-            ok = _send_with_retry(
+            sent = _send_with_retry(
                 send_message_url,
                 {"chat_id": chat_id, **send_payload},
                 alert=alert,
                 store=alert["site"],
                 alert_url=alert["url"],
             )
-            status = "SENT" if ok else "DEAD_LETTER"
-            _write_outbox_record(
-                event_id,
-                "deal",
-                alert_payload,
-                send_payload,
-                status,
-                created_at,
-                1,
-                alert["site"],
-                None if ok else "delivery failed after retries",
-                dedup_key=dedup_key,
-            )
+
+        status = "SENT" if sent else "DEAD_LETTER"
+        outbox_effective[event_id] = _write_outbox_record(
+            event_id,
+            "deal",
+            alert_payload,
+            send_payload,
+            status,
+            created_at,
+            1,
+            alert["site"],
+            None if sent else "delivery failed after retries",
+            dedup_key=dedup_key,
+        )
 
         time.sleep(1.1)  # Telegram allows ~1 message/second per chat
 
