@@ -28,6 +28,10 @@ Tests: 128 passed (121 existing unchanged + 7 new), ruff check/format and mypy -
 Added .gitleaks.toml (extends default ruleset + custom Healthchecks.io ping-URL rule) and .pre-commit-config.yaml (gitleaks v8.30.1), plus a matching "Secret scan (pre-commit / Gitleaks)" step in quality.yml so local and CI share one config. Added docs/security/secret-rotation-runbook.md covering HF_TOKEN, TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, HEALTHCHECK_URL individually. Audited scrape.py, analyze.py, notify.py for secret-leaking logs: only notify.py's `_send_with_retry` had a real leak path (a network exception's stringified URL can embed the Telegram bot token), now redacted via `_redact_secrets` before it reaches stderr or data/dlq.jsonl. scrape.py and analyze.py needed no changes.
 Tests: 128 passed unchanged, ruff check/format clean, Gitleaks scan of full repo clean (no `.gitleaksignore` needed). Commit: e7899a7 (not pushed).
 
+## T-41 (#58): dedup id, outbox and cooldown bugs found during T-40 investigation
+Fixed four notify.py bugs surfaced while scoping T-40's fan-out: outbox event id was URL-only (a genuine price drop was silently skipped), the photo send path never wrote to the outbox, a replayed PENDING record could crash the cooldown check for lacking a timestamp, and `cooldown_hours` had been dropped from the Watch model. Restored `cooldown_hours` (default 24) on Watch and the modern schema, carried over by migrate_watchlist_to_modern.py; data/watchlist.json left unchanged since every fallback already resolves to 24.
+Tests: 150 passed (139 existing + 11 new), ruff check/format clean (pre-existing scripts/analyze.py format issue unrelated, tracked by #54). Commit: 3c1a960.
+
 # bf-price-monitor — Current Handoff
 
 ## Sprint 3 (Security P0, due 2026-09-27) — 6/6 complete

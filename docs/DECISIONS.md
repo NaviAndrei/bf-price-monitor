@@ -58,6 +58,25 @@ Known inherited limitation from T-19: canonical_products uses title-based
 identity, so near-duplicate titles across retailers can collapse into one
 product row (291 products vs 292 offers in the migrated dataset). Not a T-20
 bug; proper cross-retailer identity is T-37/T-38 scope.
+
+## 2026-09-24 — T-41 (#58): notify.py dedup id, outbox write path, cooldown_hours
+Found while scoping T-40's multi-retailer fan-out (#57), filed separately since
+these are pre-existing bugs, not fan-out design gaps. Kept the existing
+sha256(url:price:site) dedup_key string format unchanged and layered the fix
+on top of it — event_id is now uuid5 of that key instead of the URL alone —
+rather than switching to a rounded-price key, so records already in the real
+outbox keep matching their cooldowns after deploy. The photo and text send
+paths now share one outbox write: PENDING is written before either attempt,
+not after a successful text send, since that was the actual cause of the
+photo path never appearing in the outbox. `_write_outbox_record` now returns
+the record it wrote, and replay keeps that record (with its real timestamp)
+instead of rebuilding one without it — the missing-timestamp version is what
+crashed the cooldown check on replay. `cooldown_hours` is restored to `int`
+on the Watch model (legacy schema still allows `number`, so a legacy value
+like 1.5 would fail migration — no real watchlist entry has ever used a
+non-integer value, so this wasn't backfilled). data/watchlist.json itself was
+not touched: the Watch default, notify.py's fallback, and the migration
+default all already resolve to 24, matching every real entry's prior value.
 New convention introduced: _derive_sku() extracts SKU from URL path segments
 in scripts/migrate_history_to_sqlite.py — T-38's SKU extraction work should
 either reuse or explicitly supersede this.
