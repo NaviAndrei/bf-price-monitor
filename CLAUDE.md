@@ -6,6 +6,8 @@
 - `docs/runbooks/` and `docs/security/` — operational runbooks.
 - `.claude/skills/` — task-specific skills (`add-retailer`, `check-logic`, `find-bugs`, `run-tests`, `selector-healthcheck`, `write-tests`).
 - `.claude/agents/selector-drift-detector.md` — dedicated agent for CSS-selector breakage, this project's most brittle failure mode.
+- This repo intentionally has no `CHANGELOG.md`. There are no external release consumers or version tags — `docs/DECISIONS.md` (why things changed) and `docs/progress.md` (session handoff, what changed) serve that role for this project's actual audience. Revisit only if this project gains external users/consumers who need upgrade notes.
+- This repo has no separate `ARCHITECTURE.md`. Architecture context lives in this file's "Architecture & Code Boundaries" section and in `README.md`'s "How it works" section. Read both before any structural or cross-file change, in place of the global rule's `ARCHITECTURE.md` reference.
 
 ## Environment & Essential Commands
 - Windows self-hosted runner environment / PowerShell terminal.
