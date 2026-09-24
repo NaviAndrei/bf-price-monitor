@@ -39,20 +39,25 @@
     },
     "modernWatchItem": {
       "type": "object",
-      "required": ["id", "drop_rule", "drop_threshold", "cadence_minutes"],
+      "required": ["id"],
       "oneOf": [
         { "required": ["query"] },
         { "required": ["direct_url"] }
       ],
       "properties": {
         "id": { "type": "string", "format": "uuid" },
+        "owner": { "type": "string", "minLength": 1 },
         "query": { "type": "string", "minLength": 1 },
         "direct_url": { "type": "string", "format": "uri" },
         "target_price": { "type": "number", "exclusiveMinimum": 0 },
+        "min_drop_percent": { "type": "number", "exclusiveMinimum": 0 },
         "drop_rule": { "type": "string", "enum": ["percentage", "absolute"] },
         "drop_threshold": { "type": "number", "exclusiveMinimum": 0 },
+        "track_all_time_low": { "type": "boolean" },
+        "seller_policy": { "type": "string", "enum": ["any", "trusted"] },
         "cadence_minutes": { "type": "integer", "minimum": 5, "maximum": 1440 },
-        "atl_policy": { "$ref": "#/definitions/atlPolicy" }
+        "atl_policy": { "$ref": "#/definitions/atlPolicy" },
+        "enabled": { "type": "boolean" }
       },
       "additionalProperties": false
     },

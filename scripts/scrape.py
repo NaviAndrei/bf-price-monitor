@@ -11,7 +11,7 @@ from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 from pathlib import Path
 from typing import Literal
-from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
+from urllib.parse import parse_qsl, urlencode, urlparse, urlsplit, urlunsplit
 
 import requests
 from bs4 import BeautifulSoup
@@ -19,6 +19,10 @@ from pydantic import ValidationError
 
 from bf_price_monitor.config import load_watchlist
 from bf_price_monitor.domain import Observation
+from bf_price_monitor.storage.sqlite import init_db
+from bf_price_monitor.storage.sqlite import (
+    record_observation as sqlite_record_observation,
+)
 
 HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
 REQUEST_TIMEOUT = 15
@@ -102,6 +106,7 @@ MAX_FETCH_ATTEMPTS = 1 + len(RETRY_BACKOFFS)
 
 WATCHLIST_FILE = Path("data/watchlist.json")
 HISTORY_FILE = Path("data/price_history.json")
+DB_FILE = Path("data/price_history.db")
 ALERTS_FILE = Path("data/alerts.json")
 EXTRACTION_FAILURES_FILE = Path("data/extraction_failures.jsonl")
 SCRAPE_HEALTH_FILE = Path("data/scrape_health.jsonl")
@@ -989,6 +994,7 @@ def main():
         print(f"Watchlist validation failed: {e}", file=sys.stderr)
         sys.exit(1)
     history = load_history()
+    db = init_db(DB_FILE)
     alerts = []
     now_utc = datetime.now(UTC)
     today_date = now_utc.date()
@@ -1094,6 +1100,26 @@ def main():
                     file=sys.stderr,
                 )
                 raise
+
+            # Dual-write (T-37): price_history.json above remains the live
+            # source of truth; this additionally persists the same
+            # observation into SQLite using the dict shape
+            # migrate_history_to_sqlite.py already established, so retailer
+            # SKU-derived offer/product ids line up with the historical
+            # migration.
+            sku = urlparse(key).path.rstrip("/").rsplit("/", 1)[-1]
+            sqlite_record_observation(
+                db,
+                {
+                    "sku": sku,
+                    "title": r["title"],
+                    "price": r["price"],
+                    "in_stock": stock_status != "out_of_stock",
+                    "retailer": item["site"],
+                    "url": key,
+                    "scraped_at": observed_at,
+                },
+            )
 
             # An out-of-stock listing's price isn't buyable, so a "price
             # change" against it isn't actionable — still recorded above for
@@ -1209,6 +1235,7 @@ def main():
     )
 
     save_history(history)
+    db.close()
     json.dump(
         alerts, open(ALERTS_FILE, "w", encoding="utf-8"), indent=2, ensure_ascii=False
     )

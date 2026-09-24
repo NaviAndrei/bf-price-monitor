@@ -12,14 +12,15 @@ class Watch(BaseModel):
     model_config = ConfigDict(frozen=True, str_strip_whitespace=True)
 
     id: UUID = Field(default_factory=uuid4)
-    owner: str
+    owner: str = "NaviAndrei"
     query: str | None = None
     direct_url: HttpUrl | None = None
     target_price: Decimal | None = None
-    drop_rule: Literal["percentage", "absolute"]
-    drop_threshold: Decimal = Field(gt=0)
-    track_all_time_low: bool
-    seller_policy: Literal["any", "trusted"]
+    min_drop_percent: Decimal | None = None
+    drop_rule: Literal["percentage", "absolute"] | None = None
+    drop_threshold: Decimal | None = Field(default=None, gt=0)
+    track_all_time_low: bool = True
+    seller_policy: Literal["any", "trusted"] = "any"
     cadence_minutes: int = 120
     quiet_hours_start: int | None = None
     quiet_hours_end: int | None = None

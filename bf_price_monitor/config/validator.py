@@ -6,6 +6,9 @@ from typing import Any, cast
 
 import jsonschema
 from jsonschema.exceptions import best_match
+from pydantic import ValidationError
+
+from bf_price_monitor.domain import Watch
 
 SCHEMA_PATH = Path(__file__).parent / "schemas" / "watchlist_schema.json"
 
@@ -34,13 +37,23 @@ def load_watchlist(watchlist_path: Path) -> list[dict[str, Any]]:
     """Validates and normalizes a watchlist file into a flat list of entries.
 
     Legacy (flat-array) files are returned unchanged, which is the shape
-    ``scrape.py`` already consumes. Modern (Watch-model) files return the
-    contents of their ``watches`` array as-is; mapping those entries to a
-    scrapeable site/query pair is a separate future migration, not something
-    this loader does.
+    ``scrape.py`` already consumes. Modern (Watch-model) files have each
+    entry validated against the ``Watch`` domain model, then their
+    contents of their ``watches`` array are returned as-is; mapping those
+    entries to a scrapeable site/query pair is a separate future migration,
+    not something this loader does.
     """
     validate_watchlist(watchlist_path)
     data = json.loads(watchlist_path.read_text())
     if isinstance(data, list):
         return cast("list[dict[str, Any]]", data)
-    return cast("list[dict[str, Any]]", data["watches"])
+    watches = cast("list[dict[str, Any]]", data["watches"])
+    for watch in watches:
+        try:
+            Watch.model_validate(watch)
+        except ValidationError as exc:
+            raise ValueError(
+                f"Invalid watchlist configuration: watch {watch.get('id')!r} "
+                f"failed Watch model validation:\n{exc}"
+            ) from exc
+    return watches

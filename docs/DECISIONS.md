@@ -71,3 +71,36 @@ and disaster-recovery backup during the SQLite transition period.
 Until T-37 fully cuts scrape.py over to SQLite-only writes, both files
 will exist in parallel; JSON continues to be updated by the existing
 pipeline and committed by monitor.yml's persist job as before.
+
+## 2026-09-23 — Sprint 4 parent issue #6 shows closed with open sub-issues
+Sprint 4 parent issue #6 shows as closed despite #48/#49/#55 remaining open
+sub-issues — noting the discrepancy for whoever reviews Sprint 4 completion,
+not fixing it here.
+
+## 2026-09-23: Watch.drop_rule, Watch.drop_threshold made optional (default
+None), Watch.track_all_time_low defaults to True. Confirmed via grep that
+should_alert() in scrape.py never reads drop_rule/drop_threshold — they
+have zero runtime consumers in the live alerting path. Needed to let
+migrate_watchlist_to_modern.py construct valid Watch objects from the 4
+real legacy entries, none of which populate these fields.
+
+## 2026-09-24: watchlist_schema.json's modernWatchItem was missing
+'enabled' in its properties despite Watch.enabled being a pre-existing
+model field (not introduced by this task). additionalProperties:false
+caused any dumped Watch with its default enabled value to fail schema
+validation. Added enabled: boolean to modernWatchItem; left optional
+since the model already defaults it to True.
+
+## 2026-09-24: Promoting migrate_watchlist_to_modern.py's output to
+data/watchlist.json was caught and reverted before commit. Root cause:
+Watch/modernWatchItem have no 'site' field, so migrated entries lose
+retailer identity entirely. scrape.py's main() reads item['site']
+unconditionally (line ~1012) to select the retailer adapter per watch
+and to disambiguate entries with identical queries but different
+retailers (e.g. the two 'laptop asus vivobook' entries, tracked on
+pcgarage and flanco respectively). Promoting the modern-format file as
+currently defined would crash the next scrape run. Adding site support
+to Watch/modernWatchItem/scrape.py is deferred as its own follow-up task
+— not done as part of this migration to avoid scope creep under
+time pressure. The migration script and modern schema are NOT safe to
+promote to the live watchlist until that follow-up lands.
