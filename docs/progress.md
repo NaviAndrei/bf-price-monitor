@@ -100,6 +100,10 @@ Tests: 139 passed unchanged, ruff check clean.
 the scripts only; the production migration run is a separate, explicit
 decision.
 
+## T-37 (#48) Phase 2: wire Watch model into watchlist validation
+Extended `Watch` with independent optional `target_price`/`min_drop_percent`, `owner` (default "NaviAndrei"), and `seller_policy` (default "any"); `drop_rule`/`drop_threshold` became optional and `track_all_time_low` defaults to `True`, since none of the 4 real legacy watchlist entries populate them and `should_alert()` never reads `drop_rule`/`drop_threshold` in the live alerting path. Mirrored the new fields into `watchlist_schema.json`'s `modernWatchItem`, including the `enabled` boolean that was already a `Watch` default but missing from the schema. Wired `Watch.model_validate()` into `load_watchlist()` at the modern-format boundary; the legacy flat-array branch stays untouched. Added an additive SQLite dual-write in `scrape.py`'s per-result loop. Added `scripts/migrate_watchlist_to_modern.py` to convert the legacy watchlist to the modern shape — two real bugs (Decimal serialized as a JSON string, missing `enabled` schema property) were found and fixed during a promote/validate/revert review cycle before either reached `data/watchlist.json`. A third, more severe gap was then found and **not** fixed in this task: neither `Watch` nor `modernWatchItem` has a `site`/retailer field, so migrated entries lose retailer identity entirely, and `scrape.py`'s `main()` reads `item["site"]` unconditionally — promoting the migration script's output to the live watchlist as currently defined would crash the next scrape run. `data/watchlist.json` was reverted to its committed legacy-format baseline and excluded from this commit; the migration script's docstring now documents this as unsafe to run for real. Follow-up filed as #56 (T-39).
+Tests: 139 passed, ruff check clean. Commit: dc4cc6c. Issue #48 closed via `Closes #48` trailer auto-close on push; #56 opened for the deferred site/retailer-identity gap.
+
 ## Next active focus: Sprint 4 (Storage Migration to SQLite, due 2026-09-29)
 Issues: #6 (Parent), #28 (T-19, complete), #27 (T-20, complete).
 
