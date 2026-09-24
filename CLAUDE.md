@@ -1,5 +1,12 @@
 # bf-price-monitor — Claude Code Project Instructions
 
+## Key Documentation
+- `docs/DECISIONS.md` — the architectural "why" log. Check before any schema, migration, or structural change.
+- `docs/progress.md` — session handoff log.
+- `docs/runbooks/` and `docs/security/` — operational runbooks.
+- `.claude/skills/` — task-specific skills (`add-retailer`, `check-logic`, `find-bugs`, `run-tests`, `selector-healthcheck`, `write-tests`).
+- `.claude/agents/selector-drift-detector.md` — dedicated agent for CSS-selector breakage, this project's most brittle failure mode.
+
 ## Environment & Essential Commands
 - Windows self-hosted runner environment / PowerShell terminal.
 - Python 3.11+ / Playwright with Chromium.
@@ -13,7 +20,7 @@
 
 ## Architecture & Code Boundaries
 - **Pipeline stages:** `scrape.py` (adapters) ➔ `analyze.py` (discount evaluation) ➔ `notify.py` (Telegram delivery).
-- **Domain model progression:** Always maintain the strict separation: `Watch` ➔ `CanonicalProduct` ➔ `Offer` ➔ `Observation`.
+- **Domain model progression:** Always maintain the strict separation: `Watch` ➔ `CanonicalProduct` ➔ `Offer` ➔ `Observation`. `Watch` currently has no retailer/site identity field, so this chain isn't fully wired yet — tracked as #56.
 - **Extraction hierarchy:** Always try in order: (1) JSON-LD `schema.org/Product`, (2) semantic HTML attributes, (3) CSS locators, (4) non-authoritative AI extraction fallback.
 - **Deterministic primacy:** The rule engine (`rule_verdict`) is strictly authoritative. The LLM (Hugging Face / Ollama) is an explanation generator only; it must NEVER override, invert, or bypass a deterministic discount verdict.
 - **Intraday observations:** Every scrape run records an `Observation` with an explicit UTC timestamp (`ISO 8601`). Never skip an observation because one already exists for the same calendar date.
@@ -36,6 +43,11 @@
 - **Action pinning:** All GitHub Actions references must be pinned to 40-character commit SHAs, never floating version tags (e.g., `actions/checkout@b4ffde... # v4.1.7`).
 - **Secrets hygiene:** Never log full URLs containing tokens or webhook secrets. Mask tokens and UUIDs in log output. Never commit `.env` or temporary databases.
 - **Resilient waits:** Never use fixed `time.sleep()` for network or selector waits in Playwright. Use auto-waiting bounded locators (`page.locator().wait_for()`).
+
+## Hard Migration/Schema Traps
+- **Ruff auto-fix can hide broken edits:** The ruff auto-fix hook silently strips import-only edits added before their usage lands in the same session. Verify with a real test run, not just a clean diff.
+- **Schema-valid is not production-safe:** Validate migration output programmatically against the actual validator (e.g. `validate_watchlist()`) before approving promotion — never by eyeballing printed JSON.
+- **Schema validation misses undeclared downstream dependencies:** A field a downstream consumer reads at runtime may never be declared in the schema. Grep actual runtime usage before claiming any migration is "1:1, no behavior loss."
 
 ## Roadmap source
 Roadmap lives in GitHub milestones/issues, not a standalone file. See docs/ROADMAP.md
