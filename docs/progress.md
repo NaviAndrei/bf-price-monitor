@@ -32,8 +32,6 @@ Tests: 128 passed unchanged, ruff check/format clean, Gitleaks scan of full repo
 Fixed four notify.py bugs surfaced while scoping T-40's fan-out: outbox event id was URL-only (a genuine price drop was silently skipped), the photo send path never wrote to the outbox, a replayed PENDING record could crash the cooldown check for lacking a timestamp, and `cooldown_hours` had been dropped from the Watch model. Restored `cooldown_hours` (default 24) on Watch and the modern schema, carried over by migrate_watchlist_to_modern.py; data/watchlist.json left unchanged since every fallback already resolves to 24.
 Tests: 150 passed (139 existing + 11 new), ruff check/format clean (pre-existing scripts/analyze.py format issue unrelated, tracked by #54). Commit: 3c1a960.
 
-# bf-price-monitor — Current Handoff
-
 ## Sprint 3 (Security P0, due 2026-09-27) — 6/6 complete
 Sprint 3 (Security P0) fully closed ahead of 2026-09-27 due date.
 - [x] T-14 (#21) split read/write permissions — landed via earlier commit
@@ -123,15 +121,9 @@ Tests: 139 passed, ruff check clean. Commit: f29a282.
 Implemented Option 1 of the seller_policy semantics options (first-party-verified gate): a "trusted" watch now skips alerting unless the matched listing's `is_marketplace` is `False`. eMAG's listings always report `is_marketplace: None` (robots.txt blocks the only page with real seller text), so a "trusted" watch on eMAG never alerts — a deliberate, visible degradation, surfaced via a new `policy_blocked_count` stat in scrape_health.jsonl rather than silently looking like "no price drop." Option 3 (per-Watch seller allowlist) rejected: no retailer exposes a real per-listing seller to allowlist against today. The fan-out rewrite (multiple retailers per watch) remains out of scope and untouched.
 Tests: 153 passed (3 new, TDD — shown failing before the gate was added), ruff check clean. Commit: 56a89fc.
 
-## Next active focus: Sprint 4 (Storage Migration to SQLite, due 2026-09-29)
-Issues: #6 (Parent), #28 (T-19, complete), #27 (T-20, complete).
+Sprint 4 (Storage Migration to SQLite, due 2026-09-29) closed: #6 (Parent), #28 (T-19), #27 (T-20) all complete.
 
-## Blocked / gating
-- T-31 (P0) Black Friday go/no-go review — blocked on Sprint 3-5 completion
-
-## Last session action items
-- New issue #54 filed (unrelated tech debt): Quality Gate runs ruff check but not ruff format --check
-- Watch item: PC-A1208's VPN adapter route-metric anomaly (see docs/DECISIONS.md) — not fixed, revisit only if DNS errors recur
+Watch item carried forward: PC-A1208's VPN adapter route-metric anomaly (see docs/DECISIONS.md) — not fixed, revisit only if DNS errors recur.
 
 ## T-37b (#55): wire DeliveryAttempt into SQLite as terminal audit log
 Added additive `delivery_attempts` table written from notify.py; JSONL outbox stays sole authority for PENDING/replay/cooldown/dedup. attempt_number allocated atomically at the storage-write boundary (single INSERT...SELECT), closing a read-then-write race caught in review.
@@ -146,7 +138,45 @@ Tests: 182 passed (170 existing unchanged + 12 new in tests/test_browser_state.p
 The first approved live workflow_dispatch run against 1b25f7f failed PC Garage and Flanco entirely: fetch_with_browser called context.new_page(user_agent=HEADERS["User-Agent"]), but the real playwright BrowserContext.new_page() takes no arguments, so both retailers raised TypeError on every attempt and produced zero data (scrape_health.jsonl showed products_parsed=0 for both, versus 20/10 on the last good pre-change run). This is unrelated to the separate, still-broken Runner cleanup step, which fails independently because pwsh is missing from the runner's PATH.
 Corrective fix: removed the invalid user_agent keyword from context.new_page(), leaving user_agent configured only at browser.new_context() in _BrowserState.get_context, and tightened tests/test_browser_state.py's FakeContext from permissive **kwargs to the real zero-argument new_page() shape, plus a new regression test reproducing the exact production TypeError before the fix.
 Tests: 183 passed (13 in tests/test_browser_state.py, including the new regression test), ruff check/format clean except scripts/analyze.py's pre-existing drift. Commit: 5cce44b.
-A fresh post-fix workflow_dispatch validation is pending.
+
+### T-21 (#29): closed — live validation passed
+Validation run 36128084436 at HEAD 6915ee8: Scrape prices completed in 40s versus the pre-change 42s baseline (run 36116716480), 4.8% faster, with PC Garage/Flanco parsing the same 20/10 products as baseline and no TypeError, challenge-loop, selector, or browser-lifecycle warnings. Dry-run cleanup found no Chrome process left behind by the run. Browser reuse, isolated retailer contexts, retry-reset behavior, page cleanup, and live retailer compatibility are all validated against a real scrape, not just unit tests. Issue #29 closed.
+
+## T-42 (#60): fix Runner cleanup's pwsh invocation and restore downstream persistence
+Diagnosed: `Get-Command pwsh` resolved fine at the outer shell (every other monitor.yml step using an implicit PowerShell `run:` block passed), but the Runner cleanup step's bare `pwsh scripts/runner_cleanup.ps1` was a nested process spawn whose inherited child-process PATH didn't include pwsh's install directory — pwsh installed but not resolvable from that inner lookup. Since `runner_cleanup.ps1` itself uses no PowerShell-7-only syntax, monitor.yml's Runner cleanup step now resolves `pwsh` or falls back to `powershell.exe` explicitly via `Get-Command` and invokes it by resolved path, failing fast with a clear message if neither exists; `scripts/runner_cleanup.ps1` was not modified.
+Local dry-run verification resolved pwsh.exe correctly and reported the same 18 pre-existing orphaned processes (all 1,000+ minutes old), nothing under the 30-minute threshold flagged. Commit: bb64639.
+Live validation run [36130859283](https://github.com/NaviAndrei/bf-price-monitor/actions/runs/36130859283) at HEAD bb64639: every step in scrape-analyze-notify succeeded including Runner cleanup for the first time since the regression began, overall job conclusion success, and the persist job ran (not skipped) and committed price data as 77bdb72. Issue #60 closed.
+
+## T-22 (#31): resilient waits — implementation complete, held open pending live challenge observation
+Commit a85c8c1 replaced the fixed-duration Cloudflare-challenge poll loop in `fetch_with_browser` with a bounded Playwright locator wait (`_wait_out_challenge`, genuine `.wait_for(state=..., timeout=...)` calls instead of `time.sleep()` ticks); all other `time.sleep()` calls in scrape.py (403/429 retry backoff, scraper-level retry backoff, inter-item pacing in `main()`) were left untouched as deliberate out-of-scope throttling, not page-condition waits. Commit ca56204 added a `challenge_wait_entered` health field and `challenge_wait_entered_counts` run-state counter, since `challenge_detected` only fires on final failure and can't distinguish "no challenge ever appeared" from "a challenge appeared and cleared."
+Acceptance criteria: no fixed sleep-based waits in the fetch path (verified by grep — zero `page.wait_for_timeout()` calls) and bounded waits with clear timeout errors (190 tests passing, including 8 covering clear/never-clear/frame-detach scenarios with a strict FakeLocator, plus a test asserting `time.sleep` is never called on this path) are both met. The fast-network path is proven live across three validation runs (36130859283, 36132342460, 36138596780), all green with persist committing successfully each time. The slow/challenged path is proven only by unit tests so far — no live run has yet hit a real Cloudflare challenge to exercise `_wait_out_challenge`'s second stage in production.
+Structural finding surfaced during this work, tracked separately as T-43 (#61): `data/scrape_health.jsonl` can't be read post-run because `actions/checkout`'s default `clean: true` wipes it before the downstream persist job's checkout finishes.
+**Held open, not closed:** closing now would mean accepting unit-test-only evidence for the exact claim T-22 exists to prove. Issue #31 stays open until `challenge_wait_entered` is observed flipping true in a real scheduled run's log output, ideally during BF week when challenge pressure is highest.
+
+## T-23 (#30): AI semantic schema and deterministic-verdict invariant — closed
+`AIDealEvaluation` Pydantic model validates LLM output beyond key presence (enum membership, score ranges, boolean types, length limits) and `enforce_deterministic_invariant()` guarantees the rule engine's `rule_verdict` can never be overridden by the model. Commit f76c543. Issue #30 closed.
+
+## T-24 (#32): golden adversarial AI dataset + per-call audit logging — closed
+Added a versioned evaluation set covering malformed JSON, contradictory verdicts, prompt injection in a product title, Romanian diacritics, oversized text, wrong types, and hallucinated currency, run in CI. Every model call now logs model/version, prompt template version, deterministic inputs, latency, raw-output hash, parsed result, fallback path, and final policy decision to `data/ai_audit.jsonl`. Commit 9ac8bcb. Issue #32 closed.
+Known gap inherited by this logging, not fixed here: `data/ai_audit.jsonl` is untracked and wiped by the same `actions/checkout` git-clean behavior as T-43 (#61) above — tracked there, not reopened against T-24.
+
+## T-33 (#44): AI-provider dual-failure alerting — closed
+Detects a same-run dual AI-provider failure (`ask_hf()` and `ask_ollama()` both failing on the same `get_analysis()` call) and queues a distinct operational alert — reusing T-09's `data/scrape_health_alerts.json` handoff file and notify.py's existing delivery path rather than a second Telegram integration, since analyze.py only has `HF_TOKEN` in monitor.yml. Appends to the file instead of overwriting it, since scrape.py writes it first in the same job. The alert write is best-effort and never blocks `get_analysis()`'s return value, covered by a dedicated test where the write itself fails and the deterministic result still comes back correctly.
+Tests: 32/32 in test_analyze.py, 235/235 across the full suite, ruff clean. No live dispatch test run: this change only appends to a local file, and the Telegram send path (notify.py's `_send_health_alerts`/`_send_with_retry`) is pre-existing, already tested, and untouched. Commit: cc94e4a. Issue #44 closed.
 
 ## Sprints completed
-Sprint 0 (foundations), Sprint 1 (correctness), Sprint 2 (notification reliability) — all closed, no action needed.
+Sprint 0 (foundations), Sprint 1 (correctness), Sprint 2 (notification reliability), Sprint 3 (security P0) — all closed, no action needed.
+
+# bf-price-monitor — Current Handoff (2026-09-25)
+
+## Sprint 5 (Performance & AI, due 2026-09-30) — 5/7 complete
+Parent #7 still open. Closed: T-21 (#29), T-23 (#30), T-24 (#32), T-42 (#60), T-33 (#44). Open:
+- T-22 (#31) — implementation complete, held open pending a real Cloudflare challenge being observed live (see entry above).
+- T-43 (#61) — `data/scrape_health.jsonl`/`data/ai_audit.jsonl` wiped by `actions/checkout` git-clean before the persist job's checkout completes; known gap, not yet scheduled.
+
+## Blocked / gating
+- T-31 (P0) Black Friday go/no-go review — blocked on Sprint 3-5 completion (Sprint 5 now 5/7, T-22 and T-43 remain).
+
+## Last session action items
+- Watch for a live Cloudflare challenge in scheduled-run logs to close T-22 (#31).
+- New issue #54 filed (unrelated tech debt): Quality Gate runs ruff check but not ruff format --check.
