@@ -8,8 +8,17 @@ context.new_page, page.goto/content/close), so the real fetch_with_browser
 code path runs unmodified against them.
 """
 
+from pathlib import Path
+
 import pytest
 import scrape
+from bs4 import BeautifulSoup
+
+CLOUDFLARE_FIXTURES = Path(__file__).parent / "fixtures" / "cloudflare"
+
+
+def load_cloudflare_fixture(name):
+    return (CLOUDFLARE_FIXTURES / f"{name}.html").read_text(encoding="utf-8")
 
 
 class FakeResponse:
@@ -24,11 +33,13 @@ class FakeLocator:
     # the real contract: it raises scrape.PlaywrightTimeoutError when the
     # requested state never arrives within timeout, and a real page
     # navigating away mid-wait surfaces as scrape.PlaywrightError instead.
-    #   - "absent": nothing matches the selector -- wait_for(visible) times out
-    #   - "resolves": becomes visible, then hidden -- a challenge that clears
-    #   - "never_clears": becomes visible, stays visible -- wait_for(hidden) times out
-    #   - "frame_detached": becomes visible, then the page navigates away
-    #     while waiting for hidden (Playwright raises Error, not Timeout)
+    #   - "absent": nothing matches the selector -- wait_for(attached) times out
+    #   - "resolves": attached, then detached -- a challenge that clears
+    #   - "never_clears": attached, stays attached -- wait_for(detached) times out
+    #   - "frame_detached": attached, then the page navigates away while
+    #     waiting for detached (Playwright raises Error, not Timeout)
+    # attached/detached rather than visible/hidden since T-44 (#62): the
+    # modern managed-challenge marker is a <script>, which is never "visible".
     def __init__(self, behavior="absent"):
         self.behavior = behavior
         self.wait_for_calls = []
@@ -39,9 +50,11 @@ class FakeLocator:
 
     def wait_for(self, state, timeout):
         self.wait_for_calls.append((state, timeout))
+        if state not in ("attached", "detached"):
+            raise AssertionError(f"unexpected wait_for state {state!r}")
         if self.behavior == "absent":
             raise scrape.PlaywrightTimeoutError("no matching element")
-        if state == "visible":
+        if state == "attached":
             return None
         if self.behavior == "resolves":
             return None
@@ -502,7 +515,7 @@ def test_wait_out_challenge_returns_immediately_when_no_challenge_element():
     # caller's observability signal must read "not entered".
     assert entered is False
     assert page.locator_calls == [scrape.CLOUDFLARE_CHALLENGE_SELECTOR]
-    assert page.last_locator.wait_for_calls == [("visible", 1500)]
+    assert page.last_locator.wait_for_calls == [("attached", 1500)]
 
 
 def test_wait_out_challenge_waits_for_hidden_once_challenge_appears():
@@ -515,8 +528,8 @@ def test_wait_out_challenge_waits_for_hidden_once_challenge_appears():
     # was entered regardless of it going on to clear successfully here.
     assert entered is True
     assert page.last_locator.wait_for_calls == [
-        ("visible", 1500),
-        ("hidden", 5000),
+        ("attached", 1500),
+        ("detached", 5000),
     ]
 
 
@@ -533,8 +546,8 @@ def test_wait_out_challenge_swallows_timeout_when_challenge_never_clears():
     # fast no-challenge path.
     assert entered is True
     assert page.last_locator.wait_for_calls == [
-        ("visible", 1500),
-        ("hidden", 5000),
+        ("attached", 1500),
+        ("detached", 5000),
     ]
 
 
@@ -649,3 +662,135 @@ def test_fetch_with_browser_still_challenge_after_bounded_wait_times_out(
     # will also be true for this case, but challenge_wait_entered is what
     # actually proves the new bounded-wait code path was exercised at all.
     assert scrape._run_state.challenge_wait_entered_counts.get("pcgarage", 0) == 1
+
+
+# --- 10: T-44 (#62) modern Cloudflare managed challenge / Turnstile ---------
+# Fixtures under tests/fixtures/cloudflare/ were captured live on 2026-09-25
+# with scrape.py's own Playwright context (see each file's header comment):
+#   - managed_challenge_*: a real Cloudflare Managed Challenge. Blocks the
+#     page (HTTP 403, title "Just a moment..."), carries window._cf_chl_opt
+#     and a /cdn-cgi/challenge-platform/h/<x>/orchestrate/chl_page script,
+#     and has NO #cf-challenge-running and no light-DOM Turnstile iframe --
+#     so the pre-T-44 wait selector matched nothing on it.
+#   - turnstile_embed_resolved: an ordinary page (login form) with an
+#     in-page Turnstile widget. Real content is fully present alongside the
+#     widget and nothing is removed on resolution -- there is nothing to
+#     wait out. The pre-T-44 markers ("challenges.cloudflare.com" in the
+#     api.js <script> tag) misread it as a challenge permanently.
+#   - retailer_page_with_bot_management_loader: PC Garage's real
+#     /cdn-cgi/challenge-platform/scripts/jsd/main.js loader, which sits on
+#     every normal PC Garage and Flanco page and must never count as one.
+
+
+@pytest.mark.parametrize(
+    "fixture", ["managed_challenge_initial", "managed_challenge_rendered"]
+)
+def test_is_challenge_page_detects_live_managed_challenge(fixture):
+    assert scrape.is_challenge_page(load_cloudflare_fixture(fixture)) is True
+
+
+def test_is_challenge_page_detects_managed_challenge_without_english_title():
+    # Cloudflare localizes "Just a moment..." to the visitor's language, so
+    # the structural _cf_chl_opt / orchestrate markers must be enough alone.
+    html = load_cloudflare_fixture("managed_challenge_rendered").replace(
+        "Just a moment...", "Un moment..."
+    )
+    assert "just a moment" not in html.lower()
+
+    assert scrape.is_challenge_page(html) is True
+
+
+@pytest.mark.parametrize(
+    "fixture",
+    ["turnstile_embed_resolved", "retailer_page_with_bot_management_loader"],
+)
+def test_is_challenge_page_ignores_non_blocking_cloudflare_markup(fixture):
+    assert scrape.is_challenge_page(load_cloudflare_fixture(fixture)) is False
+
+
+def test_has_turnstile_widget_on_embed_only():
+    assert scrape.has_turnstile_widget(
+        load_cloudflare_fixture("turnstile_embed_resolved")
+    )
+    assert not scrape.has_turnstile_widget(
+        load_cloudflare_fixture("retailer_page_with_bot_management_loader")
+    )
+
+
+@pytest.mark.parametrize(
+    "fixture,should_match",
+    [
+        ("managed_challenge_initial", True),
+        ("managed_challenge_rendered", True),
+        ("turnstile_embed_resolved", False),
+        ("retailer_page_with_bot_management_loader", False),
+    ],
+)
+def test_challenge_selector_matches_real_challenge_markup_only(fixture, should_match):
+    # The strict fakes above can't evaluate a CSS selector, so this checks
+    # CLOUDFLARE_CHALLENGE_SELECTOR against the captured DOM itself (bs4's
+    # soupsieve supports the same attribute-substring and comma syntax).
+    soup = BeautifulSoup(load_cloudflare_fixture(fixture), "html.parser")
+
+    assert bool(soup.select(scrape.CLOUDFLARE_CHALLENGE_SELECTOR)) is should_match
+
+
+def test_fetch_with_browser_returns_turnstile_embed_page_without_waiting(
+    monkeypatch, capsys
+):
+    install_fakes(monkeypatch)
+    bs = scrape._BrowserState()
+    bs.start()
+    monkeypatch.setattr(scrape, "_browser_state", bs)
+    scrape._run_state.reset(run_id="test-run")
+    embed_html = load_cloudflare_fixture("turnstile_embed_resolved")
+
+    ctx = bs.get_context("pcgarage")
+    original_new_page = ctx.new_page
+
+    def new_page_with_turnstile_embed(**kwargs):
+        page = original_new_page(**kwargs)
+        page.content_results = [embed_html]
+        page.locator_behavior = "absent"
+        return page
+
+    monkeypatch.setattr(ctx, "new_page", new_page_with_turnstile_embed)
+
+    html = scrape.fetch_with_browser("https://example.test/x", "pcgarage")
+
+    # Detected and logged, but never treated as blocking: the page's real
+    # content was there all along.
+    assert html == embed_html
+    assert ctx.pages[0].locator_calls == []
+    assert scrape._run_state.challenge_counts.get("pcgarage", 0) == 0
+    assert scrape._run_state.challenge_wait_entered_counts.get("pcgarage", 0) == 0
+    assert "in-page Turnstile widget" in capsys.readouterr().out
+
+
+def test_fetch_with_browser_waits_out_live_shaped_managed_challenge(monkeypatch):
+    install_fakes(monkeypatch)
+    bs = scrape._BrowserState()
+    bs.start()
+    monkeypatch.setattr(scrape, "_browser_state", bs)
+    monkeypatch.setattr(scrape.time, "sleep", lambda *_: None)
+    scrape._run_state.reset(run_id="test-run")
+
+    ctx = bs.get_context("flanco")
+    original_new_page = ctx.new_page
+
+    def new_page_with_managed_challenge(**kwargs):
+        page = original_new_page(**kwargs)
+        page.content_results = [
+            load_cloudflare_fixture("managed_challenge_initial"),
+            "<html>real listing</html>",
+        ]
+        page.locator_behavior = "resolves"
+        return page
+
+    monkeypatch.setattr(ctx, "new_page", new_page_with_managed_challenge)
+
+    html = scrape.fetch_with_browser("https://example.test/x", "flanco")
+
+    assert html == "<html>real listing</html>"
+    assert ctx.pages[0].locator_calls == [scrape.CLOUDFLARE_CHALLENGE_SELECTOR]
+    assert scrape._run_state.challenge_wait_entered_counts.get("flanco", 0) == 1

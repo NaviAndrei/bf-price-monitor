@@ -313,20 +313,48 @@ def save_history(products: dict) -> None:
     )
 
 
+# T-44 (#62): a live Cloudflare Managed Challenge (captured 2026-09-25, see
+# tests/fixtures/cloudflare/) always carries its window._cf_chl_opt config and
+# a /cdn-cgi/challenge-platform/h/<x>/orchestrate/... loader script, both
+# unique to the challenge page itself. The bare "/cdn-cgi/challenge-platform/"
+# prefix is NOT: PC Garage and Flanco load .../scripts/jsd/main.js (Bot
+# Management's passive JS detection) on every normal page.
+_MANAGED_CHALLENGE_MARKER = re.compile(
+    r"_cf_chl_opt|/cdn-cgi/challenge-platform/h/[a-z]+/orchestrate/"
+)
+
+
 def is_challenge_page(html: str) -> bool:
-    marker = html[:2000].lower()
+    # True only for a page that blocks the real content. "challenges.cloudflare.com"
+    # and "cf-chl" used to count here too, but both also appear on ordinary
+    # pages that merely embed a Turnstile widget (the api.js <script> tag and
+    # the widget's cf-chl-widget-*_response input) -- see has_turnstile_widget().
+    lowered = html.lower()
+    return "just a moment" in lowered[:2000] or bool(
+        _MANAGED_CHALLENGE_MARKER.search(lowered)
+    )
+
+
+def has_turnstile_widget(html: str) -> bool:
+    # In-page Turnstile embed (e.g. a login or newsletter form). Observed live
+    # to leave the page's real content fully rendered alongside it and to stay
+    # in place after resolving, so there is nothing to wait out: callers log
+    # it and carry on rather than treating it as a block.
+    lowered = html.lower()
     return (
-        "just a moment" in marker
-        or "cf-chl" in marker
-        or "challenges.cloudflare.com" in marker
+        "cf-turnstile" in lowered or "challenges.cloudflare.com/turnstile/" in lowered
     )
 
 
 # Locator-based counterpart to is_challenge_page()'s text-marker check above,
 # scoped to the actual Cloudflare/Turnstile challenge markup so it can be
 # waited on directly instead of polling page.content() on a fixed interval.
+# The orchestrate <script> is the only one of these present on a live modern
+# Managed Challenge (T-44, #62): its Turnstile iframe is attached inside a
+# closed shadow root, which Playwright's CSS locators can't see.
 CLOUDFLARE_CHALLENGE_SELECTOR = (
-    "iframe[src*='challenges.cloudflare.com'], #cf-challenge-running"
+    "iframe[src*='challenges.cloudflare.com'], #cf-challenge-running, "
+    "script[src*='/cdn-cgi/challenge-platform/'][src*='/orchestrate/']"
 )
 
 
@@ -343,13 +371,16 @@ def _wait_out_challenge(page, timeout_ms: int) -> bool:
     # This is the caller's only way to tell "no challenge at all" apart from
     # "a challenge appeared and this wait handled it", since a successful
     # clear leaves no other trace for is_challenge_page() to catch afterward.
+    #
+    # attached/detached, not visible/hidden (T-44, #62): the modern marker is
+    # a <script>, which Playwright never considers visible.
     locator = page.locator(CLOUDFLARE_CHALLENGE_SELECTOR).first
     try:
-        locator.wait_for(state="visible", timeout=1500)
+        locator.wait_for(state="attached", timeout=1500)
     except PlaywrightTimeoutError:
         return False
     try:
-        locator.wait_for(state="hidden", timeout=timeout_ms)
+        locator.wait_for(state="detached", timeout=timeout_ms)
     except (PlaywrightTimeoutError, PlaywrightError):
         # A successful challenge-clear often navigates the page away entirely
         # (frame detached), which Playwright also surfaces as an Error here --
@@ -649,6 +680,8 @@ def fetch_with_browser(url: str, site_name: str) -> str | None:
         )
         _record_challenge(site_name)
         return None
+    if has_turnstile_widget(html):
+        print(f"[{site_name}] page embeds an in-page Turnstile widget (not blocking)")
     return html
 
 
@@ -683,6 +716,8 @@ def fetch(url: str, site_name: str) -> str | None:
     if r.status_code != 200:
         print(f"[{site_name}] unexpected status {r.status_code}, skipping this run")
         return None
+    if has_turnstile_widget(r.text):
+        print(f"[{site_name}] page embeds an in-page Turnstile widget (not blocking)")
     return r.text
 
 
