@@ -17,6 +17,41 @@ class FakeResponse:
         self.status = status
 
 
+class FakeLocator:
+    # Mirrors the one-and-only real Playwright Locator call scrape.py makes
+    # (page.locator(...).first.wait_for(state=..., timeout=...)), not the
+    # full Locator API. `behavior` controls what wait_for() does, matching
+    # the real contract: it raises scrape.PlaywrightTimeoutError when the
+    # requested state never arrives within timeout, and a real page
+    # navigating away mid-wait surfaces as scrape.PlaywrightError instead.
+    #   - "absent": nothing matches the selector -- wait_for(visible) times out
+    #   - "resolves": becomes visible, then hidden -- a challenge that clears
+    #   - "never_clears": becomes visible, stays visible -- wait_for(hidden) times out
+    #   - "frame_detached": becomes visible, then the page navigates away
+    #     while waiting for hidden (Playwright raises Error, not Timeout)
+    def __init__(self, behavior="absent"):
+        self.behavior = behavior
+        self.wait_for_calls = []
+
+    @property
+    def first(self):
+        return self
+
+    def wait_for(self, state, timeout):
+        self.wait_for_calls.append((state, timeout))
+        if self.behavior == "absent":
+            raise scrape.PlaywrightTimeoutError("no matching element")
+        if state == "visible":
+            return None
+        if self.behavior == "resolves":
+            return None
+        if self.behavior == "never_clears":
+            raise scrape.PlaywrightTimeoutError("still visible")
+        if self.behavior == "frame_detached":
+            raise scrape.PlaywrightError("frame was detached")
+        return None
+
+
 class FakePage:
     def __init__(self, context):
         self.context = context
@@ -24,6 +59,8 @@ class FakePage:
         self.goto_error = None
         self.content_results = ["<html>ok</html>"]
         self._content_calls = 0
+        self.locator_behavior = "absent"
+        self.locator_calls = []
 
     def set_default_navigation_timeout(self, ms):
         pass
@@ -43,6 +80,11 @@ class FakePage:
         if isinstance(result, Exception):
             raise result
         return result
+
+    def locator(self, selector):
+        self.locator_calls.append(selector)
+        self.last_locator = FakeLocator(self.locator_behavior)
+        return self.last_locator
 
     def close(self):
         self.closed = True
@@ -439,3 +481,120 @@ def test_main_closes_browser_state_even_when_run_raises(monkeypatch, tmp_path):
     # that close() still runs unconditionally in finally, whether or not
     # anything was ever started.
     assert calls["close"] == 1
+
+
+# --- 9: T-22 (#31) bounded challenge wait replaces the old sleep-poll loop --
+# fetch_with_browser() used to poll page.content() on a fixed 1-second
+# interval until is_challenge_page() went false or a deadline passed. It now
+# calls _wait_out_challenge(), which waits on a Playwright locator for the
+# actual challenge markup to disappear -- these tests exercise that helper
+# directly, then confirm fetch_with_browser()'s challenge path never calls
+# time.sleep() at all.
+
+
+def test_wait_out_challenge_returns_immediately_when_no_challenge_element():
+    page = FakePage(context=None)
+    page.locator_behavior = "absent"
+
+    scrape._wait_out_challenge(page, timeout_ms=5000)
+
+    assert page.locator_calls == [scrape.CLOUDFLARE_CHALLENGE_SELECTOR]
+    assert page.last_locator.wait_for_calls == [("visible", 1500)]
+
+
+def test_wait_out_challenge_waits_for_hidden_once_challenge_appears():
+    page = FakePage(context=None)
+    page.locator_behavior = "resolves"
+
+    scrape._wait_out_challenge(page, timeout_ms=5000)
+
+    assert page.last_locator.wait_for_calls == [
+        ("visible", 1500),
+        ("hidden", 5000),
+    ]
+
+
+def test_wait_out_challenge_swallows_timeout_when_challenge_never_clears():
+    page = FakePage(context=None)
+    page.locator_behavior = "never_clears"
+
+    # Must not raise -- the caller's own is_challenge_page() re-check on the
+    # re-fetched HTML is the authoritative pass/fail signal, not this wait.
+    scrape._wait_out_challenge(page, timeout_ms=5000)
+
+    assert page.last_locator.wait_for_calls == [
+        ("visible", 1500),
+        ("hidden", 5000),
+    ]
+
+
+def test_wait_out_challenge_swallows_frame_detached_error():
+    page = FakePage(context=None)
+    page.locator_behavior = "frame_detached"
+
+    # A challenge clearing by navigating the page away entirely raises
+    # Playwright's generic Error, not TimeoutError -- also must not raise.
+    scrape._wait_out_challenge(page, timeout_ms=5000)
+
+
+def test_fetch_with_browser_clears_challenge_without_sleeping(monkeypatch):
+    install_fakes(monkeypatch)
+    bs = scrape._BrowserState()
+    bs.start()
+    monkeypatch.setattr(scrape, "_browser_state", bs)
+
+    def sleep_should_not_be_called(*_):
+        raise AssertionError(
+            "fetch_with_browser's challenge path must use the bounded "
+            "locator wait, not time.sleep()"
+        )
+
+    monkeypatch.setattr(scrape.time, "sleep", sleep_should_not_be_called)
+
+    ctx = bs.get_context("pcgarage")
+    original_new_page = ctx.new_page
+
+    def new_page_with_clearing_challenge(**kwargs):
+        page = original_new_page(**kwargs)
+        page.content_results = [
+            "<html>Just a moment...</html>",
+            "<html>real listing</html>",
+        ]
+        page.locator_behavior = "resolves"
+        return page
+
+    monkeypatch.setattr(ctx, "new_page", new_page_with_clearing_challenge)
+
+    html = scrape.fetch_with_browser("https://example.test/x", "pcgarage")
+
+    assert html == "<html>real listing</html>"
+
+
+def test_fetch_with_browser_still_challenge_after_bounded_wait_times_out(
+    monkeypatch,
+):
+    install_fakes(monkeypatch)
+    bs = scrape._BrowserState()
+    bs.start()
+    monkeypatch.setattr(scrape, "_browser_state", bs)
+    monkeypatch.setattr(scrape.time, "sleep", lambda *_: None)
+
+    ctx = bs.get_context("pcgarage")
+    original_new_page = ctx.new_page
+
+    def new_page_with_stuck_challenge(**kwargs):
+        page = original_new_page(**kwargs)
+        page.content_results = [
+            "<html>Just a moment...</html>",
+            "<html>Just a moment...</html>",
+        ]
+        page.locator_behavior = "never_clears"
+        return page
+
+    monkeypatch.setattr(ctx, "new_page", new_page_with_stuck_challenge)
+
+    html = scrape.fetch_with_browser("https://example.test/x", "pcgarage")
+
+    # Still blocked after the bounded wait -- caller reports it clearly and
+    # continues (no hang, no crash), same as the old sleep-poll's timeout path.
+    assert html is None

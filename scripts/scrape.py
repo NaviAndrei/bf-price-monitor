@@ -15,7 +15,16 @@ from urllib.parse import parse_qsl, urlencode, urlparse, urlsplit, urlunsplit
 
 import requests
 from bs4 import BeautifulSoup
-from playwright.sync_api import BrowserContext, sync_playwright
+from playwright.sync_api import (
+    BrowserContext,
+    sync_playwright,
+)
+from playwright.sync_api import (
+    Error as PlaywrightError,
+)
+from playwright.sync_api import (
+    TimeoutError as PlaywrightTimeoutError,
+)
 from playwright_stealth import Stealth
 from pydantic import ValidationError
 
@@ -298,6 +307,36 @@ def is_challenge_page(html: str) -> bool:
     )
 
 
+# Locator-based counterpart to is_challenge_page()'s text-marker check above,
+# scoped to the actual Cloudflare/Turnstile challenge markup so it can be
+# waited on directly instead of polling page.content() on a fixed interval.
+CLOUDFLARE_CHALLENGE_SELECTOR = (
+    "iframe[src*='challenges.cloudflare.com'], #cf-challenge-running"
+)
+
+
+def _wait_out_challenge(page, timeout_ms: int) -> None:
+    # Bounded, two-stage wait: first confirm the challenge markup is actually
+    # present (a short, separate timeout from the main wait below -- most
+    # pages never hit this at all), then wait out its removal up to
+    # timeout_ms. Replaces the old `while is_challenge_page(...): sleep(1)`
+    # poll loop with Playwright's own auto-waiting locator instead of manual
+    # ticks.
+    locator = page.locator(CLOUDFLARE_CHALLENGE_SELECTOR).first
+    try:
+        locator.wait_for(state="visible", timeout=1500)
+    except PlaywrightTimeoutError:
+        return
+    try:
+        locator.wait_for(state="hidden", timeout=timeout_ms)
+    except (PlaywrightTimeoutError, PlaywrightError):
+        # A successful challenge-clear often navigates the page away entirely
+        # (frame detached), which Playwright also surfaces as an Error here --
+        # not a real failure. Either way, the caller re-reads page.content()
+        # and is_challenge_page() is still the authoritative pass/fail check.
+        pass
+
+
 def parse_price(raw: str) -> float | None:
     # Romanian retailers format prices as "1.234,56 Lei"/"RON": "." is a
     # thousands separator, "," is the decimal separator.
@@ -552,14 +591,13 @@ def fetch_with_browser(url: str, site_name: str) -> str | None:
             )
             status = response.status if response else None
 
-            # Cloudflare-challenge polling loop — unrelated to the retry
-            # below, left exactly as before. This waits out a JS
-            # challenge within a single attempt; the retry loop instead
-            # re-attempts the whole fetch after a 403/429 status.
-            deadline = time.time() + REQUEST_TIMEOUT
+            # Bounded challenge wait — unrelated to the retry below. This
+            # waits out a JS challenge within a single attempt; the retry
+            # loop instead re-attempts the whole fetch after a 403/429
+            # status.
             html = page.content()
-            while is_challenge_page(html) and time.time() < deadline:
-                time.sleep(1)
+            if is_challenge_page(html):
+                _wait_out_challenge(page, REQUEST_TIMEOUT * 1000)
                 html = page.content()
         except Exception as e:
             print(
