@@ -1,4 +1,5 @@
 import json
+from unittest.mock import MagicMock
 
 import pytest
 from analyze import (
@@ -27,6 +28,12 @@ def redirect_ai_audit_log(monkeypatch, tmp_path):
     # redirect it into tmp_path so the test suite never appends to this
     # repo's real data/ai_audit.jsonl.
     monkeypatch.setattr("analyze.AI_AUDIT_FILE", tmp_path / "ai_audit.jsonl")
+    # T-33 (#44): dual-failure alerts are queued into the same handoff file
+    # scrape.py's health alerts use — redirect it too so tests never touch
+    # this repo's real data/scrape_health_alerts.json.
+    monkeypatch.setattr(
+        "analyze.SCRAPE_HEALTH_ALERTS_FILE", tmp_path / "scrape_health_alerts.json"
+    )
 
 
 def test_evaluate_omnibus_rule_insufficient_history():
@@ -375,3 +382,139 @@ def test_get_analysis_audit_record_redacts_secret_shapes_in_summary(
     record = json.loads((tmp_path / "ai_audit.jsonl").read_text(encoding="utf-8"))
     assert "bot123456" not in record["parsed_result"]["summary"]
     assert "[REDACTED]" in record["parsed_result"]["summary"]
+
+
+def test_get_analysis_hf_fails_ollama_succeeds_no_dual_failure_alert(
+    monkeypatch, tmp_path
+):
+    monkeypatch.setattr(
+        "analyze.ask_hf",
+        lambda client, prompt: (_ for _ in ()).throw(RuntimeError("HF down")),
+    )
+    monkeypatch.setattr(
+        "analyze.ask_ollama", lambda prompt: (json.dumps(VALID_AI_OUTPUT), None)
+    )
+    get_analysis(
+        client=None,
+        prompt="irrelevant",
+        rule_verdict="GENUINE_DEAL",
+        thirty_day_low=90.0,
+    )
+    assert not (tmp_path / "scrape_health_alerts.json").exists()
+
+
+def test_get_analysis_hf_succeeds_no_dual_failure_alert_regardless_of_ollama(
+    monkeypatch, tmp_path
+):
+    monkeypatch.setattr(
+        "analyze.ask_hf", lambda client, prompt: (json.dumps(VALID_AI_OUTPUT), None)
+    )
+    monkeypatch.setattr(
+        "analyze.ask_ollama",
+        lambda prompt: (_ for _ in ()).throw(RuntimeError("should never be called")),
+    )
+    get_analysis(
+        client=None,
+        prompt="irrelevant",
+        rule_verdict="GENUINE_DEAL",
+        thirty_day_low=90.0,
+    )
+    assert not (tmp_path / "scrape_health_alerts.json").exists()
+
+
+def test_get_analysis_both_providers_fail_fires_one_redacted_dual_failure_alert(
+    monkeypatch, tmp_path
+):
+    monkeypatch.setattr(
+        "analyze.ask_hf",
+        lambda client, prompt: (_ for _ in ()).throw(
+            RuntimeError("HF token hf_ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 rejected")
+        ),
+    )
+    monkeypatch.setattr(
+        "analyze.ask_ollama",
+        lambda prompt: (_ for _ in ()).throw(RuntimeError("Ollama unreachable")),
+    )
+    result = get_analysis(
+        client=None,
+        prompt="irrelevant",
+        rule_verdict="NORMAL_DROP",
+        thirty_day_low=90.0,
+    )
+    # The deterministic rule-only path must still return a fully valid result.
+    assert result == default_analysis("NORMAL_DROP", 90.0)
+
+    alerts_file = tmp_path / "scrape_health_alerts.json"
+    assert alerts_file.exists()
+    alerts = json.loads(alerts_file.read_text(encoding="utf-8"))
+    assert len(alerts) == 1
+    assert "AI INFERENCE OUTAGE" in alerts[0]
+    assert "Ollama is unreachable" in alerts[0]
+    assert "deterministic rule-only mode" in alerts[0]
+    # Secret shapes in the raised exception text must never reach the alert.
+    assert "hf_ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789" not in alerts[0]
+    assert "[REDACTED]" in alerts[0]
+
+    record = json.loads((tmp_path / "ai_audit.jsonl").read_text(encoding="utf-8"))
+    assert record["fallback_path"] == "both_providers_failed"
+
+
+def test_get_analysis_appends_to_existing_scrape_health_alerts_without_clobbering(
+    monkeypatch, tmp_path
+):
+    # scrape.py already wrote its own health alerts to this file earlier in
+    # the same monitor.yml job (T-09); analyze.py must append, not overwrite.
+    alerts_file = tmp_path / "scrape_health_alerts.json"
+    alerts_file.write_text(
+        json.dumps(["🚨 SCRAPER BREAKDOWN: eMAG returned 0 items"]),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(
+        "analyze.ask_hf",
+        lambda client, prompt: (_ for _ in ()).throw(RuntimeError("HF down")),
+    )
+    monkeypatch.setattr(
+        "analyze.ask_ollama",
+        lambda prompt: (_ for _ in ()).throw(RuntimeError("Ollama down")),
+    )
+    get_analysis(
+        client=None,
+        prompt="irrelevant",
+        rule_verdict="NORMAL_DROP",
+        thirty_day_low=90.0,
+    )
+    alerts = json.loads(alerts_file.read_text(encoding="utf-8"))
+    assert len(alerts) == 2
+    assert "SCRAPER BREAKDOWN" in alerts[0]
+    assert "AI INFERENCE OUTAGE" in alerts[1]
+
+
+def test_get_analysis_dual_failure_alert_write_failure_does_not_raise_or_block(
+    monkeypatch, tmp_path, capsys
+):
+    # The alert queue is best-effort observability, not a gate on the pricing
+    # pipeline: if writing the handoff file itself fails (e.g. a permissions
+    # or disk error standing in for a network failure on a live send), the
+    # deterministic result must still come back untouched. Only
+    # SCRAPE_HEALTH_ALERTS_FILE's mkdir is broken here, not AI_AUDIT_FILE's
+    # (a separate file _log_audit_record still writes to on the same call).
+    broken_path = MagicMock()
+    broken_path.exists.return_value = False
+    broken_path.parent.mkdir.side_effect = OSError("disk full")
+    monkeypatch.setattr("analyze.SCRAPE_HEALTH_ALERTS_FILE", broken_path)
+    monkeypatch.setattr(
+        "analyze.ask_hf",
+        lambda client, prompt: (_ for _ in ()).throw(RuntimeError("HF down")),
+    )
+    monkeypatch.setattr(
+        "analyze.ask_ollama",
+        lambda prompt: (_ for _ in ()).throw(RuntimeError("Ollama down")),
+    )
+    result = get_analysis(
+        client=None,
+        prompt="irrelevant",
+        rule_verdict="NORMAL_DROP",
+        thirty_day_low=90.0,
+    )
+    assert result == default_analysis("NORMAL_DROP", 90.0)
+    assert "Failed to queue dual-failure operational alert" in capsys.readouterr().err

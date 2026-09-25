@@ -16,6 +16,12 @@ from pydantic import BaseModel, Field, ValidationError, field_validator
 ALERTS_FILE = Path("data/alerts.json")
 FORMATTED_FILE = Path("data/formatted_alerts.json")
 AI_AUDIT_FILE = Path("data/ai_audit.jsonl")
+# T-33 (#44): same handoff file scrape.py's Critical Selector Drift / dead-man
+# alerts already use (T-09) — analyze.py has no TELEGRAM_BOT_TOKEN/CHAT_ID in
+# monitor.yml (only HF_TOKEN), so it can't send Telegram directly either.
+# Reusing this file lets notify.py's existing _send_health_alerts deliver it
+# through the operational stream instead of a second bot integration.
+SCRAPE_HEALTH_ALERTS_FILE = Path("data/scrape_health_alerts.json")
 
 
 class RawAlertCandidate(BaseModel):
@@ -238,6 +244,41 @@ def _redact_secrets(text: str) -> str:
     return text
 
 
+def _queue_dual_failure_alert(hf_reason: str, ollama_reason: str) -> None:
+    """Best-effort operational signal for T-33 (#44): both AI providers failed
+    on the same get_analysis() call. Appends to scrape.py's health-alerts
+    handoff file (read first, not overwritten — scrape.py already wrote its
+    own alerts there earlier in the same monitor.yml job) rather than sending
+    Telegram directly, since analyze.py has no bot credentials. Never raises:
+    this is observability, not a gate on the pricing pipeline, so a disk
+    error here must not stop get_analysis() from returning a valid result.
+    """
+    message = (
+        "⚠️ AI INFERENCE OUTAGE: Hugging Face returned "
+        f"{_redact_secrets(hf_reason)[:200]} and Ollama is unreachable "
+        f"({_redact_secrets(ollama_reason)[:200]}). System operating in "
+        "deterministic rule-only mode."
+    )
+    try:
+        existing = []
+        if SCRAPE_HEALTH_ALERTS_FILE.exists():
+            existing = json.load(open(SCRAPE_HEALTH_ALERTS_FILE, encoding="utf-8"))
+        existing.append(message)
+        SCRAPE_HEALTH_ALERTS_FILE.parent.mkdir(parents=True, exist_ok=True)
+        json.dump(
+            existing,
+            open(SCRAPE_HEALTH_ALERTS_FILE, "w", encoding="utf-8"),
+            indent=2,
+            ensure_ascii=False,
+        )
+    except Exception as e:
+        print(
+            f"Failed to queue dual-failure operational alert ({e.__class__.__name__}); "
+            "continuing with deterministic rule-only result",
+            file=sys.stderr,
+        )
+
+
 def default_analysis(rule_verdict: str, thirty_day_low: float | None) -> dict:
     summaries = {
         "GENUINE_DEAL": f"Prețul este sub minimul ultimelor 30 de zile ({thirty_day_low} RON).",
@@ -365,6 +406,7 @@ def get_analysis(
             network_path = "both_providers_failed"
             raw = None
             usage = None
+            _queue_dual_failure_alert(str(e), str(e2))
     latency_ms = round((time.perf_counter() - start) * 1000, 1)
 
     validated = None
