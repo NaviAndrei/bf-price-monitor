@@ -248,3 +248,57 @@ Scope was kept deliberately narrow:
 This keeps the migration pattern consistent with `price_history.json` +
 SQLite `price_history.db` dual-write (T-37): the new store is additive and
 observational, not a replacement, until a future issue decides otherwise.
+
+## 2026-09-25 — T-21 (#29): one browser per run, one context per retailer
+
+Replaced `fetch_with_browser`'s previous per-fetch full browser launch with a
+run-scoped `_BrowserState` that reuses one stealth-wrapped Chromium browser
+and per-retailer `BrowserContext`s across the whole `scripts/scrape.py`
+`main()` invocation, closing the gap between the two GitHub Actions steps
+that previously left orphaned Chromium processes for `scripts/runner_cleanup.ps1`
+to mop up (T-16, #26) and made every fetch pay a fresh launch cost.
+
+- **One browser per run, lazily started.** `_BrowserState.start()` launches
+  Chromium on the first real `get_context()` call, not unconditionally in
+  `main()`. A watchlist run with no pcgarage/flanco items never touches
+  Playwright at all — this also sidesteps a real conflict: eagerly starting
+  Playwright's sync API inside `main()` broke every test that fully mocks
+  `SCRAPERS` and runs under pytest's `anyio` plugin, since Playwright's sync
+  driver refuses to start inside a process with an active asyncio event loop.
+- **One `BrowserContext` per retailer, reused across normal fetches and
+  403/429 retries.** `fetch_with_browser`'s inner status-code retry loop
+  keeps calling `get_context(site_name)` on the same cached context, so any
+  challenge/session cookies a site sets while working through a 403/429 are
+  still present on the next attempt. Different retailers never share a
+  context — cookies, storage, and any challenge state are isolated per site.
+- **Context reset only on a scraper-level exception retry, not on inner
+  403/429 retries.** `with_retry` gained an optional `site_name` parameter;
+  when set, a caught exception calls `_browser_state.reset_context(site_name)`
+  before the outer retry re-invokes the scraper function. This discards and
+  closes only that site's context (a fresh one is created lazily on the next
+  `get_context` call) — the reasoning being that an *unhandled exception*
+  signals the context itself may be in a bad state (e.g. stuck mid-navigation
+  or wedged in a challenge loop), so the retry deserves a clean context,
+  whereas an in-band 403/429 status code is an expected, recoverable
+  condition where discarding cookies would be counterproductive. Other
+  retailers' contexts and the run's browser are untouched by a reset.
+- **A fresh `Page` per fetch attempt, always closed in `finally`.** Only the
+  context (cookies/storage) is long-lived; each navigation gets its own page,
+  closed whether `goto()`, `content()`, or challenge-polling succeeds,
+  returns early, or raises.
+- **Run-level cleanup is unconditional.** `main()` now wraps `_run(watchlist)`
+  in `try`/`finally`, calling `_browser_state.close()` regardless of how
+  `_run` exits. `close()` tears down every remaining context, the browser,
+  then the stealth/`sync_playwright` context, in that order, so a mid-run
+  exception (a bad scrape, a file-write failure) can never leak a live
+  browser process for the next scheduled run to inherit.
+- **`fetch_with_browser`'s public contract is unchanged** — still
+  `(url: str, site_name: str) -> str | None` — so no adapter or call site
+  needed to change; only its internal resource acquisition changed from
+  "launch a browser" to "borrow a run-scoped context and open a page."
+- **Live before/after performance measurement (actual launch-time savings
+  across a real multi-retailer run) is deferred.** This change was verified
+  via unit tests against fakes (`tests/test_browser_state.py`) and the full
+  existing suite, not via a live `workflow_dispatch` run — that requires
+  separate explicit approval, per the standing rule that no live retailer
+  scrape runs without it.

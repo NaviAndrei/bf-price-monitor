@@ -137,5 +137,10 @@ Issues: #6 (Parent), #28 (T-19, complete), #27 (T-20, complete).
 Added additive `delivery_attempts` table written from notify.py; JSONL outbox stays sole authority for PENDING/replay/cooldown/dedup. attempt_number allocated atomically at the storage-write boundary (single INSERT...SELECT), closing a read-then-write race caught in review.
 Tests: 170 passed, ruff check/format clean (scripts/analyze.py pre-existing drift only). Commit: 8e70052.
 
+## T-21 (#29): reuse one Playwright browser per monitoring run with isolated contexts
+Replaced fetch_with_browser's per-fetch full browser launch with a run-scoped _BrowserState: one stealth-wrapped Chromium browser launches lazily on first real use per scripts/scrape.py run, with one reusable BrowserContext per retailer (pcgarage, flanco) isolating cookies/storage so no state crosses sites. A 403/429 retry inside fetch_with_browser reuses the same site context so recoverable challenge/session cookies survive; only a scraper-level retry after an unhandled exception discards and rebuilds that one site's context via with_retry's new optional site_name parameter, leaving other sites and the browser untouched. Each fetch attempt opens and closes its own Page in finally. main() now wraps the run body in try/finally so _browser_state.close() tears down every context, the browser, and the stealth/Playwright context unconditionally, even if the watchlist loop raises.
+Tests: 182 passed (170 existing unchanged + 12 new in tests/test_browser_state.py), ruff check clean, ruff format --check clean except scripts/analyze.py's pre-existing drift (#54). Commit: 1b25f7f.
+**Live before/after performance measurement on the self-hosted runner remains pending and unapproved** — no workflow_dispatch or real retailer scrape was run as part of this implementation. #29 stays open until that acceptance criterion is explicitly approved and run.
+
 ## Sprints completed
 Sprint 0 (foundations), Sprint 1 (correctness), Sprint 2 (notification reliability) — all closed, no action needed.
