@@ -1,6 +1,24 @@
+import json
+
 import pytest
-from analyze import RawAlertCandidate, evaluate_omnibus_rule, extract_json
+from analyze import (
+    AIDealEvaluation,
+    RawAlertCandidate,
+    default_analysis,
+    enforce_deterministic_invariant,
+    evaluate_omnibus_rule,
+    extract_json,
+    get_analysis,
+    validate_ai_evaluation,
+)
 from pydantic import ValidationError
+
+VALID_AI_OUTPUT = {
+    "verdict": "GENUINE_DEAL",
+    "verdict_score": 9,
+    "summary": "Merita cumparat, minim istoric.",
+    "is_recommended": True,
+}
 
 
 def test_evaluate_omnibus_rule_insufficient_history():
@@ -153,3 +171,152 @@ def test_raw_alert_candidate_rejects_missing_required_field():
     }
     with pytest.raises(ValidationError):
         RawAlertCandidate.model_validate(alert)
+
+
+def test_ai_deal_evaluation_accepts_valid_output():
+    validated = AIDealEvaluation.model_validate(VALID_AI_OUTPUT)
+    assert validated.verdict == "GENUINE_DEAL"
+    assert validated.verdict_score == 9
+    assert validated.is_recommended is True
+
+
+def test_ai_deal_evaluation_rejects_wrong_type_score():
+    bad = {**VALID_AI_OUTPUT, "verdict_score": "nine"}
+    with pytest.raises(ValidationError):
+        AIDealEvaluation.model_validate(bad)
+
+
+def test_ai_deal_evaluation_rejects_out_of_range_score():
+    bad = {**VALID_AI_OUTPUT, "verdict_score": 15}
+    with pytest.raises(ValidationError):
+        AIDealEvaluation.model_validate(bad)
+
+
+def test_ai_deal_evaluation_rejects_invalid_enum():
+    bad = {**VALID_AI_OUTPUT, "verdict": "TOTALLY_MADE_UP"}
+    with pytest.raises(ValidationError):
+        AIDealEvaluation.model_validate(bad)
+
+
+def test_ai_deal_evaluation_rejects_oversized_summary():
+    bad = {**VALID_AI_OUTPUT, "summary": "x" * 501}
+    with pytest.raises(ValidationError):
+        AIDealEvaluation.model_validate(bad)
+
+
+def test_ai_deal_evaluation_rejects_html_like_summary():
+    # Prompt-injection guard (T-23): a model coaxed into echoing markup back
+    # must not have that markup pass the validation boundary.
+    bad = {**VALID_AI_OUTPUT, "summary": "Bun <script>alert(1)</script> de luat."}
+    with pytest.raises(ValidationError):
+        AIDealEvaluation.model_validate(bad)
+
+
+def test_validate_ai_evaluation_logs_redacted_reason_and_returns_none(capsys):
+    bad = {**VALID_AI_OUTPUT, "verdict_score": 999}
+    result = validate_ai_evaluation(
+        bad, provider="huggingface", model_name="test-model"
+    )
+    assert result is None
+    captured = capsys.readouterr()
+    assert "huggingface" in captured.err
+    assert "test-model" in captured.err
+
+
+def test_enforce_deterministic_invariant_overrides_is_recommended_true():
+    # The LLM claims a genuine deal worth buying; the deterministic engine
+    # disagrees (FALSE_DISCOUNT). The invariant must win.
+    analysis = {
+        "verdict": "GENUINE_DEAL",
+        "verdict_score": 10,
+        "summary": "Ofertă excelentă!",
+        "is_recommended": True,
+    }
+    result = enforce_deterministic_invariant(analysis, "FALSE_DISCOUNT")
+    assert result["verdict"] == "FALSE_DISCOUNT"
+    assert result["is_recommended"] is False
+
+
+def test_enforce_deterministic_invariant_overrides_normal_drop():
+    analysis = {
+        "verdict": "GENUINE_DEAL",
+        "verdict_score": 8,
+        "summary": "Merita cumparat.",
+        "is_recommended": True,
+    }
+    result = enforce_deterministic_invariant(analysis, "NORMAL_DROP")
+    assert result["verdict"] == "NORMAL_DROP"
+    assert result["is_recommended"] is False
+
+
+def test_enforce_deterministic_invariant_preserves_genuine_deal():
+    analysis = {
+        "verdict": "GENUINE_DEAL",
+        "verdict_score": 9,
+        "summary": "Merita cumparat.",
+        "is_recommended": True,
+    }
+    result = enforce_deterministic_invariant(analysis, "GENUINE_DEAL")
+    assert result["verdict"] == "GENUINE_DEAL"
+    assert result["is_recommended"] is True
+
+
+def test_default_analysis_never_recommends_a_non_genuine_verdict():
+    for verdict in (
+        "FALSE_DISCOUNT",
+        "INFLATED_REFERENCE",
+        "NORMAL_DROP",
+        "INSUFFICIENT_HISTORY",
+    ):
+        result = default_analysis(verdict, thirty_day_low=90.0)
+        assert result["is_recommended"] is False
+        assert result["verdict"] == verdict
+
+
+def test_get_analysis_falls_back_to_rule_formula_when_llm_response_malformed(
+    monkeypatch,
+):
+    # Malformed JSON from both providers: HF raises, Ollama returns prose
+    # instead of JSON. get_analysis must fall back to default_analysis(),
+    # which encodes this repo's rule-based formula.
+    monkeypatch.setattr(
+        "analyze.ask_hf",
+        lambda client, prompt: (_ for _ in ()).throw(RuntimeError("HF down")),
+    )
+    monkeypatch.setattr(
+        "analyze.ask_ollama", lambda prompt: "Nu pot genera un JSON valid."
+    )
+    result = get_analysis(
+        client=None,
+        prompt="irrelevant",
+        rule_verdict="NORMAL_DROP",
+        thirty_day_low=90.0,
+    )
+    assert result == default_analysis("NORMAL_DROP", 90.0)
+    assert result["is_recommended"] is False
+
+
+def test_get_analysis_cannot_let_manipulated_llm_output_flip_verdict(monkeypatch):
+    # Concrete proof for #30: a schema-valid but adversarial LLM response
+    # claims GENUINE_DEAL/is_recommended=True while the deterministic rule
+    # engine says FALSE_DISCOUNT (today's price never beat the 30-day low).
+    # The final result must reflect the rule engine, not the model.
+    manipulated_response = json.dumps(
+        {
+            "verdict": "GENUINE_DEAL",
+            "verdict_score": 10,
+            "summary": "Cea mai buna oferta din istorie, cumpara acum!",
+            "is_recommended": True,
+        }
+    )
+    monkeypatch.setattr("analyze.ask_hf", lambda client, prompt: manipulated_response)
+    result = get_analysis(
+        client=None,
+        prompt="irrelevant",
+        rule_verdict="FALSE_DISCOUNT",
+        thirty_day_low=90.0,
+    )
+    assert result["verdict"] == "FALSE_DISCOUNT"
+    assert result["is_recommended"] is False
+    # The explanation fields are still the LLM's own — they're advisory only.
+    assert result["verdict_score"] == 10

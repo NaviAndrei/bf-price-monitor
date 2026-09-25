@@ -4,10 +4,11 @@ import os
 import re
 import sys
 from pathlib import Path
+from typing import Literal
 
 import requests
 from huggingface_hub import InferenceClient
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel, Field, ValidationError, field_validator
 
 ALERTS_FILE = Path("data/alerts.json")
 FORMATTED_FILE = Path("data/formatted_alerts.json")
@@ -36,6 +37,45 @@ class RawAlertCandidate(BaseModel):
     is_marketplace: bool | None = None
     all_time_low: float
     all_time_high: float
+
+
+_HTML_LIKE = re.compile(r"<[^>]*>|javascript:", re.IGNORECASE)
+
+# The five rule_verdict values evaluate_omnibus_rule() can produce (T-23):
+# kept as its own tuple so the LLM's "verdict" field can't validate to a
+# value the deterministic engine could never emit.
+_RULE_VERDICTS = (
+    "GENUINE_DEAL",
+    "FALSE_DISCOUNT",
+    "INFLATED_REFERENCE",
+    "NORMAL_DROP",
+    "INSUFFICIENT_HISTORY",
+)
+
+
+class AIDealEvaluation(BaseModel):
+    """Schema for the LLM's JSON response to build_omnibus_prompt() (T-23).
+
+    verdict and is_recommended are validated here for shape only — even a
+    schema-valid response never reaches the output as-is, since
+    enforce_deterministic_invariant() always overwrites both from the
+    rule engine's rule_verdict afterward (T-23 / #30). This model exists to
+    reject malformed verdict_score/summary before they're trusted for
+    display, not to let the model decide genuineness.
+    """
+
+    verdict: Literal[_RULE_VERDICTS]
+    verdict_score: int = Field(ge=1, le=10)
+    summary: str = Field(min_length=1, max_length=500)
+    is_recommended: bool
+
+    @field_validator("summary")
+    @classmethod
+    def reject_html_like_content(cls, v: str) -> str:
+        if _HTML_LIKE.search(v):
+            raise ValueError("summary contains HTML/script-like content")
+        return v
+
 
 HF_MODEL = os.getenv("HF_MODEL", "Qwen/Qwen2.5-Coder-32B-Instruct")
 OLLAMA_URL = "http://localhost:11434/api/chat"
@@ -99,7 +139,7 @@ def build_omnibus_prompt(alert: dict, metrics: dict) -> str:
         f'  "verdict": "{metrics["rule_verdict"]}",\n'
         '  "verdict_score": <notă 1-10 în funcție de cât de atractivă și reală este oferta>,\n'
         '  "summary": "<1-2 propoziții în română: explică dacă merită cumpărat sau e o capcană de marketing>",\n'
-        "  \"is_recommended\": <true dacă este GENUINE_DEAL și merită cumpărat, altfel false>\n"
+        '  "is_recommended": <true dacă este GENUINE_DEAL și merită cumpărat, altfel false>\n'
         "}"
     )
 
@@ -148,6 +188,23 @@ def extract_json(text: str | None) -> dict | None:
     return parsed
 
 
+# Same convention as notify.py's _redact_secrets (T-17/#25): strip known
+# secret shapes before any AI-provider failure reason reaches a log line.
+_SECRET_PATTERNS = [
+    re.compile(r"bot[0-9]{5,16}:[A-Za-z0-9_-]{34,36}"),
+    re.compile(r"hf_[A-Za-z0-9]{20,}"),
+    re.compile(
+        r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
+    ),
+]
+
+
+def _redact_secrets(text: str) -> str:
+    for pattern in _SECRET_PATTERNS:
+        text = pattern.sub("[REDACTED]", text)
+    return text
+
+
 def default_analysis(rule_verdict: str, thirty_day_low: float | None) -> dict:
     summaries = {
         "GENUINE_DEAL": f"Prețul este sub minimul ultimelor 30 de zile ({thirty_day_low} RON).",
@@ -156,24 +213,61 @@ def default_analysis(rule_verdict: str, thirty_day_low: float | None) -> dict:
         "NORMAL_DROP": "Scăderea de preț este sub 5% față de minimul ultimelor 30 de zile.",
         "INSUFFICIENT_HISTORY": "Istoricul de preț este prea scurt pentru a confirma o reducere reală.",
     }
-    return {
+    analysis = {
         "verdict": rule_verdict,
         "verdict_score": 8 if rule_verdict == "GENUINE_DEAL" else 4,
         "summary": summaries.get(rule_verdict, "Verdict necunoscut."),
         "is_recommended": rule_verdict == "GENUINE_DEAL",
     }
+    return enforce_deterministic_invariant(analysis, rule_verdict)
+
+
+def enforce_deterministic_invariant(analysis: dict, rule_verdict: str) -> dict:
+    """The rule engine's rule_verdict (T-23 / #30) is the sole source of
+    truth for verdict and is_recommended. Called on every path in
+    get_analysis — successful schema-valid LLM parse, failed validation, and
+    provider-unavailable fallback — so the LLM's own verdict/is_recommended
+    values are always discarded and replaced, never merged in. verdict_score
+    and summary stay whatever the LLM (or default_analysis) produced: they
+    are explanation only, per this repo's deterministic-primacy rule.
+    """
+    analysis["verdict"] = rule_verdict
+    analysis["is_recommended"] = rule_verdict == "GENUINE_DEAL"
+    return analysis
+
+
+def validate_ai_evaluation(
+    parsed: dict, provider: str | None, model_name: str | None
+) -> AIDealEvaluation | None:
+    try:
+        return AIDealEvaluation.model_validate(parsed)
+    except ValidationError as e:
+        reason = _redact_secrets(str(e))[:500]
+        print(
+            f"AI output failed schema validation (provider={provider}, "
+            f"model={model_name}): {reason}; using deterministic fallback",
+            file=sys.stderr,
+        )
+        return None
 
 
 def get_analysis(
-    client: InferenceClient, prompt: str, rule_verdict: str, thirty_day_low: float | None
+    client: InferenceClient,
+    prompt: str,
+    rule_verdict: str,
+    thirty_day_low: float | None,
 ) -> dict:
     raw = None
+    provider = None
+    model_name = None
     try:
         raw = ask_hf(client, prompt)
+        provider, model_name = "huggingface", HF_MODEL
     except Exception as e:
         print(f"HF inference failed ({e.__class__.__name__}), falling back to Ollama")
         try:
             raw = ask_ollama(prompt)
+            provider, model_name = "ollama", OLLAMA_MODEL
         except Exception as e2:
             print(
                 f"Ollama fallback also failed ({e2.__class__.__name__}), using default template"
@@ -182,8 +276,19 @@ def get_analysis(
 
     parsed = extract_json(raw)
     if parsed is None:
+        if raw is not None:
+            print(
+                f"AI output malformed or missing keys (provider={provider}, "
+                f"model={model_name}); using deterministic fallback",
+                file=sys.stderr,
+            )
         return default_analysis(rule_verdict, thirty_day_low)
-    return parsed
+
+    validated = validate_ai_evaluation(parsed, provider, model_name)
+    if validated is None:
+        return default_analysis(rule_verdict, thirty_day_low)
+
+    return enforce_deterministic_invariant(validated.model_dump(), rule_verdict)
 
 
 def main():
