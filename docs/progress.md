@@ -169,14 +169,20 @@ Sprint 0 (foundations), Sprint 1 (correctness), Sprint 2 (notification reliabili
 
 # bf-price-monitor — Current Handoff (2026-09-25)
 
-## Sprint 5 (Performance & AI, due 2026-09-30) — 5/7 complete
-Parent #7 still open. Closed: T-21 (#29), T-23 (#30), T-24 (#32), T-42 (#60), T-33 (#44). Open:
+## T-22/#31 diagnostic and T-44/#62 filed: challenge-detection selectors target a retired Cloudflare pattern
+Following up on #31's remaining unproven acceptance criterion (whether `_wait_out_challenge` correctly clears a real Cloudflare challenge), ran a genuine, unmodified `fetch_with_browser` -> `is_challenge_page` -> `_wait_out_challenge` code path against `https://nowsecure.nl`, a public Cloudflare-challenge test page, via a new isolated diagnostic script (not wired into watchlist.json, main(), or any workflow). Three runs, all under 5 seconds, returned real page HTML with no challenge ever detected and the bounded wait never entered.
+Root cause: `nowsecure.nl` now renders Cloudflare Turnstile as an in-page widget (`cf-turnstile` div, Cloudflare's own always-passing test sitekey), not the classic full-page interstitial (`#cf-challenge-running`, `iframe[src*='challenges.cloudflare.com']`) that `is_challenge_page()` and `_wait_out_challenge()` target. This produced no closing evidence either way for #31 — it's a detection-currency gap in the test target and, potentially, in production detection generally, not a bug in #31's bounded-wait mechanism itself, which is correctly implemented for the pattern it targets.
+Filed T-44 (#62) to track modernizing `is_challenge_page()`/`_wait_out_challenge()` to also recognize in-page Turnstile/Managed Challenge patterns, linked as a sub-issue of #7 alongside every other Sprint 5 task. Cross-referenced on #31 via comment (no label/milestone/state change on either issue). Committed the diagnostic script as a reusable harness at `scripts/diagnostics/test_challenge_wait.py` (outside pytest's `testpaths = ["tests"]` scope). Commit: 250e819. #31 remains open and untouched otherwise, still held pending a real Cloudflare challenge being observed live.
+
+## Sprint 5 (Performance & AI, due 2026-09-30) — 6/8 complete
+Parent #7 still open. Closed: T-21 (#29), T-23 (#30), T-24 (#32), T-33 (#44), T-42 (#60), T-43 (#61 — closed since the last handoff entry below was written; that entry's "Open" listing is now stale). Open:
 - T-22 (#31) — implementation complete, held open pending a real Cloudflare challenge being observed live (see entry above).
-- T-43 (#61) — `data/scrape_health.jsonl`/`data/ai_audit.jsonl` wiped by `actions/checkout` git-clean before the persist job's checkout completes; known gap, not yet scheduled.
+- T-44 (#62) — new, filed this session: challenge-detection selectors target a retired Cloudflare interstitial pattern, may miss modern Turnstile/Managed Challenge blocks (see entry above).
 
 ## Blocked / gating
-- T-31 (P0) Black Friday go/no-go review — blocked on Sprint 3-5 completion (Sprint 5 now 5/7, T-22 and T-43 remain).
+- T-31 (P0) Black Friday go/no-go review — blocked on Sprint 3-5 completion (Sprint 5 now 6/8; T-22 and T-44 remain open).
 
 ## Last session action items
 - Watch for a live Cloudflare challenge in scheduled-run logs to close T-22 (#31).
+- Investigate a live Turnstile/Managed Challenge HTML sample to progress T-44 (#62) once one is available.
 - New issue #54 filed (unrelated tech debt): Quality Gate runs ruff check but not ruff format --check.
