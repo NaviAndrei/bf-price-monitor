@@ -3,7 +3,7 @@ from __future__ import annotations
 import sqlite3
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 from uuid import NAMESPACE_URL, uuid4, uuid5
 
 from bf_price_monitor.domain.models import DeliveryAttempt, Observation
@@ -110,7 +110,7 @@ def _upsert_offer(
     row = db.execute(
         "SELECT id FROM offers WHERE retailer = ? AND sku = ?", (retailer, sku)
     ).fetchone()
-    return row["id"]
+    return cast(str, row["id"])
 
 
 def _upsert_price_observation(
@@ -265,7 +265,7 @@ def record_delivery_attempt_new_cycle(
         row = db.execute(
             "SELECT attempt_number FROM delivery_attempts WHERE id = ?", (row_id,)
         ).fetchone()
-    return row["attempt_number"]
+    return cast(int, row["attempt_number"])
 
 
 def get_latest_price(
