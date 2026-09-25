@@ -1129,3 +1129,81 @@ def test_delivery_attempt_gets_new_number_per_real_delivery_cycle(
     rows = _delivery_attempt_rows(notify.DB_FILE)
     assert len(rows) == 2
     assert sorted(r["attempt_number"] for r in rows) == [1, 2]
+
+
+# --- T-25 (#33): Omnibus genuine savings + fake-discount label ---------------
+
+
+def test_format_telegram_message_shows_genuine_savings_percent():
+    alert = {
+        **BASE_ALERT,
+        "deal_stats": {
+            "genuine_savings_percent": 11.11,
+            "fake_discount_suspect": False,
+            "fake_discount_reasons": [],
+        },
+    }
+    message = format_telegram_message(alert)
+    assert "Economie reală vs. minim 30 zile:</b> 11.11%" in message
+    assert "SUSPICIUNE REDUCERE FALSĂ" not in message
+
+
+def test_format_telegram_message_flags_non_discount_and_fake_discount():
+    alert = {
+        **BASE_ALERT,
+        "verdict": "FALSE_DISCOUNT",
+        "deal_stats": {
+            "genuine_savings_percent": -5.0,
+            "fake_discount_suspect": True,
+            "fake_discount_reasons": [
+                "ADVERTISED_ORIGINAL_INFLATED",
+                "OBSERVED_PRE_SALE_HIKE",
+            ],
+        },
+    }
+    message = format_telegram_message(alert)
+    assert "-5.00% (legal, nu este o reducere)" in message
+    assert "<b>SUSPICIUNE REDUCERE FALSĂ:</b>" in message
+    assert "preț tăiat umflat" in message
+    assert "preț majorat chiar înainte de reducere" in message
+
+
+def test_format_telegram_message_without_deal_stats_is_unchanged():
+    # formatted_alerts.json written before T-25 has no deal_stats key.
+    message = format_telegram_message(BASE_ALERT)
+    assert "Economie reală" not in message
+    assert "SUSPICIUNE" not in message
+
+
+def test_fake_discount_suspect_recorded_as_distinct_alert_reason(
+    monkeypatch, tmp_path, _full_pipeline_env
+):
+    alert = {
+        **DEAL_ALERT,
+        "rule_verdict": "FALSE_DISCOUNT",
+        "deal_stats": {
+            "genuine_savings_percent": 0.0,
+            "fake_discount_suspect": True,
+            "fake_discount_reasons": ["OBSERVED_PRE_SALE_HIKE"],
+        },
+    }
+    _write_formatted(tmp_path, [alert])
+    monkeypatch.setattr(notify.requests, "post", _sequenced_post([_FakeResponse(200)]))
+
+    notify.main()
+
+    reasons = _read_outbox_records()[-1]["alert_payload"]["reasons"]
+    assert reasons == ["FALSE_DISCOUNT", "FAKE_DISCOUNT_SUSPECT"]
+
+
+def test_no_fake_discount_reason_when_not_suspect(
+    monkeypatch, tmp_path, _full_pipeline_env
+):
+    alert = {**DEAL_ALERT, "rule_verdict": "GENUINE_DEAL"}
+    _write_formatted(tmp_path, [alert])
+    monkeypatch.setattr(notify.requests, "post", _sequenced_post([_FakeResponse(200)]))
+
+    notify.main()
+
+    reasons = _read_outbox_records()[-1]["alert_payload"]["reasons"]
+    assert reasons == ["GENUINE_DEAL"]

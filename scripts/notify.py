@@ -61,6 +61,31 @@ VERDICT_BADGES = {
 # plain text message instead of the chart.
 CAPTION_LIMIT = 1024
 
+# T-25 (#33): deal_stats fake_discount_reasons codes -> display text.
+FAKE_DISCOUNT_REASON_TEXT = {
+    "ADVERTISED_ORIGINAL_INFLATED": "preț tăiat umflat față de mediana pe 30 zile",
+    "OBSERVED_PRE_SALE_HIKE": "preț majorat chiar înainte de reducere",
+}
+
+
+def _omnibus_detail_lines(deal_stats: dict) -> list[str]:
+    lines = []
+    savings = deal_stats.get("genuine_savings_percent")
+    if savings is not None:
+        suffix = "" if savings > 0 else " (legal, nu este o reducere)"
+        lines.append(
+            f"\U0001f9ee <b>Economie reală vs. minim 30 zile:</b> {savings:.2f}%{suffix}"
+        )
+    if deal_stats.get("fake_discount_suspect"):
+        reasons = "; ".join(
+            FAKE_DISCOUNT_REASON_TEXT.get(r, r)
+            for r in deal_stats.get("fake_discount_reasons", [])
+        )
+        lines.append(
+            f"\U0001f6a9 <b>SUSPICIUNE REDUCERE FALSĂ:</b> {html.escape(reasons)}"
+        )
+    return lines
+
 
 def format_telegram_message(alert: dict) -> str:
     emoji, label = VERDICT_BADGES.get(
@@ -82,6 +107,7 @@ def format_telegram_message(alert: dict) -> str:
         f"\U0001f4b0 <b>Preț Nou:</b> {alert['new_price']:,.2f} RON",
         f"\U0001f4c9 <b>Preț Anterior:</b> {alert['old_price']:,.2f} RON (-{alert['discount_vs_old_pct']}%)",
         f"⚖️ <b>Minim 30 zile (Omnibus):</b> {alert['thirty_day_low']:,.2f} RON",
+        *_omnibus_detail_lines(alert.get("deal_stats") or {}),
         f"\U0001f3c6 <b>Record Minim Istoric:</b> {alert['all_time_low']:,.2f} RON",
         "",
         f"\U0001f4a1 <i>{summary}</i>",
@@ -652,7 +678,14 @@ def _run(
                     ),
                     "observation_id": uuid.uuid5(uuid.NAMESPACE_URL, alert["url"]),
                     "verdict": "alert",
-                    "reasons": [alert.get("rule_verdict", "unknown")],
+                    # T-25 (#33): fake discount is its own reason, kept
+                    # next to (never replacing) the rule engine's verdict.
+                    "reasons": [alert.get("rule_verdict", "unknown")]
+                    + (
+                        ["FAKE_DISCOUNT_SUSPECT"]
+                        if (alert.get("deal_stats") or {}).get("fake_discount_suspect")
+                        else []
+                    ),
                     "evidence_urls": [alert["url"]],
                 }
             )

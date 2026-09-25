@@ -1012,3 +1012,54 @@ def test_any_policy_watch_alerts_regardless_of_marketplace_status(
 
     record = _health_records()[0]
     assert record["policy_blocked_count"] == 0
+
+
+def test_alert_carries_prior_30_day_window_for_deal_stats(tmp_path, monkeypatch):
+    # T-25 (#33): analyze.py derives the Omnibus reference price from
+    # history_30d, so it must hold exactly the prior observations inside the
+    # same 30-day window thirty_day_low uses -- never this run's own price.
+    today = datetime.now(UTC).date()
+    url = _watchlist_entry()["url"]
+    history_file = tmp_path / "price_history.json"
+    history_file.write_text(
+        json.dumps(
+            {
+                "schema_version": scrape.HISTORY_SCHEMA_VERSION,
+                "products": {
+                    scrape.canonicalize_url(url): {
+                        "title": "Laptop Lenovo V15",
+                        "site": "emag",
+                        "history": [
+                            {
+                                "date": (today - timedelta(days=d)).isoformat(),
+                                "price": p,
+                            }
+                            for d, p in ((40, 2000.0), (20, 2900.0), (1, 3200.0))
+                        ],
+                    }
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    watchlist_file = tmp_path / "watchlist.json"
+    watchlist_file.write_text(
+        json.dumps([{"site": "emag", "query": "laptop lenovo v15"}]),
+        encoding="utf-8",
+    )
+    alerts_file = tmp_path / "alerts.json"
+    monkeypatch.setattr(scrape, "WATCHLIST_FILE", watchlist_file)
+    monkeypatch.setattr(scrape, "HISTORY_FILE", history_file)
+    monkeypatch.setattr(scrape, "ALERTS_FILE", alerts_file)
+    monkeypatch.setattr(scrape, "DB_FILE", tmp_path / "price_history.db")
+    monkeypatch.setattr(
+        scrape, "SCRAPERS", {"emag": lambda query: [_watchlist_entry(price=2950.0)]}
+    )
+    monkeypatch.setattr(scrape.time, "sleep", lambda *_: None)
+
+    scrape.main()
+
+    [alert] = json.loads(alerts_file.read_text(encoding="utf-8"))
+    assert [h["price"] for h in alert["history_30d"]] == [2900.0, 3200.0]
+    assert alert["thirty_day_low"] == 2900.0
+    assert alert["observed_at"].endswith("+00:00")

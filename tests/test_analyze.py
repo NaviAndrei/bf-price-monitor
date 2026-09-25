@@ -5,6 +5,7 @@ import pytest
 from analyze import (
     AIDealEvaluation,
     RawAlertCandidate,
+    build_deal_stats,
     default_analysis,
     enforce_deterministic_invariant,
     evaluate_omnibus_rule,
@@ -12,6 +13,7 @@ from analyze import (
     get_analysis,
     validate_ai_evaluation,
 )
+from analyze import main as analyze_main
 from pydantic import ValidationError
 
 VALID_AI_OUTPUT = {
@@ -518,3 +520,85 @@ def test_get_analysis_dual_failure_alert_write_failure_does_not_raise_or_block(
     )
     assert result == default_analysis("NORMAL_DROP", 90.0)
     assert "Failed to queue dual-failure operational alert" in capsys.readouterr().err
+
+
+# --- T-25 (#33): deal statistics / fake-discount wiring ----------------------
+
+HIKE_THEN_DROP_ALERT = {
+    "title": "Laptop Lenovo V15 G4 AMN",
+    "site": "emag",
+    "query": "laptop lenovo v15",
+    "url": "https://www.emag.ro/laptop-lenovo-v15/pd/ABC123/",
+    "old_price": 3200.0,
+    "new_price": 2600.0,
+    "thirty_day_low": 2500.0,
+    "history_days": 30,
+    "reference_price": None,
+    "stock_status": "in_stock",
+    "seller": None,
+    "is_marketplace": None,
+    "all_time_low": 2500.0,
+    "all_time_high": 3200.0,
+    "observed_at": "2026-09-25T10:00:00+00:00",
+    # Stable at 2500 for ten days, hiked to 3200 (1.28x) two days before the "sale".
+    "history_30d": [
+        {"date": f"2026-09-{d:02d}", "price": 2500.0} for d in range(13, 23)
+    ]
+    + [
+        {"date": "2026-09-23", "price": 3200.0},
+        {"date": "2026-09-24", "price": 3200.0},
+    ],
+}
+
+
+def test_raw_alert_candidate_accepts_history_window_fields():
+    validated = RawAlertCandidate.model_validate(HIKE_THEN_DROP_ALERT)
+    assert validated.history_30d is not None and len(validated.history_30d) == 12
+
+
+def test_build_deal_stats_flags_hike_then_drop():
+    stats = build_deal_stats(HIKE_THEN_DROP_ALERT)
+    assert stats["reference_price_30d"] == 2500.0
+    assert stats["genuine_savings_percent"] == -4.0
+    assert stats["is_legal_discount"] is False
+    assert stats["fake_discount_suspect"] is True
+    assert stats["fake_discount_reasons"] == ["OBSERVED_PRE_SALE_HIKE"]
+
+
+def test_build_deal_stats_tolerates_pre_t25_alert_without_window():
+    legacy = {
+        k: v
+        for k, v in HIKE_THEN_DROP_ALERT.items()
+        if k not in ("history_30d", "observed_at")
+    }
+    stats = build_deal_stats(legacy)
+    assert stats["observation_count"] == 0
+    assert stats["reference_price_30d"] is None
+    assert stats["fake_discount_suspect"] is False
+
+
+def test_main_attaches_deal_stats_without_changing_rule_verdict(monkeypatch, tmp_path):
+    alerts_file = tmp_path / "alerts.json"
+    formatted_file = tmp_path / "formatted_alerts.json"
+    alerts_file.write_text(json.dumps([HIKE_THEN_DROP_ALERT]), encoding="utf-8")
+    monkeypatch.setattr("analyze.ALERTS_FILE", alerts_file)
+    monkeypatch.setattr("analyze.FORMATTED_FILE", formatted_file)
+    monkeypatch.setattr(
+        "analyze.get_analysis",
+        lambda client, prompt, rule_verdict, thirty_day_low: default_analysis(
+            rule_verdict, thirty_day_low
+        ),
+    )
+
+    analyze_main()
+
+    [out] = json.loads(formatted_file.read_text(encoding="utf-8"))
+    # Deterministic primacy: the rule engine's verdict is untouched by the
+    # new statistics; the fake-discount label rides alongside it.
+    assert out["rule_verdict"] == "FALSE_DISCOUNT"
+    assert out["verdict"] == "FALSE_DISCOUNT"
+    assert out["is_recommended"] is False
+    assert out["deal_stats"]["fake_discount_suspect"] is True
+    assert out["deal_stats"]["reference_price_30d"] == 2500.0
+    # The raw window is summarized, not copied into the formatted output.
+    assert "history_30d" not in out

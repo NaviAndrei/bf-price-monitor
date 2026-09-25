@@ -1334,11 +1334,16 @@ def _run(watchlist: list[dict]) -> None:
                     continue
                 stats["matched_count"] += 1
                 thirty_day_cutoff = today_date - timedelta(days=30)
-                recent_prices = [
-                    h["price"]
+                # T-25 (#33): the prior 30-day window (this run's own
+                # observation excluded) travels with the alert so
+                # analyze.py can compute the Omnibus reference price and
+                # deal statistics from the same data as thirty_day_low.
+                history_30d = [
+                    {"date": h["date"], "price": h["price"]}
                     for h in prior_history
                     if date.fromisoformat(h["date"]) >= thirty_day_cutoff
                 ]
+                recent_prices = [h["price"] for h in history_30d]
                 oldest_date = (
                     date.fromisoformat(prior_history[0]["date"])
                     if prior_history
@@ -1362,6 +1367,8 @@ def _run(watchlist: list[dict]) -> None:
                         "is_marketplace": r.get("is_marketplace"),
                         "all_time_low": entry["all_time_low"],
                         "all_time_high": entry["all_time_high"],
+                        "observed_at": observed_at,
+                        "history_30d": history_30d,
                     }
                 )
 

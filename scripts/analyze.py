@@ -13,6 +13,8 @@ import requests
 from huggingface_hub import InferenceClient
 from pydantic import BaseModel, Field, ValidationError, field_validator
 
+from bf_price_monitor.analytics import compute_deal_stats
+
 ALERTS_FILE = Path("data/alerts.json")
 FORMATTED_FILE = Path("data/formatted_alerts.json")
 AI_AUDIT_FILE = Path("data/ai_audit.jsonl")
@@ -47,6 +49,10 @@ class RawAlertCandidate(BaseModel):
     is_marketplace: bool | None = None
     all_time_low: float
     all_time_high: float
+    # T-25 (#33): optional so alerts.json files written before this field
+    # existed still validate; build_deal_stats() treats absence as no history.
+    observed_at: str | None = None
+    history_30d: list[dict] | None = None
 
 
 _HTML_LIKE = re.compile(r"<[^>]*>|javascript:", re.IGNORECASE)
@@ -138,6 +144,25 @@ def evaluate_omnibus_rule(
         "discount_vs_30d_pct": discount_vs_30d_pct,
         "rule_verdict": rule_verdict,
     }
+
+
+def build_deal_stats(alert: dict) -> dict:
+    """T-25 (#33): 30-day Omnibus reference price, robust statistics, and
+    the fake-discount (hike-then-drop) flag for one alert. Deterministic and
+    additive only -- it never feeds or alters rule_verdict."""
+    observed_at = alert.get("observed_at")
+    as_of = (
+        datetime.fromisoformat(observed_at).date()
+        if observed_at
+        else datetime.now(UTC).date()
+    )
+    return compute_deal_stats(
+        alert.get("history_30d") or [],
+        alert["new_price"],
+        alert.get("old_price"),
+        alert.get("reference_price"),
+        as_of,
+    )
 
 
 def build_omnibus_prompt(alert: dict, metrics: dict) -> str:
@@ -476,7 +501,13 @@ def main():
         )
         prompt = build_omnibus_prompt(a, metrics)
         analysis = get_analysis(client, prompt, metrics["rule_verdict"], thirty_day_low)
-        formatted_alerts.append({**a, **metrics, **analysis})
+        deal_stats = build_deal_stats(a)
+        # The raw window is summarized by deal_stats; dropping it keeps
+        # formatted_alerts.json (and the outbox payloads built from it) small.
+        alert_fields = {k: v for k, v in a.items() if k != "history_30d"}
+        formatted_alerts.append(
+            {**alert_fields, **metrics, **analysis, "deal_stats": deal_stats}
+        )
 
     json.dump(
         formatted_alerts,
