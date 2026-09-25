@@ -98,6 +98,8 @@ class DeliveryAttempt(BaseModel):
     destination: str
     attempt_number: int = Field(ge=1)
     response_class: Literal["2xx", "4xx", "5xx", "timeout", "unknown"]
-    sent_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
-    dedup_key: str
+    # Terminal-attempt completion time for both outcomes (delivered or
+    # failed) -- there is no "sent but pending" state on this model.
+    completed_at_utc: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    dedup_key: str | None = None
     final_state: Literal["delivered", "failed", "deduped"]

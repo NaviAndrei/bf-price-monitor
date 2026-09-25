@@ -5,6 +5,7 @@ import json
 import os
 import random
 import re
+import sqlite3
 import sys
 import time
 import urllib.parse
@@ -16,6 +17,7 @@ import requests
 from pydantic import ValidationError
 
 from bf_price_monitor.domain import AlertDecision
+from bf_price_monitor.storage.sqlite import init_db, record_delivery_attempt_new_cycle
 
 FORMATTED_FILE = Path("data/formatted_alerts.json")
 PRICE_HISTORY_FILE = Path("data/price_history.json")
@@ -23,6 +25,9 @@ SCRAPE_HEALTH_ALERTS_FILE = Path("data/scrape_health_alerts.json")
 WATCHLIST_FILE = Path("data/watchlist.json")
 DLQ_FILE = Path("data/dlq.jsonl")
 OUTBOX_FILE = Path("data/alert_outbox.jsonl")
+# T-37b (#55): same file scrape.py's dual-write already persists to -- this
+# is a second process/step in monitor.yml, so it opens its own connection.
+DB_FILE = Path("data/price_history.db")
 
 # T-13: cooldown window applied when a watch entry has no cooldown_hours of
 # its own.
@@ -341,11 +346,16 @@ def _load_outbox_effective() -> dict[str, dict]:
     return effective
 
 
-def _replay_pending_outbox(send_message_url: str, chat_id: str) -> dict[str, dict]:
+def _replay_pending_outbox(
+    send_message_url: str, chat_id: str, db: sqlite3.Connection | None = None
+) -> dict[str, dict]:
     """Resends any PENDING event older than REPLAY_GRACE_SECONDS using the
     payload captured when it was first queued, then records the terminal
     status. Returns the (now up-to-date) effective-status map so the caller
-    can dedup the rest of this run against it without re-reading the file."""
+    can dedup the rest of this run against it without re-reading the file.
+    db is optional (T-37b, #55): when given, the terminal outcome is also
+    audited into SQLite; existing callers that only need the JSONL replay
+    keep working unchanged."""
     effective = _load_outbox_effective()
     now = datetime.now(UTC)
 
@@ -388,13 +398,24 @@ def _replay_pending_outbox(send_message_url: str, chat_id: str) -> dict[str, dic
             None if ok else "replay send failed after retries",
             dedup_key=record.get("dedup_key"),
         )
+        if db is not None:
+            _record_delivery_attempt(
+                db,
+                event_id=event_id,
+                dedup_key=record.get("dedup_key"),
+                chat_id=chat_id,
+                sent=ok,
+            )
         print(f"REPLAYED: event {event_id} -> {status}", file=sys.stderr)
 
     return effective
 
 
 def _send_health_alerts(
-    send_message_url: str, chat_id: str, outbox_effective: dict[str, dict]
+    send_message_url: str,
+    chat_id: str,
+    outbox_effective: dict[str, dict],
+    db: sqlite3.Connection,
 ) -> None:
     # T-09: per-store health alerts (Critical Selector Drift, dead-man
     # checks) are written by scrape.py to a handoff file rather than sent
@@ -443,6 +464,13 @@ def _send_health_alerts(
             1,
             "scrape_health",
             None if ok else "delivery failed after retries",
+        )
+        _record_delivery_attempt(
+            db,
+            event_id=event_id,
+            dedup_key=None,
+            chat_id=chat_id,
+            sent=ok,
         )
         time.sleep(1.1)  # Telegram allows ~1 message/second per chat
 
@@ -507,18 +535,81 @@ def _find_cooldown_block(
     return None
 
 
+def _destination_ref(chat_id: str) -> str:
+    # T-37b (#55): delivery_attempts is an audit table; never store the raw
+    # Telegram chat id in it, only a stable non-reversible reference.
+    return hashlib.sha256(f"telegram:{chat_id}".encode()).hexdigest()
+
+
+def _decision_id_from_event(event_id: str) -> uuid.UUID:
+    try:
+        return uuid.UUID(event_id)
+    except ValueError:
+        # Health event ids are content-hash hex strings (_health_event_id),
+        # not UUIDs, but DeliveryAttempt.alert_decision_id is typed UUID --
+        # derive one deterministically so replays stay idempotent.
+        return uuid.uuid5(uuid.NAMESPACE_URL, event_id)
+
+
+def _record_delivery_attempt(
+    db: sqlite3.Connection,
+    *,
+    event_id: str,
+    dedup_key: str | None,
+    chat_id: str,
+    sent: bool,
+) -> None:
+    """Audits one terminal outbox finalization into SQLite as a new delivery
+    cycle. alert_decision_id may already carry prior audit rows -- this deal
+    re-alerting once its cooldown expires, or a health alert retried after
+    an earlier failure -- so attempt_number is allocated atomically at the
+    storage-write boundary (record_delivery_attempt_new_cycle), never
+    computed here: a separate SELECT MAX before this call would leave a
+    window where a concurrent run could allocate the same number. This is
+    additive: alert_outbox.jsonl remains the operational source of truth for
+    PENDING/replay/cooldown behavior, which this never touches. response_class
+    is coarse ("2xx"/"unknown") since per-HTTP-retry classification inside
+    _send_with_retry isn't surfaced to these call sites (deferred)."""
+    record_delivery_attempt_new_cycle(
+        db,
+        {
+            "alert_decision_id": _decision_id_from_event(event_id),
+            "channel": "telegram",
+            "destination": _destination_ref(chat_id),
+            "response_class": "2xx" if sent else "unknown",
+            "dedup_key": dedup_key,
+            "final_state": "delivered" if sent else "failed",
+        },
+    )
+
+
 def main():
     bot_token = os.environ["TELEGRAM_BOT_TOKEN"]
     chat_id = os.environ["TELEGRAM_CHAT_ID"]
     send_message_url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
     send_photo_url = f"https://api.telegram.org/bot{bot_token}/sendPhoto"
 
+    # T-37b (#55): notify.py runs as its own step/process (see DB_FILE), so
+    # it opens its own connection rather than reusing scrape.py's.
+    db = init_db(DB_FILE)
+    try:
+        _run(chat_id, send_message_url, send_photo_url, db)
+    finally:
+        db.close()
+
+
+def _run(
+    chat_id: str,
+    send_message_url: str,
+    send_photo_url: str,
+    db: sqlite3.Connection,
+) -> None:
     # T-12: replay anything left PENDING by a crashed prior run before this
     # run queues anything new, so the dedup check below sees an up-to-date
     # effective status for every event_id.
-    outbox_effective = _replay_pending_outbox(send_message_url, chat_id)
+    outbox_effective = _replay_pending_outbox(send_message_url, chat_id, db)
 
-    _send_health_alerts(send_message_url, chat_id, outbox_effective)
+    _send_health_alerts(send_message_url, chat_id, outbox_effective, db)
 
     alerts = json.load(open(FORMATTED_FILE, encoding="utf-8"))
     if not alerts:
@@ -672,6 +763,13 @@ def main():
             alert["site"],
             None if sent else "delivery failed after retries",
             dedup_key=dedup_key,
+        )
+        _record_delivery_attempt(
+            db,
+            event_id=event_id,
+            dedup_key=dedup_key,
+            chat_id=chat_id,
+            sent=sent,
         )
 
         time.sleep(1.1)  # Telegram allows ~1 message/second per chat

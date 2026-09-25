@@ -4,9 +4,9 @@ import sqlite3
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
-from uuid import NAMESPACE_URL, uuid5
+from uuid import NAMESPACE_URL, uuid4, uuid5
 
-from bf_price_monitor.domain.models import Observation
+from bf_price_monitor.domain.models import DeliveryAttempt, Observation
 
 _SCHEMA_SQL = """
 CREATE TABLE IF NOT EXISTS canonical_products (
@@ -38,6 +38,26 @@ CREATE TABLE IF NOT EXISTS price_observations (
 
 CREATE INDEX IF NOT EXISTS idx_price_observations_offer_scraped
     ON price_observations(offer_id, scraped_at);
+
+-- T-37b (#55): additive terminal-outcome audit trail. alert_outbox.jsonl
+-- remains the operational source of truth for PENDING/replay/cooldown; this
+-- table has no FK on alert_decision_id since no alert_decisions table
+-- exists yet (out of scope here), and holds only delivered/failed rows.
+CREATE TABLE IF NOT EXISTS delivery_attempts (
+    id TEXT PRIMARY KEY NOT NULL,
+    alert_decision_id TEXT NOT NULL,
+    channel TEXT NOT NULL,
+    destination_ref TEXT NOT NULL,
+    attempt_number INTEGER NOT NULL CHECK(attempt_number >= 1),
+    response_class TEXT NOT NULL,
+    completed_at_utc TEXT NOT NULL,
+    dedup_key TEXT,
+    final_state TEXT NOT NULL,
+    UNIQUE(alert_decision_id, attempt_number)
+);
+
+CREATE INDEX IF NOT EXISTS idx_delivery_attempts_dedup_key
+    ON delivery_attempts(dedup_key);
 """
 
 
@@ -156,6 +176,96 @@ def record_observation(
             bool(obs["in_stock"]),
             scraped_at,
         )
+
+
+def record_delivery_attempt(
+    db: sqlite3.Connection, attempt: dict[str, Any] | DeliveryAttempt
+) -> None:
+    """Insert or replay-update one terminal delivery outcome. Idempotent per
+    (alert_decision_id, attempt_number); id is derived from that pair so a
+    replayed attempt updates the same row instead of appending a duplicate."""
+    if not isinstance(attempt, DeliveryAttempt):
+        attempt = DeliveryAttempt.model_validate(attempt)
+
+    row_id = str(
+        uuid5(
+            NAMESPACE_URL,
+            f"delivery-attempt:{attempt.alert_decision_id}:{attempt.attempt_number}",
+        )
+    )
+    with db:
+        db.execute(
+            """
+            INSERT INTO delivery_attempts
+                (id, alert_decision_id, channel, destination_ref, attempt_number,
+                 response_class, completed_at_utc, dedup_key, final_state)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(alert_decision_id, attempt_number) DO UPDATE SET
+                channel = excluded.channel,
+                destination_ref = excluded.destination_ref,
+                response_class = excluded.response_class,
+                completed_at_utc = excluded.completed_at_utc,
+                dedup_key = excluded.dedup_key,
+                final_state = excluded.final_state
+            """,
+            (
+                row_id,
+                str(attempt.alert_decision_id),
+                attempt.channel,
+                attempt.destination,
+                attempt.attempt_number,
+                attempt.response_class,
+                attempt.completed_at_utc.isoformat(),
+                attempt.dedup_key,
+                attempt.final_state,
+            ),
+        )
+
+
+def record_delivery_attempt_new_cycle(
+    db: sqlite3.Connection, attempt: dict[str, Any]
+) -> int:
+    """Starts a new terminal-delivery audit cycle for
+    attempt['alert_decision_id']: allocates the next attempt_number
+    (COALESCE(MAX(attempt_number), 0) + 1 for that id) and inserts the row
+    in the same INSERT ... SELECT statement, so allocation and write can
+    never interleave with a concurrent caller's allocation for the same
+    alert_decision_id -- unlike a separate SELECT MAX then INSERT, which
+    leaves a window where two processes could both read the same MAX and
+    collide on the UNIQUE(alert_decision_id, attempt_number) constraint.
+    Returns the allocated attempt_number. Any attempt_number in `attempt`
+    is ignored -- use record_delivery_attempt() instead when the number is
+    already known, e.g. an idempotent rewrite of a specific already-audited
+    row."""
+    validated = DeliveryAttempt.model_validate({**attempt, "attempt_number": 1})
+    alert_decision_id = str(validated.alert_decision_id)
+    row_id = str(uuid4())
+    with db:
+        db.execute(
+            """
+            INSERT INTO delivery_attempts
+                (id, alert_decision_id, channel, destination_ref, attempt_number,
+                 response_class, completed_at_utc, dedup_key, final_state)
+            SELECT ?, ?, ?, ?, COALESCE(MAX(attempt_number), 0) + 1, ?, ?, ?, ?
+            FROM delivery_attempts
+            WHERE alert_decision_id = ?
+            """,
+            (
+                row_id,
+                alert_decision_id,
+                validated.channel,
+                validated.destination,
+                validated.response_class,
+                validated.completed_at_utc.isoformat(),
+                validated.dedup_key,
+                validated.final_state,
+                alert_decision_id,
+            ),
+        )
+        row = db.execute(
+            "SELECT attempt_number FROM delivery_attempts WHERE id = ?", (row_id,)
+        ).fetchone()
+    return row["attempt_number"]
 
 
 def get_latest_price(

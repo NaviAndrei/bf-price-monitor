@@ -11,6 +11,9 @@ from notify import (
     generate_quickchart_url,
 )
 
+from bf_price_monitor.domain import DeliveryAttempt
+from bf_price_monitor.storage.sqlite import init_db, record_delivery_attempt
+
 BASE_ALERT = {
     "title": "Laptop Lenovo V15 G4 AMN AMD Ryzen 5 7520U 16GB 512GB SSD",
     "site": "emag",
@@ -161,6 +164,7 @@ def _full_pipeline_env(monkeypatch, tmp_path):
         notify, "SCRAPE_HEALTH_ALERTS_FILE", tmp_path / "scrape_health_alerts.json"
     )
     monkeypatch.setattr(notify, "WATCHLIST_FILE", tmp_path / "watchlist.json")
+    monkeypatch.setattr(notify, "DB_FILE", tmp_path / "price_history.db")
     monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "testtoken")
     monkeypatch.setenv("TELEGRAM_CHAT_ID", "12345")
     notify.PRICE_HISTORY_FILE.write_text(json.dumps({"products": {}}), encoding="utf-8")
@@ -980,3 +984,148 @@ def test_same_deal_twice_in_one_run_sent_once(
 
     assert post.call_count() == 1
     assert [r["status"] for r in _read_outbox_records()] == ["PENDING", "SENT"]
+
+
+# --- T-37b (#55): delivery_attempts SQLite audit trail -----------------------
+
+
+def _delivery_attempt_rows(db_path):
+    conn = init_db(db_path)
+    try:
+        return [
+            dict(row)
+            for row in conn.execute("SELECT * FROM delivery_attempts").fetchall()
+        ]
+    finally:
+        conn.close()
+
+
+def test_successful_text_send_writes_exactly_one_delivered_attempt(
+    monkeypatch, tmp_path, _full_pipeline_env
+):
+    _write_formatted(tmp_path, [DEAL_ALERT])
+    monkeypatch.setattr(notify.requests, "post", _sequenced_post([_FakeResponse(200)]))
+
+    notify.main()
+
+    rows = _delivery_attempt_rows(notify.DB_FILE)
+    assert len(rows) == 1
+    assert rows[0]["final_state"] == "delivered"
+
+
+def test_successful_photo_send_writes_exactly_one_delivered_attempt(
+    monkeypatch, tmp_path, _full_pipeline_env
+):
+    _write_formatted(tmp_path, [DEAL_ALERT])
+    _enable_photo_path(DEAL_ALERT)
+    monkeypatch.setattr(notify.requests, "post", _sequenced_post([_FakeResponse(200)]))
+
+    notify.main()
+
+    rows = _delivery_attempt_rows(notify.DB_FILE)
+    assert len(rows) == 1
+    assert rows[0]["final_state"] == "delivered"
+
+
+def test_exhausted_send_failure_writes_exactly_one_failed_attempt(
+    monkeypatch, tmp_path, _full_pipeline_env
+):
+    _write_formatted(tmp_path, [DEAL_ALERT])
+    monkeypatch.setattr(
+        notify.requests,
+        "post",
+        _sequenced_post([_FakeResponse(403, text="Forbidden")]),
+    )
+
+    notify.main()
+
+    rows = _delivery_attempt_rows(notify.DB_FILE)
+    assert len(rows) == 1
+    assert rows[0]["final_state"] == "failed"
+
+
+def test_destination_ref_is_not_the_raw_chat_id(
+    monkeypatch, tmp_path, _full_pipeline_env
+):
+    _write_formatted(tmp_path, [DEAL_ALERT])
+    monkeypatch.setattr(notify.requests, "post", _sequenced_post([_FakeResponse(200)]))
+
+    notify.main()
+
+    rows = _delivery_attempt_rows(notify.DB_FILE)
+    assert len(rows) == 1
+    assert rows[0]["destination_ref"] != "12345"
+
+
+def test_health_alert_delivery_attempt_has_no_dedup_key(
+    monkeypatch, tmp_path, _full_pipeline_env
+):
+    message = "⚠️ test health alert"
+    (tmp_path / "scrape_health_alerts.json").write_text(
+        json.dumps([message]), encoding="utf-8"
+    )
+    _write_formatted(tmp_path, [])
+    monkeypatch.setattr(notify.requests, "post", _sequenced_post([_FakeResponse(200)]))
+
+    notify.main()
+
+    rows = _delivery_attempt_rows(notify.DB_FILE)
+    assert len(rows) == 1
+    assert rows[0]["dedup_key"] is None
+    assert rows[0]["final_state"] == "delivered"
+
+
+def test_delivery_attempt_gets_new_number_per_real_delivery_cycle(
+    monkeypatch, tmp_path, _full_pipeline_env
+):
+    # Same event_id/dedup_key can legitimately go through more than one live
+    # PENDING->terminal cycle over its lifetime (e.g. this deal re-alerting
+    # once its cooldown expires) -- each real cycle must get its own
+    # attempt_number instead of colliding with the first row via the SQLite
+    # UPSERT's (alert_decision_id, attempt_number) key.
+    _write_formatted(tmp_path, [DEAL_ALERT])
+    monkeypatch.setattr(notify.requests, "post", _sequenced_post([_FakeResponse(200)]))
+    notify.main()
+
+    rows = _delivery_attempt_rows(notify.DB_FILE)
+    assert len(rows) == 1
+    assert rows[0]["attempt_number"] == 1
+    decision_id = rows[0]["alert_decision_id"]
+
+    # Cooldown expires -> the real replay/cooldown machinery (not a mock)
+    # drives a second genuine delivery cycle for the identical event.
+    _age_outbox_records(hours=notify.DEFAULT_COOLDOWN_HOURS + 1)
+    monkeypatch.setattr(notify.requests, "post", _sequenced_post([_FakeResponse(200)]))
+    notify.main()
+
+    rows = _delivery_attempt_rows(notify.DB_FILE)
+    assert {r["alert_decision_id"] for r in rows} == {decision_id}
+    assert sorted(r["attempt_number"] for r in rows) == [1, 2]
+
+    # An exact, already-known-attempt-number rewrite of the second cycle
+    # (e.g. a reconciliation job re-auditing a row it already knows) must
+    # upsert onto attempt 2 via the storage layer's known-number path, not
+    # append a third row. notify.py itself never does this in the live
+    # pipeline -- every live call site allocates a new cycle -- so this
+    # exercises record_delivery_attempt() (mode B) directly.
+    second_attempt = next(r for r in rows if r["attempt_number"] == 2)
+    db = init_db(notify.DB_FILE)
+    try:
+        record_delivery_attempt(
+            db,
+            DeliveryAttempt(
+                alert_decision_id=uuid.UUID(second_attempt["alert_decision_id"]),
+                channel=second_attempt["channel"],
+                destination=second_attempt["destination_ref"],
+                attempt_number=2,
+                response_class=second_attempt["response_class"],
+                dedup_key=second_attempt["dedup_key"],
+                final_state=second_attempt["final_state"],
+            ),
+        )
+    finally:
+        db.close()
+
+    rows = _delivery_attempt_rows(notify.DB_FILE)
+    assert len(rows) == 2
+    assert sorted(r["attempt_number"] for r in rows) == [1, 2]

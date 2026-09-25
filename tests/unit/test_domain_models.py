@@ -158,6 +158,22 @@ def test_delivery_attempt_happy_path():
     assert attempt.final_state == "delivered"
 
 
+def test_delivery_attempt_dedup_key_is_optional_for_health_alerts():
+    # Health alerts have no deal dedup key (see notify.py's _deal_dedup_key,
+    # which only exists for deal alerts) -- the model must accept None
+    # rather than forcing a synthetic key.
+    attempt = DeliveryAttempt(
+        alert_decision_id=uuid4(),
+        channel="telegram",
+        destination="chat-123",
+        attempt_number=1,
+        response_class="2xx",
+        dedup_key=None,
+        final_state="delivered",
+    )
+    assert attempt.dedup_key is None
+
+
 def test_watch_cooldown_hours_defaults_to_24():
     assert Watch(site="emag", query="laptop lenovo v15").cooldown_hours == 24
 
