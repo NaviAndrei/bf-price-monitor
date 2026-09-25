@@ -302,3 +302,13 @@ to mop up (T-16, #26) and made every fetch pay a fresh launch cost.
   existing suite, not via a live `workflow_dispatch` run — that requires
   separate explicit approval, per the standing rule that no live retailer
   scrape runs without it.
+- **The first live validation run (2026-09-25) exposed an invalid
+  `context.new_page(user_agent=...)` call**, which broke PC Garage and
+  Flanco entirely (Playwright's real `BrowserContext.new_page()` takes no
+  arguments). `user_agent` remains configured only at
+  `browser.new_context(...)` in `_BrowserState.get_context`, unchanged from
+  the original design. `tests/test_browser_state.py`'s `FakeContext` was
+  tightened from a permissive `new_page(self, **kwargs)` to the real
+  zero-argument `new_page(self)` shape so this class of bug fails in unit
+  tests instead of only surfacing live. #29 remains In Review pending a
+  successful revalidation run against the corrected code.

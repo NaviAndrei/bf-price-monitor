@@ -142,5 +142,11 @@ Replaced fetch_with_browser's per-fetch full browser launch with a run-scoped _B
 Tests: 182 passed (170 existing unchanged + 12 new in tests/test_browser_state.py), ruff check clean, ruff format --check clean except scripts/analyze.py's pre-existing drift (#54). Commit: 1b25f7f.
 **Live before/after performance measurement on the self-hosted runner remains pending and unapproved** — no workflow_dispatch or real retailer scrape was run as part of this implementation. #29 stays open until that acceptance criterion is explicitly approved and run.
 
+### T-21 live-validation regression and correction
+The first approved live workflow_dispatch run against 1b25f7f failed PC Garage and Flanco entirely: fetch_with_browser called context.new_page(user_agent=HEADERS["User-Agent"]), but the real playwright BrowserContext.new_page() takes no arguments, so both retailers raised TypeError on every attempt and produced zero data (scrape_health.jsonl showed products_parsed=0 for both, versus 20/10 on the last good pre-change run). This is unrelated to the separate, still-broken Runner cleanup step, which fails independently because pwsh is missing from the runner's PATH.
+Corrective fix: removed the invalid user_agent keyword from context.new_page(), leaving user_agent configured only at browser.new_context() in _BrowserState.get_context, and tightened tests/test_browser_state.py's FakeContext from permissive **kwargs to the real zero-argument new_page() shape, plus a new regression test reproducing the exact production TypeError before the fix.
+Tests: 183 passed (13 in tests/test_browser_state.py, including the new regression test), ruff check/format clean except scripts/analyze.py's pre-existing drift. Commit: 5cce44b.
+A fresh post-fix workflow_dispatch validation is pending.
+
 ## Sprints completed
 Sprint 0 (foundations), Sprint 1 (correctness), Sprint 2 (notification reliability) — all closed, no action needed.
