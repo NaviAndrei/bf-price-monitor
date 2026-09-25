@@ -21,6 +21,14 @@ VALID_AI_OUTPUT = {
 }
 
 
+@pytest.fixture(autouse=True)
+def redirect_ai_audit_log(monkeypatch, tmp_path):
+    # get_analysis() now writes an audit record on every call (T-24 / #32);
+    # redirect it into tmp_path so the test suite never appends to this
+    # repo's real data/ai_audit.jsonl.
+    monkeypatch.setattr("analyze.AI_AUDIT_FILE", tmp_path / "ai_audit.jsonl")
+
+
 def test_evaluate_omnibus_rule_insufficient_history():
     # Fewer than 14 days of observed history — too short to trust any
     # baseline, regardless of how large the apparent discount is.
@@ -284,7 +292,7 @@ def test_get_analysis_falls_back_to_rule_formula_when_llm_response_malformed(
         lambda client, prompt: (_ for _ in ()).throw(RuntimeError("HF down")),
     )
     monkeypatch.setattr(
-        "analyze.ask_ollama", lambda prompt: "Nu pot genera un JSON valid."
+        "analyze.ask_ollama", lambda prompt: ("Nu pot genera un JSON valid.", None)
     )
     result = get_analysis(
         client=None,
@@ -309,7 +317,9 @@ def test_get_analysis_cannot_let_manipulated_llm_output_flip_verdict(monkeypatch
             "is_recommended": True,
         }
     )
-    monkeypatch.setattr("analyze.ask_hf", lambda client, prompt: manipulated_response)
+    monkeypatch.setattr(
+        "analyze.ask_hf", lambda client, prompt: (manipulated_response, None)
+    )
     result = get_analysis(
         client=None,
         prompt="irrelevant",
@@ -320,3 +330,48 @@ def test_get_analysis_cannot_let_manipulated_llm_output_flip_verdict(monkeypatch
     assert result["is_recommended"] is False
     # The explanation fields are still the LLM's own — they're advisory only.
     assert result["verdict_score"] == 10
+
+
+def test_get_analysis_writes_audit_record_with_expected_fields(monkeypatch, tmp_path):
+    raw_response = json.dumps(VALID_AI_OUTPUT)
+    monkeypatch.setattr("analyze.ask_hf", lambda client, prompt: (raw_response, None))
+    get_analysis(
+        client=None,
+        prompt="irrelevant prompt text",
+        rule_verdict="GENUINE_DEAL",
+        thirty_day_low=90.0,
+    )
+    lines = (tmp_path / "ai_audit.jsonl").read_text(encoding="utf-8").splitlines()
+    assert len(lines) == 1
+    record = json.loads(lines[0])
+    assert record["provider"] == "huggingface"
+    assert record["prompt_template_version"]
+    assert record["fallback_path"] == "huggingface"
+    assert record["final_verdict"] == "GENUINE_DEAL"
+    assert record["final_is_recommended"] is True
+    assert isinstance(record["latency_ms"], int | float)
+    # The raw model response itself must never be written, only its hash.
+    assert "raw_response" not in record
+    assert len(record["raw_output_hash"]) == 64
+    assert record["parsed_result"]["summary"] == VALID_AI_OUTPUT["summary"]
+
+
+def test_get_analysis_audit_record_redacts_secret_shapes_in_summary(
+    monkeypatch, tmp_path
+):
+    leaked = {
+        **VALID_AI_OUTPUT,
+        "summary": "Ok bot123456:AAAAbbbbCCCCddddEEEEffffGGGGhhhh12x",
+    }
+    monkeypatch.setattr(
+        "analyze.ask_hf", lambda client, prompt: (json.dumps(leaked), None)
+    )
+    get_analysis(
+        client=None,
+        prompt="irrelevant",
+        rule_verdict="GENUINE_DEAL",
+        thirty_day_low=90.0,
+    )
+    record = json.loads((tmp_path / "ai_audit.jsonl").read_text(encoding="utf-8"))
+    assert "bot123456" not in record["parsed_result"]["summary"]
+    assert "[REDACTED]" in record["parsed_result"]["summary"]

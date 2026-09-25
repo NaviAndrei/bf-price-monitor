@@ -1,8 +1,11 @@
 # scripts/analyze.py
+import hashlib
 import json
 import os
 import re
 import sys
+import time
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Literal
 
@@ -12,6 +15,7 @@ from pydantic import BaseModel, Field, ValidationError, field_validator
 
 ALERTS_FILE = Path("data/alerts.json")
 FORMATTED_FILE = Path("data/formatted_alerts.json")
+AI_AUDIT_FILE = Path("data/ai_audit.jsonl")
 
 
 class RawAlertCandidate(BaseModel):
@@ -81,6 +85,11 @@ HF_MODEL = os.getenv("HF_MODEL", "Qwen/Qwen2.5-Coder-32B-Instruct")
 OLLAMA_URL = "http://localhost:11434/api/chat"
 OLLAMA_MODEL = "qwen3:8b"
 
+# Bumped whenever build_omnibus_prompt()'s instructions or requested fields
+# change, so data/ai_audit.jsonl records can be grouped by which prompt
+# shape actually produced them (T-24 / #32).
+PROMPT_TEMPLATE_VERSION = "omnibus-v1"
+
 # The JSON payload (verdict + verdict_score + summary + is_recommended) needs
 # more room than a one-sentence verdict did; 250 keeps the Romanian summary
 # from being cut off mid-string, which would otherwise fail JSON parsing.
@@ -144,16 +153,26 @@ def build_omnibus_prompt(alert: dict, metrics: dict) -> str:
     )
 
 
-def ask_hf(client: InferenceClient, prompt: str) -> str:
+def ask_hf(client: InferenceClient, prompt: str) -> tuple[str, dict | None]:
     completion = client.chat.completions.create(
         model=HF_MODEL,
         messages=[{"role": "user", "content": prompt}],
         max_tokens=LLM_MAX_TOKENS,
     )
-    return completion.choices[0].message.content
+    usage_obj = getattr(completion, "usage", None)
+    usage = (
+        {
+            "prompt_tokens": getattr(usage_obj, "prompt_tokens", None),
+            "completion_tokens": getattr(usage_obj, "completion_tokens", None),
+            "total_tokens": getattr(usage_obj, "total_tokens", None),
+        }
+        if usage_obj is not None
+        else None
+    )
+    return completion.choices[0].message.content, usage
 
 
-def ask_ollama(prompt: str) -> str:
+def ask_ollama(prompt: str) -> tuple[str, dict | None]:
     r = requests.post(
         OLLAMA_URL,
         json={
@@ -164,7 +183,21 @@ def ask_ollama(prompt: str) -> str:
         timeout=180,  # qwen3:8b is a "thinking" model; ~90s to reason before answering on this hardware
     )
     r.raise_for_status()
-    return r.json()["message"]["content"]
+    body = r.json()
+    # Ollama's non-streaming /api/chat response exposes token counts under
+    # these names (not "usage") when the model reports them.
+    usage = (
+        {
+            "prompt_tokens": body.get("prompt_eval_count"),
+            "completion_tokens": body.get("eval_count"),
+            "total_tokens": (
+                (body.get("prompt_eval_count") or 0) + (body.get("eval_count") or 0)
+            ),
+        }
+        if "prompt_eval_count" in body or "eval_count" in body
+        else None
+    )
+    return body["message"]["content"], usage
 
 
 def extract_json(text: str | None) -> dict | None:
@@ -251,6 +284,59 @@ def validate_ai_evaluation(
         return None
 
 
+def _log_audit_record(
+    *,
+    provider: str | None,
+    model_name: str | None,
+    prompt: str,
+    latency_ms: float,
+    usage: dict | None,
+    raw: str | None,
+    parsed_result: dict | None,
+    fallback_path: str,
+    final_verdict: str,
+    final_is_recommended: bool,
+) -> None:
+    """Append-only per-call record for T-24 (#32), same convention as
+    scrape.py's scrape_health.jsonl (mkdir + open(..., "a") + one JSON object
+    per line). Never writes the raw model response itself, only a hash of it
+    -- and redacts the LLM-controlled summary text (the same convention as
+    T-17's _redact_secrets) before writing it, in case a prompt-injected
+    response tries to echo a secret shape back.
+
+    Known limitation (T-43 / #61, not fixed here): this file is untracked,
+    and actions/checkout's git clean wipes it before the persist job's
+    checkout completes -- it does not survive past the run that wrote it.
+    """
+    record = {
+        "timestamp_utc": datetime.now(UTC).isoformat(),
+        "provider": provider,
+        "model_name": model_name,
+        "prompt_template_version": PROMPT_TEMPLATE_VERSION,
+        # Proxy for "deterministic inputs": build_omnibus_prompt() is a pure
+        # function of the rule engine's metrics and the alert fields, so
+        # hashing the exact prompt sent is equivalent to hashing those inputs
+        # without threading them through get_analysis() as extra parameters.
+        "deterministic_inputs_hash": hashlib.sha256(prompt.encode("utf-8")).hexdigest(),
+        "latency_ms": latency_ms,
+        "token_usage": usage,
+        "raw_output_hash": (
+            hashlib.sha256(raw.encode("utf-8")).hexdigest() if raw is not None else None
+        ),
+        "parsed_result": (
+            {**parsed_result, "summary": _redact_secrets(parsed_result["summary"])}
+            if parsed_result is not None
+            else None
+        ),
+        "fallback_path": fallback_path,
+        "final_verdict": final_verdict,
+        "final_is_recommended": final_is_recommended,
+    }
+    AI_AUDIT_FILE.parent.mkdir(parents=True, exist_ok=True)
+    with open(AI_AUDIT_FILE, "a", encoding="utf-8") as f:
+        f.write(json.dumps(record, ensure_ascii=False) + "\n")
+
+
 def get_analysis(
     client: InferenceClient,
     prompt: str,
@@ -258,22 +344,31 @@ def get_analysis(
     thirty_day_low: float | None,
 ) -> dict:
     raw = None
+    usage = None
     provider = None
     model_name = None
+    network_path = "huggingface"
+    start = time.perf_counter()
     try:
-        raw = ask_hf(client, prompt)
+        raw, usage = ask_hf(client, prompt)
         provider, model_name = "huggingface", HF_MODEL
     except Exception as e:
         print(f"HF inference failed ({e.__class__.__name__}), falling back to Ollama")
+        network_path = "ollama"
         try:
-            raw = ask_ollama(prompt)
+            raw, usage = ask_ollama(prompt)
             provider, model_name = "ollama", OLLAMA_MODEL
         except Exception as e2:
             print(
                 f"Ollama fallback also failed ({e2.__class__.__name__}), using default template"
             )
+            network_path = "both_providers_failed"
             raw = None
+            usage = None
+    latency_ms = round((time.perf_counter() - start) * 1000, 1)
 
+    validated = None
+    fallback_path = network_path
     parsed = extract_json(raw)
     if parsed is None:
         if raw is not None:
@@ -282,13 +377,31 @@ def get_analysis(
                 f"model={model_name}); using deterministic fallback",
                 file=sys.stderr,
             )
-        return default_analysis(rule_verdict, thirty_day_low)
+            fallback_path = f"{network_path}_malformed_output"
+        result = default_analysis(rule_verdict, thirty_day_low)
+    else:
+        validated = validate_ai_evaluation(parsed, provider, model_name)
+        if validated is None:
+            fallback_path = f"{network_path}_schema_invalid"
+            result = default_analysis(rule_verdict, thirty_day_low)
+        else:
+            result = enforce_deterministic_invariant(
+                validated.model_dump(), rule_verdict
+            )
 
-    validated = validate_ai_evaluation(parsed, provider, model_name)
-    if validated is None:
-        return default_analysis(rule_verdict, thirty_day_low)
-
-    return enforce_deterministic_invariant(validated.model_dump(), rule_verdict)
+    _log_audit_record(
+        provider=provider,
+        model_name=model_name,
+        prompt=prompt,
+        latency_ms=latency_ms,
+        usage=usage,
+        raw=raw,
+        parsed_result=validated.model_dump() if validated is not None else None,
+        fallback_path=fallback_path,
+        final_verdict=result["verdict"],
+        final_is_recommended=result["is_recommended"],
+    )
+    return result
 
 
 def main():
