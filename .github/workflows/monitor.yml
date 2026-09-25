@@ -147,6 +147,13 @@ jobs:
       # This job has no write permission, so the updated data files can only
       # leave it via an artifact -- the persist job below downloads this
       # instead of trusting a shared runner filesystem between jobs.
+      #
+      # T-43 (#61): data/scrape_health.jsonl is included here too, purely so
+      # it survives as a downloadable artifact -- the persist job's checkout
+      # (clean: true) wipes anything untracked from the runner's local disk
+      # before a later check could read it there, but an uploaded artifact
+      # lives on GitHub's side independent of that. persist never reads or
+      # commits this file; it is not added to persist's `git add` allowlist.
       - name: Upload updated data files
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -154,6 +161,7 @@ jobs:
           path: |
             data/price_history.json
             data/watchlist.json
+            data/scrape_health.jsonl
           retention-days: 1
 
       # T-16 (#26): runs even if scrape/analyze/notify failed, so a crashed
