@@ -159,9 +159,28 @@ jobs:
       # T-16 (#26): runs even if scrape/analyze/notify failed, so a crashed
       # or timed-out run never leaves an orphaned Chromium process or stale
       # temp profile behind for the next scheduled run to inherit.
+      #
+      # T-42 (#60): the step's own default shell is already a working pwsh
+      # process (proven by every other run: step above it succeeding without
+      # an explicit `shell:`), but spawning a *second* `pwsh` by bare name
+      # failed with "The term 'pwsh' is not recognized" -- the service
+      # account's inherited PATH for that nested child-process lookup didn't
+      # include pwsh's install directory, even though the runner agent's own
+      # (PATH-independent) shell launch worked fine. Resolve the interpreter
+      # explicitly instead of relying on a second PATH lookup, falling back
+      # to Windows PowerShell (the script uses no PS7-only syntax), and fail
+      # fast with a clear message instead of the opaque error if neither is
+      # resolvable.
       - name: Runner cleanup
         if: always()
-        run: pwsh scripts/runner_cleanup.ps1
+        run: |
+          $exe = Get-Command pwsh -ErrorAction SilentlyContinue
+          if (-not $exe) { $exe = Get-Command powershell -ErrorAction SilentlyContinue }
+          if (-not $exe) {
+            Write-Error "[runner_cleanup] Neither pwsh nor powershell.exe is resolvable on this runner's PATH -- cannot run cleanup. Verify PowerShell is installed and on the service account's PATH."
+            exit 1
+          }
+          & $exe.Source -File scripts/runner_cleanup.ps1
 
   persist:
     needs: scrape-analyze-notify
