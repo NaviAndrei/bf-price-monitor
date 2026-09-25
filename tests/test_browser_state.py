@@ -49,14 +49,20 @@ class FakePage:
 
 
 class FakeContext:
-    def __init__(self, browser, name):
+    def __init__(self, browser, name, user_agent=None):
         self.browser = browser
         self.name = name
+        self.user_agent = user_agent
         self.pages = []
         self.cookies = {}
         self.closed = False
 
-    def new_page(self, **kwargs):
+    def new_page(self):
+        # Mirrors the real playwright.sync_api.BrowserContext.new_page(),
+        # which takes no arguments -- the user agent is configured once at
+        # new_context() time, not per page. Deliberately strict (no **kwargs
+        # passthrough) so a caller passing user_agent= here fails loudly
+        # instead of the fake silently accepting an invalid real API call.
         page = FakePage(self)
         self.pages.append(page)
         return page
@@ -76,7 +82,9 @@ class FakeBrowser:
 
     def new_context(self, **kwargs):
         self.new_context_calls += 1
-        ctx = FakeContext(self, f"ctx{self.new_context_calls}")
+        ctx = FakeContext(
+            self, f"ctx{self.new_context_calls}", user_agent=kwargs.get("user_agent")
+        )
         self.contexts.append(ctx)
         return ctx
 
@@ -187,6 +195,36 @@ def test_context_state_does_not_cross_sites(monkeypatch):
     pcgarage_ctx.add_cookie("cf_clearance", "pcgarage-token")
 
     assert "cf_clearance" not in flanco_ctx.cookies
+
+
+# --- regression: context.new_page() must take no arguments ------------------
+# T-21 (#29) live validation on 2026-09-25 found this exact bug in production:
+# fetch_with_browser passed user_agent=... into context.new_page(), but the
+# real playwright.sync_api.BrowserContext.new_page() takes no arguments (the
+# user agent is only configurable at new_context() time). The original
+# FakeContext.new_page(self, **kwargs) silently accepted the invalid keyword
+# and let this ship untested; FakeContext is now strict (see above) so this
+# can't happen silently again.
+
+
+def test_fetch_with_browser_context_new_page_takes_no_arguments(monkeypatch):
+    install_fakes(monkeypatch)
+    bs = scrape._BrowserState()
+    bs.start()
+    monkeypatch.setattr(scrape, "_browser_state", bs)
+    monkeypatch.setattr(scrape.time, "sleep", lambda *_: None)
+
+    html = scrape.fetch_with_browser("https://example.test/x", "pcgarage")
+
+    assert html == "<html>ok</html>"
+    ctx = bs.get_context("pcgarage")
+    # The page came from the existing per-site context, not a fresh one.
+    assert len(ctx.pages) == 1
+    page = ctx.pages[0]
+    assert page.context is ctx
+    # The context, not the page, carries the configured user agent.
+    assert ctx.user_agent == scrape.HEADERS["User-Agent"]
+    assert page.closed is True
 
 
 # --- 5: every fetch attempt closes its page in finally -----------------------

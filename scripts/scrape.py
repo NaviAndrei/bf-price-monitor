@@ -541,7 +541,7 @@ def fetch_with_browser(url: str, site_name: str) -> str | None:
         # survive into the retry; a poisoned context is instead discarded by
         # with_retry()'s scraper-level retry path, not here.
         context = _browser_state.get_context(site_name)
-        page = context.new_page(user_agent=HEADERS["User-Agent"])
+        page = context.new_page()
         try:
             page.set_default_navigation_timeout(PLAYWRIGHT_NAV_TIMEOUT_MS)
             page.route("**/*", _block_heavy_requests)
