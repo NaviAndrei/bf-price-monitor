@@ -16,3 +16,5 @@ data/price_history.db-shm
 .claude/settings.local.json
 .claude/logs/
 .specstory/
+/pitems2.json
+/target_items.json
