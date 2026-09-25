@@ -15,6 +15,8 @@ from urllib.parse import parse_qsl, urlencode, urlparse, urlsplit, urlunsplit
 
 import requests
 from bs4 import BeautifulSoup
+from playwright.sync_api import BrowserContext, sync_playwright
+from playwright_stealth import Stealth
 from pydantic import ValidationError
 
 from bf_price_monitor.config import load_watchlist
@@ -54,7 +56,12 @@ SCRAPER_RETRY_ATTEMPTS = 2
 SCRAPER_RETRY_BASE_DELAY = 3  # seconds, plus random jitter
 
 
-def with_retry(func):
+def with_retry(func, site_name: str | None = None):
+    # site_name is only set for scrapers that call fetch_with_browser()
+    # (pcgarage, flanco). On a retry after an unhandled exception, that
+    # site's BrowserContext is discarded before the retry so a poisoned
+    # context (mid-navigation crash, corrupted session state) doesn't carry
+    # into the next attempt — the run-scoped browser itself is untouched.
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
         for attempt in range(1, SCRAPER_RETRY_ATTEMPTS + 1):
@@ -63,6 +70,8 @@ def with_retry(func):
             except Exception as e:
                 if attempt == SCRAPER_RETRY_ATTEMPTS:
                     raise
+                if site_name is not None:
+                    _browser_state.reset_context(site_name)
                 delay = SCRAPER_RETRY_BASE_DELAY + random.uniform(0, 1)
                 print(
                     f"[{func.__name__}] failed ({e.__class__.__name__}: {e}), "
@@ -143,6 +152,68 @@ class _RunState:
 
 
 _run_state = _RunState()
+
+
+class _BrowserState:
+    # T-21 (#29): one stealth-wrapped Chromium browser for the whole
+    # scripts/scrape.py run, with one reusable BrowserContext per retailer
+    # (isolated cookies/storage per site, no cross-retailer bleed). A page is
+    # opened fresh for every fetch attempt and always closed by its caller;
+    # only the context and browser live across calls.
+    def __init__(self) -> None:
+        self._stealth_ctx = None
+        self._playwright = None
+        self._browser = None
+        self._contexts: dict[str, BrowserContext] = {}
+
+    def start(self) -> None:
+        # Idempotent and lazy: a watchlist run with no pcgarage/flanco items
+        # never touches Playwright at all, so the single browser launch only
+        # happens on the first real get_context() call, not unconditionally
+        # in main().
+        if self._browser is not None:
+            return
+        self._stealth_ctx = Stealth().use_sync(sync_playwright())
+        self._playwright = self._stealth_ctx.__enter__()
+        self._browser = self._playwright.chromium.launch(headless=True)
+
+    def get_context(self, site_name: str) -> BrowserContext:
+        self.start()
+        context = self._contexts.get(site_name)
+        if context is None:
+            context = self._browser.new_context(user_agent=HEADERS["User-Agent"])
+            self._contexts[site_name] = context
+        return context
+
+    def reset_context(self, site_name: str) -> None:
+        # Called before a scraper-level retry after an unhandled exception:
+        # the failed site's context may hold corrupted navigation/session
+        # state, so it's discarded and rebuilt fresh on next get_context().
+        # Other sites' contexts, and the run-scoped browser itself, are
+        # untouched.
+        context = self._contexts.pop(site_name, None)
+        if context is not None:
+            try:
+                context.close()
+            except Exception:
+                pass
+
+    def close(self) -> None:
+        for site_name in list(self._contexts):
+            self.reset_context(site_name)
+        if self._browser is not None:
+            try:
+                self._browser.close()
+            except Exception:
+                pass
+            self._browser = None
+        if self._stealth_ctx is not None:
+            self._stealth_ctx.__exit__(None, None, None)
+            self._stealth_ctx = None
+            self._playwright = None
+
+
+_browser_state = _BrowserState()
 
 
 def _record_challenge(site_name: str) -> None:
@@ -461,39 +532,42 @@ def fetch_with_browser(url: str, site_name: str) -> str | None:
     # headless Chromium clears the JS-fingerprint half of the challenge;
     # IP reputation is already covered since this runs on the self-hosted
     # runner. Still only reads listing/search pages — same scope as fetch().
-    from playwright.sync_api import sync_playwright
-    from playwright_stealth import Stealth
 
     html = None
     for attempt in range(1, MAX_FETCH_ATTEMPTS + 1):
+        # Reused per site across attempts (and across watches on the same
+        # site) — only the page below is per-attempt. A 403/429 retry keeps
+        # this same context so any challenge/session cookies it picked up
+        # survive into the retry; a poisoned context is instead discarded by
+        # with_retry()'s scraper-level retry path, not here.
+        context = _browser_state.get_context(site_name)
+        page = context.new_page(user_agent=HEADERS["User-Agent"])
         try:
-            with Stealth().use_sync(sync_playwright()) as p:
-                browser = p.chromium.launch(headless=True)
-                page = browser.new_page(user_agent=HEADERS["User-Agent"])
-                page.set_default_navigation_timeout(PLAYWRIGHT_NAV_TIMEOUT_MS)
-                page.route("**/*", _block_heavy_requests)
-                response = page.goto(
-                    url,
-                    timeout=PLAYWRIGHT_NAV_TIMEOUT_MS,
-                    wait_until="domcontentloaded",
-                )
-                status = response.status if response else None
+            page.set_default_navigation_timeout(PLAYWRIGHT_NAV_TIMEOUT_MS)
+            page.route("**/*", _block_heavy_requests)
+            response = page.goto(
+                url,
+                timeout=PLAYWRIGHT_NAV_TIMEOUT_MS,
+                wait_until="domcontentloaded",
+            )
+            status = response.status if response else None
 
-                # Cloudflare-challenge polling loop — unrelated to the retry
-                # below, left exactly as before. This waits out a JS
-                # challenge within a single attempt; the retry loop instead
-                # re-attempts the whole fetch after a 403/429 status.
-                deadline = time.time() + REQUEST_TIMEOUT
+            # Cloudflare-challenge polling loop — unrelated to the retry
+            # below, left exactly as before. This waits out a JS
+            # challenge within a single attempt; the retry loop instead
+            # re-attempts the whole fetch after a 403/429 status.
+            deadline = time.time() + REQUEST_TIMEOUT
+            html = page.content()
+            while is_challenge_page(html) and time.time() < deadline:
+                time.sleep(1)
                 html = page.content()
-                while is_challenge_page(html) and time.time() < deadline:
-                    time.sleep(1)
-                    html = page.content()
-                browser.close()
         except Exception as e:
             print(
                 f"[{site_name}] playwright fetch failed ({e.__class__.__name__}), skipping this run"
             )
             return None
+        finally:
+            page.close()
 
         if status in RETRY_STATUS_CODES and attempt < MAX_FETCH_ATTEMPTS:
             delay = RETRY_BACKOFFS[attempt - 1]
@@ -805,8 +879,8 @@ def scrape_altex_listing(query: str) -> list[dict]:
 
 SCRAPERS = {
     "emag": with_retry(scrape_emag_listing),
-    "pcgarage": with_retry(scrape_pcgarage_listing),
-    "flanco": with_retry(scrape_flanco_listing),
+    "pcgarage": with_retry(scrape_pcgarage_listing, site_name="pcgarage"),
+    "flanco": with_retry(scrape_flanco_listing, site_name="flanco"),
     "altex": with_retry(scrape_altex_listing),
 }
 
@@ -993,6 +1067,19 @@ def main():
     except ValueError as e:
         print(f"Watchlist validation failed: {e}", file=sys.stderr)
         sys.exit(1)
+
+    # Torn down in finally so a browser/context never survives past main(),
+    # even when scraping or a data write later in _run() raises (T-21, #29).
+    # get_context() starts the browser lazily on first real use, so a run
+    # with no pcgarage/flanco items never launches one at all; close() is a
+    # no-op if nothing was ever started.
+    try:
+        _run(watchlist)
+    finally:
+        _browser_state.close()
+
+
+def _run(watchlist: list[dict]) -> None:
     history = load_history()
     db = init_db(DB_FILE)
     alerts = []
