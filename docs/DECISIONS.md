@@ -178,3 +178,73 @@ needs verification before Option B is safe. Deferred to a new issue,
 not attempted under Sprint 4's deadline. seller_policy and
 Offer.retailer remain declared-but-unwired in the live path until that
 future work lands.
+
+## 2026-09-25 — T-37b (#55): delivery_attempts is additive audit storage only
+Wired `DeliveryAttempt` into a new SQLite `delivery_attempts` table
+(`bf_price_monitor/storage/sqlite.py`), written from `scripts/notify.py`.
+Scope was kept deliberately narrow:
+
+- `data/alert_outbox.jsonl` remains the sole operational authority for
+  PENDING/in-flight state, crash replay, cooldown lookups, and dedup
+  suppression. `delivery_attempts` never drives any of that logic — it is
+  written *after* the outbox record that already governs behavior, purely
+  for querying delivery history later.
+- Only terminal outcomes are ever persisted (`delivered`/`failed`). No
+  `pending` state was added to `DeliveryAttempt.final_state`, and no
+  `deduped` rows are written either — cooldown/in-run-duplicate skips still
+  write nothing anywhere, matching existing behavior; wiring "deduped"
+  would mean adding new write calls at those skip sites, which is a
+  behavior change out of scope for this issue.
+- No `alert_decisions` table or FK was introduced. `AlertDecision` is still
+  never persisted (dumped into the outbox's `alert_payload` only); the new
+  table's `alert_decision_id` column is a plain indexed TEXT reference, not
+  a SQL foreign key, since a strict FK against a nonexistent table would
+  fail every insert (confirmed via `tests/unit/test_sqlite_storage.py`'s
+  existing `sqlite3.IntegrityError` FK-enforcement test).
+- `destination_ref` stores `sha256("telegram:" + chat_id)`, never the raw
+  Telegram chat id, keeping the audit table safe to inspect without
+  exposing a credential-adjacent value.
+- `notify.py` opens its own `init_db(DB_FILE)` connection at `main()`
+  startup and closes it in a `finally` block, since it runs as a separate
+  CI step/process from `scrape.py` and has never had any SQLite access
+  before this change — `scrape.py`'s open connection can't be reused
+  across process boundaries.
+- Deal alerts pass their existing `dedup_key` (sha256 of url:price:site)
+  through unchanged; health alerts pass `dedup_key=None` rather than a
+  manufactured key, since they have no "same offer" identity to key off of
+  (this is also why `DeliveryAttempt.dedup_key` became optional).
+- Health alerts' outbox `event_id` is a raw sha256 hex string (see
+  `_health_event_id`), not a UUID, while `DeliveryAttempt.alert_decision_id`
+  is typed `UUID`. `notify._decision_id_from_event()` parses deal event ids
+  directly (already UUID-shaped) and falls back to `uuid5`-wrapping the
+  health event id into a UUID otherwise — a small mechanical adaptation
+  needed to satisfy the model's existing typing, not a scope change.
+- `response_class` is only ever written as `"2xx"` (success) or `"unknown"`
+  (failure) — `_send_with_retry`'s internal HTTP-status classification
+  (429/5xx/network/permanent-4xx) is not surfaced to the outbox-finalization
+  call sites that write `delivery_attempts`, and per-HTTP-retry
+  instrumentation is deliberately deferred rather than added here.
+- `DeliveryAttempt.attempt_number` is never hard-coded and never read from
+  the outbox's own `attempt_count` field. That JSONL field only ever
+  describes attempts *within* one PENDING/terminal pair (reset to 0/1 every
+  cycle, per #58) and can't distinguish a genuinely new delivery cycle for
+  the same event — a deal re-alerting once its cooldown expires, or a
+  failed health alert retried in a later run — from the first one. A new
+  cycle's number is instead allocated atomically at the storage-write
+  boundary: `storage.sqlite.record_delivery_attempt_new_cycle()` computes
+  `COALESCE(MAX(attempt_number), 0) + 1` for that `alert_decision_id`
+  inside the same `INSERT ... SELECT` statement that writes the row, so
+  allocation and insertion can never interleave with a concurrent writer's
+  allocation for the same id — unlike a separate `SELECT MAX` followed by
+  its own `INSERT`, which leaves a window where two callers could read the
+  same max and collide on the `UNIQUE(alert_decision_id, attempt_number)`
+  constraint. `notify.py` calls this for every live write and never queries
+  `MAX(attempt_number)` itself. A second, explicit path,
+  `record_delivery_attempt()`, is for replaying an *already-known*
+  `attempt_number` — an idempotent rewrite of a specific already-audited
+  row — and upserts that exact `(alert_decision_id, attempt_number)` pair
+  rather than allocating a new one.
+
+This keeps the migration pattern consistent with `price_history.json` +
+SQLite `price_history.db` dual-write (T-37): the new store is additive and
+observational, not a replacement, until a future issue decides otherwise.

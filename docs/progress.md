@@ -133,5 +133,9 @@ Issues: #6 (Parent), #28 (T-19, complete), #27 (T-20, complete).
 - New issue #54 filed (unrelated tech debt): Quality Gate runs ruff check but not ruff format --check
 - Watch item: PC-A1208's VPN adapter route-metric anomaly (see docs/DECISIONS.md) — not fixed, revisit only if DNS errors recur
 
+## T-37b (#55): wire DeliveryAttempt into SQLite as terminal audit log
+Added additive `delivery_attempts` table written from notify.py; JSONL outbox stays sole authority for PENDING/replay/cooldown/dedup. attempt_number allocated atomically at the storage-write boundary (single INSERT...SELECT), closing a read-then-write race caught in review.
+Tests: 170 passed, ruff check/format clean (scripts/analyze.py pre-existing drift only). Commit: 8e70052.
+
 ## Sprints completed
 Sprint 0 (foundations), Sprint 1 (correctness), Sprint 2 (notification reliability) — all closed, no action needed.
