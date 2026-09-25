@@ -152,11 +152,20 @@ class _RunState:
     def __init__(self) -> None:
         self.run_id = ""
         self.challenge_counts: dict[str, int] = {}
+        # T-22 (#31): distinct from challenge_counts above, which only fires
+        # when a fetch is *still* blocked after the bounded wait. This counts
+        # every time _wait_out_challenge() actually found challenge markup
+        # and entered its second-stage wait, whether or not that wait went on
+        # to clear it -- the only way to tell "challenge appeared and cleared
+        # successfully" apart from "no challenge markup was ever present",
+        # which challenge_counts alone can't distinguish.
+        self.challenge_wait_entered_counts: dict[str, int] = {}
         self.failure_counts: dict[str, int] = {}
 
     def reset(self, run_id: str) -> None:
         self.run_id = run_id
         self.challenge_counts = {}
+        self.challenge_wait_entered_counts = {}
         self.failure_counts = {}
 
 
@@ -228,6 +237,12 @@ _browser_state = _BrowserState()
 def _record_challenge(site_name: str) -> None:
     _run_state.challenge_counts[site_name] = (
         _run_state.challenge_counts.get(site_name, 0) + 1
+    )
+
+
+def _record_challenge_wait_entered(site_name: str) -> None:
+    _run_state.challenge_wait_entered_counts[site_name] = (
+        _run_state.challenge_wait_entered_counts.get(site_name, 0) + 1
     )
 
 
@@ -315,18 +330,24 @@ CLOUDFLARE_CHALLENGE_SELECTOR = (
 )
 
 
-def _wait_out_challenge(page, timeout_ms: int) -> None:
+def _wait_out_challenge(page, timeout_ms: int) -> bool:
     # Bounded, two-stage wait: first confirm the challenge markup is actually
     # present (a short, separate timeout from the main wait below -- most
     # pages never hit this at all), then wait out its removal up to
     # timeout_ms. Replaces the old `while is_challenge_page(...): sleep(1)`
     # poll loop with Playwright's own auto-waiting locator instead of manual
     # ticks.
+    #
+    # Return value (T-22, #31): whether the second-stage wait was actually
+    # entered, i.e. real challenge markup was found -- not whether it cleared.
+    # This is the caller's only way to tell "no challenge at all" apart from
+    # "a challenge appeared and this wait handled it", since a successful
+    # clear leaves no other trace for is_challenge_page() to catch afterward.
     locator = page.locator(CLOUDFLARE_CHALLENGE_SELECTOR).first
     try:
         locator.wait_for(state="visible", timeout=1500)
     except PlaywrightTimeoutError:
-        return
+        return False
     try:
         locator.wait_for(state="hidden", timeout=timeout_ms)
     except (PlaywrightTimeoutError, PlaywrightError):
@@ -335,6 +356,7 @@ def _wait_out_challenge(page, timeout_ms: int) -> None:
         # not a real failure. Either way, the caller re-reads page.content()
         # and is_challenge_page() is still the authoritative pass/fail check.
         pass
+    return True
 
 
 def parse_price(raw: str) -> float | None:
@@ -597,7 +619,11 @@ def fetch_with_browser(url: str, site_name: str) -> str | None:
             # status.
             html = page.content()
             if is_challenge_page(html):
-                _wait_out_challenge(page, REQUEST_TIMEOUT * 1000)
+                if _wait_out_challenge(page, REQUEST_TIMEOUT * 1000):
+                    print(
+                        f"[{site_name}] challenge markup detected, entered bounded clear-wait"
+                    )
+                    _record_challenge_wait_entered(site_name)
                 html = page.content()
         except Exception as e:
             print(
@@ -1325,6 +1351,16 @@ def _run(watchlist: list[dict]) -> None:
                 "policy_blocked_count": stats["policy_blocked_count"],
                 "parse_failures": _run_state.failure_counts.get(site, 0),
                 "challenge_detected": _run_state.challenge_counts.get(site, 0) > 0,
+                # T-22 (#31): true if _wait_out_challenge()'s second-stage
+                # wait was ever entered this run, whether or not it went on
+                # to clear -- distinct from challenge_detected above, which
+                # only fires when still blocked at the very end. This is the
+                # only field that can tell "challenge appeared and cleared"
+                # apart from "no challenge markup was ever present".
+                "challenge_wait_entered": _run_state.challenge_wait_entered_counts.get(
+                    site, 0
+                )
+                > 0,
                 "latency_seconds": round(stats["latency_seconds"], 3),
                 "last_known_good_utc": last_known_good_utc,
             }

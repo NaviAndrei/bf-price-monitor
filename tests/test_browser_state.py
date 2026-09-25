@@ -496,8 +496,11 @@ def test_wait_out_challenge_returns_immediately_when_no_challenge_element():
     page = FakePage(context=None)
     page.locator_behavior = "absent"
 
-    scrape._wait_out_challenge(page, timeout_ms=5000)
+    entered = scrape._wait_out_challenge(page, timeout_ms=5000)
 
+    # T-22 (#31): fast path -- no challenge markup ever appeared, so the
+    # caller's observability signal must read "not entered".
+    assert entered is False
     assert page.locator_calls == [scrape.CLOUDFLARE_CHALLENGE_SELECTOR]
     assert page.last_locator.wait_for_calls == [("visible", 1500)]
 
@@ -506,8 +509,11 @@ def test_wait_out_challenge_waits_for_hidden_once_challenge_appears():
     page = FakePage(context=None)
     page.locator_behavior = "resolves"
 
-    scrape._wait_out_challenge(page, timeout_ms=5000)
+    entered = scrape._wait_out_challenge(page, timeout_ms=5000)
 
+    # T-22 (#31): real challenge markup was found, so the second-stage wait
+    # was entered regardless of it going on to clear successfully here.
+    assert entered is True
     assert page.last_locator.wait_for_calls == [
         ("visible", 1500),
         ("hidden", 5000),
@@ -520,8 +526,12 @@ def test_wait_out_challenge_swallows_timeout_when_challenge_never_clears():
 
     # Must not raise -- the caller's own is_challenge_page() re-check on the
     # re-fetched HTML is the authoritative pass/fail signal, not this wait.
-    scrape._wait_out_challenge(page, timeout_ms=5000)
+    entered = scrape._wait_out_challenge(page, timeout_ms=5000)
 
+    # T-22 (#31): still "entered" even though it never cleared -- this is
+    # exactly the case challenge_wait_entered exists to distinguish from the
+    # fast no-challenge path.
+    assert entered is True
     assert page.last_locator.wait_for_calls == [
         ("visible", 1500),
         ("hidden", 5000),
@@ -534,7 +544,9 @@ def test_wait_out_challenge_swallows_frame_detached_error():
 
     # A challenge clearing by navigating the page away entirely raises
     # Playwright's generic Error, not TimeoutError -- also must not raise.
-    scrape._wait_out_challenge(page, timeout_ms=5000)
+    entered = scrape._wait_out_challenge(page, timeout_ms=5000)
+
+    assert entered is True
 
 
 def test_fetch_with_browser_clears_challenge_without_sleeping(monkeypatch):
@@ -542,6 +554,7 @@ def test_fetch_with_browser_clears_challenge_without_sleeping(monkeypatch):
     bs = scrape._BrowserState()
     bs.start()
     monkeypatch.setattr(scrape, "_browser_state", bs)
+    scrape._run_state.reset(run_id="test-run")
 
     def sleep_should_not_be_called(*_):
         raise AssertionError(
@@ -568,6 +581,39 @@ def test_fetch_with_browser_clears_challenge_without_sleeping(monkeypatch):
     html = scrape.fetch_with_browser("https://example.test/x", "pcgarage")
 
     assert html == "<html>real listing</html>"
+    # T-22 (#31): the second-stage wait was entered here (real challenge
+    # markup was present and cleared) -- the observability counter must
+    # record that, distinct from a run where no challenge ever appeared.
+    assert scrape._run_state.challenge_wait_entered_counts.get("pcgarage", 0) == 1
+
+
+def test_fetch_with_browser_no_challenge_leaves_wait_entered_counter_unset(
+    monkeypatch,
+):
+    install_fakes(monkeypatch)
+    bs = scrape._BrowserState()
+    bs.start()
+    monkeypatch.setattr(scrape, "_browser_state", bs)
+    scrape._run_state.reset(run_id="test-run")
+
+    ctx = bs.get_context("pcgarage")
+    original_new_page = ctx.new_page
+
+    def new_page_without_challenge(**kwargs):
+        page = original_new_page(**kwargs)
+        page.content_results = ["<html>real listing</html>"]
+        page.locator_behavior = "absent"
+        return page
+
+    monkeypatch.setattr(ctx, "new_page", new_page_without_challenge)
+
+    html = scrape.fetch_with_browser("https://example.test/x", "pcgarage")
+
+    assert html == "<html>real listing</html>"
+    # T-22 (#31): fast path never entered the second-stage wait, so the
+    # counter must stay at zero -- this is the "not exercised" half of the
+    # signal that challenge_detected alone couldn't distinguish before.
+    assert scrape._run_state.challenge_wait_entered_counts.get("pcgarage", 0) == 0
 
 
 def test_fetch_with_browser_still_challenge_after_bounded_wait_times_out(
@@ -578,6 +624,7 @@ def test_fetch_with_browser_still_challenge_after_bounded_wait_times_out(
     bs.start()
     monkeypatch.setattr(scrape, "_browser_state", bs)
     monkeypatch.setattr(scrape.time, "sleep", lambda *_: None)
+    scrape._run_state.reset(run_id="test-run")
 
     ctx = bs.get_context("pcgarage")
     original_new_page = ctx.new_page
@@ -598,3 +645,7 @@ def test_fetch_with_browser_still_challenge_after_bounded_wait_times_out(
     # Still blocked after the bounded wait -- caller reports it clearly and
     # continues (no hang, no crash), same as the old sleep-poll's timeout path.
     assert html is None
+    # T-22 (#31): entered even though it never cleared -- challenge_detected
+    # will also be true for this case, but challenge_wait_entered is what
+    # actually proves the new bounded-wait code path was exercised at all.
+    assert scrape._run_state.challenge_wait_entered_counts.get("pcgarage", 0) == 1
