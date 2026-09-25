@@ -59,7 +59,13 @@
         "cadence_minutes": { "type": "integer", "minimum": 5, "maximum": 1440 },
         "cooldown_hours": { "type": "integer", "minimum": 1 },
         "atl_policy": { "$ref": "#/definitions/atlPolicy" },
-        "enabled": { "type": "boolean" }
+        "enabled": { "type": "boolean" },
+        "channels": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "enum": ["telegram", "teams", "email", "ntfy"] }
+        }
       },
       "additionalProperties": false
     },

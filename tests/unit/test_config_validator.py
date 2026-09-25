@@ -134,3 +134,31 @@ def test_modern_watch_entry_accepts_cooldown_hours(tmp_path):
     )
     validate_watchlist(path)
     assert load_watchlist(path)[0]["cooldown_hours"] == 6
+
+
+def _modern_watch_with_channels(channels):
+    return {
+        "watches": [
+            {
+                "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                "site": "emag",
+                "query": "laptop lenovo v15",
+                "channels": channels,
+            }
+        ]
+    }
+
+
+def test_modern_watch_entry_accepts_channels(tmp_path):
+    path = write_watchlist(
+        tmp_path, _modern_watch_with_channels(["telegram", "teams", "ntfy", "email"])
+    )
+    validate_watchlist(path)
+    assert load_watchlist(path)[0]["channels"] == ["telegram", "teams", "ntfy", "email"]
+
+
+@pytest.mark.parametrize("channels", [["slack"], [], ["teams", "teams"]])
+def test_modern_watch_entry_rejects_invalid_channels(tmp_path, channels):
+    path = write_watchlist(tmp_path, _modern_watch_with_channels(channels))
+    with pytest.raises(ValueError):
+        validate_watchlist(path)

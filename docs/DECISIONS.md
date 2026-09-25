@@ -312,3 +312,58 @@ to mop up (T-16, #26) and made every fetch pay a fresh launch cost.
   zero-argument `new_page(self)` shape so this class of bug fails in unit
   tests instead of only surfacing live. #29 remains In Review pending a
   successful revalidation run against the corrected code.
+
+## 2026-09-25 — T-26 (#35): Teams, email and ntfy channels share the outbox
+Added Microsoft Teams (Workflows webhook), email (SMTP) and ntfy delivery
+next to Telegram, routed per watch via a new `Watch.channels` field
+(`modernWatchItem.channels` in the schema; default `["telegram"]`).
+
+- **No Apprise.** Apprise would have hidden each service's status codes
+  behind a single boolean, which makes the retry/dead-letter
+  classification impossible to keep identical across channels (acceptance
+  criterion 3). Teams and ntfy go through the existing `requests` path;
+  email uses stdlib `smtplib`. No new dependency.
+- **One retry loop for every channel.** `_deliver_with_retry` owns the
+  attempt budget, backoff and DLQ write. Each transport only classifies one
+  attempt as ok, transient or permanent. HTTP: any 2xx is success (Teams
+  Workflows answers 202, ntfy and Telegram 200); 429 (with Retry-After), 5xx
+  and network errors are transient; other 4xx are permanent. SMTP: a 4xx
+  reply is transient, a 5xx reply (including auth failure 535) is
+  permanent, and connection-level errors are transient.
+- **One outbox event per (decision, channel).** Telegram keeps the bare
+  pre-T-26 event id so existing SENT history and cooldown windows still
+  match after the upgrade; other channels use `<decision id>:<channel>`.
+  Each record carries its `channel`, which replay uses to pick the
+  provider. Cooldown is checked per channel, so a failed Teams delivery is
+  retried next run even though Telegram's copy is inside its cooldown.
+- **A PENDING record whose channel is no longer configured is
+  dead-lettered on replay** (`final_status_code: "channel_not_configured"`)
+  rather than left PENDING to be retried every run.
+- **`delivery_attempts` stays one table.** Every channel of one decision
+  shares the same `alert_decision_id` (the `:<channel>` suffix is stripped),
+  and `channel` tells the rows apart. Consequence: `attempt_number` counts
+  delivery cycles across all of that decision's channels, not per channel.
+  `destination_ref` hashes the webhook URL, ntfy topic URL or recipient
+  list the same way it already hashed the chat id.
+- **Secrets stay out of storage and logs.** The ntfy topic is added at send
+  time and never written to the outbox's `send_payload`; a Teams webhook's
+  `sig=` value is redacted from DLQ and log reasons. SMTP failure reasons
+  have the configured login, sender and every individual recipient
+  redacted (case-insensitively), because GitHub masks only a secret's exact
+  value and a server reply often echoes one address out of a
+  comma-separated `EMAIL_TO`. Secret-bearing dataclass fields (SMTP
+  credentials and addresses, a channel's raw destination) are `repr=False`.
+- **Card version 1.2.** The card uses only 1.0-era elements (TextBlock,
+  FactSet, Action.OpenUrl), so it declares 1.2, matching Microsoft's
+  Workflows-webhook sample; 1.5 support in the post-card action was not
+  verified.
+- **Routing merges watches.** Because T-41's in-run skip keeps only the
+  first alert per offer, an offer matched by several watches goes to the
+  union of their channels. Health alerts remain Telegram-only.
+- **Known limits.** Teams' 202 is asynchronous: the flow can still fail
+  after accepting the request, and that failure is invisible to the outbox.
+  A 202 proves acceptance by the workflow, not posting or rendering in the
+  channel; live Teams posting and rendering have not been verified.
+  Whether ntfy sends a Retry-After header on 429 was not verified; without
+  it the normal backoff applies. The legacy flat-array schema did not gain
+  `channels`, since production already uses the modern format.

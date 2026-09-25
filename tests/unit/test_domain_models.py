@@ -182,3 +182,16 @@ def test_watch_cooldown_hours_accepts_custom_and_rejects_non_positive():
     assert Watch(site="emag", query="q", cooldown_hours=6).cooldown_hours == 6
     with pytest.raises(ValidationError):
         Watch(site="emag", query="q", cooldown_hours=0)
+
+
+def test_watch_channels_defaults_to_telegram_only():
+    assert Watch(site="emag", query="q").channels == ["telegram"]
+
+
+def test_watch_channels_accepts_known_and_rejects_unknown_or_empty():
+    watch = Watch(site="emag", query="q", channels=["telegram", "teams", "email"])
+    assert watch.channels == ["telegram", "teams", "email"]
+    with pytest.raises(ValidationError):
+        Watch(site="emag", query="q", channels=["slack"])
+    with pytest.raises(ValidationError):
+        Watch(site="emag", query="q", channels=[])

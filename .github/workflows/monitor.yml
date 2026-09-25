@@ -138,10 +138,21 @@ jobs:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: uv run --no-sync scripts/analyze.py
 
-      - name: Send Telegram alerts
+      # T-26 (#35): the optional channels' secrets expand to "" when unset,
+      # which notify.py treats as "channel not configured".
+      - name: Send alerts
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TEAMS_WEBHOOK_URL: ${{ secrets.TEAMS_WEBHOOK_URL }}
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          NTFY_SERVER: ${{ secrets.NTFY_SERVER }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USERNAME: ${{ secrets.SMTP_USERNAME }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
+          EMAIL_TO: ${{ secrets.EMAIL_TO }}
         run: uv run --no-sync scripts/notify.py
 
       # This job has no write permission, so the updated data files can only

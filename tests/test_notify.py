@@ -154,6 +154,19 @@ def _read_outbox_records():
     return [json.loads(line) for line in lines]
 
 
+_OPTIONAL_CHANNEL_ENV_VARS = (
+    "TEAMS_WEBHOOK_URL",
+    "NTFY_TOPIC",
+    "NTFY_SERVER",
+    "SMTP_HOST",
+    "SMTP_PORT",
+    "SMTP_USERNAME",
+    "SMTP_PASSWORD",
+    "EMAIL_FROM",
+    "EMAIL_TO",
+)
+
+
 @pytest.fixture
 def _full_pipeline_env(monkeypatch, tmp_path):
     """Isolates the file paths and env vars notify.main() reads, so T-12
@@ -167,6 +180,9 @@ def _full_pipeline_env(monkeypatch, tmp_path):
     monkeypatch.setattr(notify, "DB_FILE", tmp_path / "price_history.db")
     monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "testtoken")
     monkeypatch.setenv("TELEGRAM_CHAT_ID", "12345")
+    # T-26 (#35): optional channels stay unconfigured unless a test opts in.
+    for name in _OPTIONAL_CHANNEL_ENV_VARS:
+        monkeypatch.delenv(name, raising=False)
     notify.PRICE_HISTORY_FILE.write_text(json.dumps({"products": {}}), encoding="utf-8")
     return tmp_path
 
@@ -1207,3 +1223,950 @@ def test_no_fake_discount_reason_when_not_suspect(
 
     reasons = _read_outbox_records()[-1]["alert_payload"]["reasons"]
     assert reasons == ["GENUINE_DEAL"]
+
+
+# --- T-26 (#35): additional channels + per-watch routing --------------------
+# Strict fakes: every HTTP post is matched against the URLs a test declares,
+# and an undeclared URL fails the test instead of silently passing.
+
+TELEGRAM_SEND_URL = "https://api.telegram.org/bottesttoken/sendMessage"
+TEAMS_URL = (
+    "https://prod-00.westeurope.logic.azure.com/workflows/abc/triggers/manual/"
+    "paths/invoke?api-version=2016-06-01&sp=%2Ftriggers&sv=1.0&sig=SECRETSIG123"
+)
+NTFY_URL = "https://ntfy.sh/"
+
+
+def _routed_post(routes):
+    """routes maps URL -> list of responses/exceptions, consumed in order.
+    Every call is recorded as (url, json) on _post.calls."""
+    queues = {url: list(items) for url, items in routes.items()}
+    calls = []
+
+    def _post(url, json=None, timeout=None):
+        assert url in queues, f"unexpected POST to {url}"
+        calls.append((url, json))
+        item = queues[url].pop(0)
+        if isinstance(item, Exception):
+            raise item
+        return item
+
+    _post.calls = calls
+    return _post
+
+
+def _write_modern_watchlist(watches):
+    notify.WATCHLIST_FILE.write_text(json.dumps({"watches": watches}), encoding="utf-8")
+
+
+def _deal_watch(**overrides):
+    return {"site": DEAL_ALERT["site"], "query": DEAL_ALERT["query"], **overrides}
+
+
+def _base_event_id(alert=DEAL_ALERT):
+    return notify._deal_event_id(notify._deal_dedup_key(alert))
+
+
+class _FakeSMTPFactory:
+    """Stands in for smtplib.SMTP / SMTP_SSL. script holds one item per
+    connection: None delivers, a plain OSError is raised on connect, and an
+    SMTP reply error is raised from send_message. (SMTPException subclasses
+    OSError, hence the explicit exclusion.)"""
+
+    def __init__(self, script):
+        self.script = list(script)
+        self.connections = []
+        self.sent = []
+
+    def __call__(self, host, port, timeout=None):
+        item = self.script.pop(0)
+        if isinstance(item, OSError) and not isinstance(
+            item, notify.smtplib.SMTPException
+        ):
+            raise item
+        conn = _FakeSMTPConnection(self, host, port, item)
+        self.connections.append(conn)
+        return conn
+
+
+class _FakeSMTPConnection:
+    def __init__(self, factory, host, port, outcome):
+        self.factory = factory
+        self.host = host
+        self.port = port
+        self.outcome = outcome
+        self.tls = False
+        self.login_user = None
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
+
+    def starttls(self):
+        self.tls = True
+
+    def login(self, user, password):
+        self.login_user = user
+
+    def send_message(self, msg):
+        if self.outcome is not None:
+            raise self.outcome
+        self.factory.sent.append(msg)
+        return {}
+
+
+SMTP_CONFIG = notify.SmtpConfig(
+    host="smtp.example.com",
+    port=587,
+    username="bot@example.com",
+    password="app-password",
+    sender="bot@example.com",
+    recipients="me@example.com",
+)
+EMAIL_PAYLOAD = {"subject": "Deal", "body": "Preț Nou: 80.00 RON"}
+
+
+def _set_smtp_env(monkeypatch):
+    monkeypatch.setenv("SMTP_HOST", SMTP_CONFIG.host)
+    monkeypatch.setenv("SMTP_PORT", str(SMTP_CONFIG.port))
+    monkeypatch.setenv("SMTP_USERNAME", SMTP_CONFIG.username)
+    monkeypatch.setenv("SMTP_PASSWORD", SMTP_CONFIG.password)
+    monkeypatch.setenv("EMAIL_FROM", SMTP_CONFIG.sender)
+    monkeypatch.setenv("EMAIL_TO", SMTP_CONFIG.recipients)
+
+
+# Formatting ------------------------------------------------------------------
+
+
+def test_format_plain_text_message_strips_markup_and_unescapes():
+    text = notify.format_plain_text_message(BASE_ALERT)
+    assert "<b>" not in text
+    assert "OFERTĂ REALĂ" in text
+    assert "Merită cumpărat <acum>." in text
+    assert "&lt;" not in text
+
+
+def test_build_teams_card_is_adaptive_card_with_offer_actions():
+    alert = {
+        **BASE_ALERT,
+        "deal_stats": {
+            "genuine_savings_percent": 11.11,
+            "fake_discount_suspect": False,
+            "fake_discount_reasons": [],
+        },
+    }
+    payload = notify.build_teams_card(alert)
+
+    # Workflows webhook envelope (Teams connector TeamsIncomingWebhookTrigger):
+    # type "message", and each attachment carries contentType, a contentUrl
+    # that must be null, and the card object as content.
+    assert set(payload) == {"type", "attachments"}
+    assert payload["type"] == "message"
+    assert len(payload["attachments"]) == 1
+    attachment = payload["attachments"][0]
+    assert set(attachment) == {"contentType", "contentUrl", "content"}
+    assert attachment["contentUrl"] is None
+    assert attachment["contentType"] == "application/vnd.microsoft.card.adaptive"
+    card = attachment["content"]
+    assert card["type"] == "AdaptiveCard"
+    # Only 1.0-era elements are used; 1.2 matches Microsoft's Workflows sample.
+    assert card["version"] == "1.2"
+    texts = [block.get("text", "") for block in card["body"]]
+    assert any("OFERTĂ REALĂ" in t for t in texts)
+    assert BASE_ALERT["title"] in texts
+    # T-25's deal_stats lines are carried over as plain text, not HTML.
+    assert any("Economie reală vs. minim 30 zile: 11.11%" in t for t in texts)
+    assert not any("<b>" in t for t in texts)
+    facts = next(b for b in card["body"] if b["type"] == "FactSet")["facts"]
+    assert {"title": "Preț Nou", "value": "80.00 RON"} in facts
+    urls = [a["url"] for a in card["actions"]]
+    assert urls[0] == BASE_ALERT["url"]
+    assert urls[1].startswith("https://www.compari.ro/CategorySearch.php?st=")
+    assert all(a["type"] == "Action.OpenUrl" for a in card["actions"])
+
+
+def test_build_ntfy_payload_has_click_url_and_no_topic():
+    payload = notify.build_ntfy_payload(BASE_ALERT)
+    assert payload["click"] == BASE_ALERT["url"]
+    assert "OFERTĂ REALĂ" in payload["title"]
+    assert "Merită cumpărat <acum>." in payload["message"]
+    assert payload["actions"][0]["url"] == BASE_ALERT["url"]
+    # The topic is effectively a subscription secret on ntfy.sh; it is added
+    # at send time and never persisted into the outbox's send_payload.
+    assert "topic" not in payload
+
+
+def test_build_email_payload_has_subject_and_links():
+    payload = notify.build_email_payload(BASE_ALERT)
+    assert "OFERTĂ REALĂ" in payload["subject"]
+    assert "80.00 RON" in payload["subject"]
+    assert "\n" not in payload["subject"]
+    assert BASE_ALERT["url"] in payload["body"]
+    assert "<b>" not in payload["body"]
+
+
+# HTTP retry path shared by Telegram, Teams and ntfy -------------------------
+
+
+def test_send_with_retry_accepts_202_accepted_as_success(monkeypatch):
+    # A Teams Workflows webhook answers 202 Accepted, not 200.
+    post = _sequenced_post([_FakeResponse(202)])
+    monkeypatch.setattr(notify.requests, "post", post)
+
+    ok = notify._send_with_retry(
+        TEAMS_URL, {"type": "message"}, alert=None, store="emag", alert_url=""
+    )
+
+    assert ok is True
+    assert post.call_count() == 1
+    assert _read_dlq_records() == []
+
+
+def test_teams_webhook_signature_redacted_from_network_error_dlq(monkeypatch):
+    post = _sequenced_post(
+        [requests.ConnectionError(f"Max retries exceeded with url: {TEAMS_URL}")]
+        * notify.MAX_ATTEMPTS
+    )
+    monkeypatch.setattr(notify.requests, "post", post)
+
+    notify._send_with_retry(
+        TEAMS_URL, {"type": "message"}, alert=None, store="emag", alert_url=""
+    )
+
+    reason = _read_dlq_records()[0]["failure_reason"]
+    assert "SECRETSIG123" not in reason
+    assert "sig=[REDACTED]" in reason
+
+
+# SMTP retry path --------------------------------------------------------------
+
+
+def test_send_email_success_uses_starttls_and_login(monkeypatch):
+    smtp = _FakeSMTPFactory([None])
+    monkeypatch.setattr(notify.smtplib, "SMTP", smtp)
+
+    ok = notify._send_email_with_retry(
+        SMTP_CONFIG, EMAIL_PAYLOAD, alert=None, store="emag", alert_url=""
+    )
+
+    assert ok is True
+    assert smtp.connections[0].tls is True
+    assert smtp.connections[0].login_user == "bot@example.com"
+    msg = smtp.sent[0]
+    assert msg["Subject"] == "Deal"
+    assert msg["To"] == "me@example.com"
+    assert "80.00 RON" in msg.get_content()
+
+
+def test_send_email_4xx_reply_retries_then_succeeds(monkeypatch):
+    smtp = _FakeSMTPFactory(
+        [notify.smtplib.SMTPDataError(451, b"try again later"), None]
+    )
+    monkeypatch.setattr(notify.smtplib, "SMTP", smtp)
+
+    ok = notify._send_email_with_retry(
+        SMTP_CONFIG, EMAIL_PAYLOAD, alert=None, store="emag", alert_url=""
+    )
+
+    assert ok is True
+    assert len(smtp.connections) == 2
+    assert _read_dlq_records() == []
+
+
+def test_send_email_5xx_reply_dead_letters_without_retry(monkeypatch):
+    smtp = _FakeSMTPFactory([notify.smtplib.SMTPDataError(550, b"mailbox unavailable")])
+    monkeypatch.setattr(notify.smtplib, "SMTP", smtp)
+
+    ok = notify._send_email_with_retry(
+        SMTP_CONFIG, EMAIL_PAYLOAD, alert={"x": 1}, store="emag", alert_url="u"
+    )
+
+    assert ok is False
+    assert len(smtp.connections) == 1
+    records = _read_dlq_records()
+    assert len(records) == 1
+    assert records[0]["attempt_count"] == 1
+    assert records[0]["final_status_code"] == 550
+
+
+def test_send_email_auth_failure_is_permanent(monkeypatch):
+    smtp = _FakeSMTPFactory(
+        [notify.smtplib.SMTPAuthenticationError(535, b"bad credentials")]
+    )
+    monkeypatch.setattr(notify.smtplib, "SMTP", smtp)
+
+    ok = notify._send_email_with_retry(
+        SMTP_CONFIG, EMAIL_PAYLOAD, alert=None, store="emag", alert_url=""
+    )
+
+    assert ok is False
+    assert len(smtp.connections) == 1
+    assert _read_dlq_records()[0]["final_status_code"] == 535
+
+
+def test_send_email_connection_error_retries_to_max_then_dead_letters(monkeypatch):
+    smtp = _FakeSMTPFactory([ConnectionRefusedError("refused")] * notify.MAX_ATTEMPTS)
+    monkeypatch.setattr(notify.smtplib, "SMTP", smtp)
+
+    ok = notify._send_email_with_retry(
+        SMTP_CONFIG, EMAIL_PAYLOAD, alert=None, store="emag", alert_url=""
+    )
+
+    assert ok is False
+    assert smtp.script == []  # every attempt consumed
+    records = _read_dlq_records()
+    assert records[0]["attempt_count"] == notify.MAX_ATTEMPTS
+    assert records[0]["final_status_code"] == "network_error"
+
+
+def test_send_email_port_465_uses_implicit_tls(monkeypatch):
+    smtp_ssl = _FakeSMTPFactory([None])
+    monkeypatch.setattr(notify.smtplib, "SMTP_SSL", smtp_ssl)
+    monkeypatch.setattr(notify.smtplib, "SMTP", _FakeSMTPFactory([]))
+    config = notify.SmtpConfig(**{**SMTP_CONFIG.__dict__, "port": 465})
+
+    ok = notify._send_email_with_retry(
+        config, EMAIL_PAYLOAD, alert=None, store="emag", alert_url=""
+    )
+
+    assert ok is True
+    assert smtp_ssl.connections[0].tls is False  # no STARTTLS on implicit TLS
+
+
+# Per-watch routing through the outbox, end to end ---------------------------
+
+
+def test_watch_without_channels_routes_to_telegram_only(
+    monkeypatch, tmp_path, _full_pipeline_env
+):
+    _write_formatted(tmp_path, [DEAL_ALERT])
+    _write_modern_watchlist([_deal_watch()])
+    monkeypatch.setenv("TEAMS_WEBHOOK_URL", TEAMS_URL)
+    post = _routed_post({TELEGRAM_SEND_URL: [_FakeResponse(200)]})
+    monkeypatch.setattr(notify.requests, "post", post)
+
+    notify.main()
+
+    assert [url for url, _ in post.calls] == [TELEGRAM_SEND_URL]
+
+
+def test_watch_routed_to_telegram_and_teams_delivers_on_both(
+    monkeypatch, tmp_path, _full_pipeline_env
+):
+    _write_formatted(tmp_path, [DEAL_ALERT])
+    _write_modern_watchlist([_deal_watch(channels=["telegram", "teams"])])
+    monkeypatch.setenv("TEAMS_WEBHOOK_URL", TEAMS_URL)
+    post = _routed_post(
+        {TELEGRAM_SEND_URL: [_FakeResponse(200)], TEAMS_URL: [_FakeResponse(202)]}
+    )
+    monkeypatch.setattr(notify.requests, "post", post)
+
+    notify.main()
+
+    assert [url for url, _ in post.calls] == [TELEGRAM_SEND_URL, TEAMS_URL]
+    teams_body = post.calls[1][1]
+    assert teams_body["attachments"][0]["content"]["type"] == "AdaptiveCard"
+
+    records = _read_outbox_records()
+    assert [(r["channel"], r["status"]) for r in records] == [
+        ("telegram", "PENDING"),
+        ("telegram", "SENT"),
+        ("teams", "PENDING"),
+        ("teams", "SENT"),
+    ]
+    base_id = _base_event_id()
+    # Telegram keeps the pre-T-26 event id, so existing outbox history still
+    # matches; every other channel gets its own derived id.
+    assert records[0]["event_id"] == base_id
+    assert records[2]["event_id"] == f"{base_id}:teams"
+    # The Teams send_payload is what a replay resends verbatim.
+    assert records[3]["send_payload"] == teams_body
+
+    rows = _delivery_attempt_rows(notify.DB_FILE)
+    assert sorted(r["channel"] for r in rows) == ["teams", "telegram"]
+    assert {r["alert_decision_id"] for r in rows} == {base_id}
+    assert all(r["final_state"] == "delivered" for r in rows)
+    assert all(TEAMS_URL not in r["destination_ref"] for r in rows)
+
+
+def test_watch_routed_to_teams_only_skips_telegram(
+    monkeypatch, tmp_path, _full_pipeline_env
+):
+    _write_formatted(tmp_path, [DEAL_ALERT])
+    _write_modern_watchlist([_deal_watch(channels=["teams"])])
+    monkeypatch.setenv("TEAMS_WEBHOOK_URL", TEAMS_URL)
+    post = _routed_post({TEAMS_URL: [_FakeResponse(202)]})
+    monkeypatch.setattr(notify.requests, "post", post)
+
+    notify.main()
+
+    assert [url for url, _ in post.calls] == [TEAMS_URL]
+
+
+def test_routed_channel_not_configured_is_reported_not_sent(
+    monkeypatch, tmp_path, _full_pipeline_env, capsys
+):
+    _write_formatted(tmp_path, [DEAL_ALERT])
+    _write_modern_watchlist([_deal_watch(channels=["telegram", "teams"])])
+    post = _routed_post({TELEGRAM_SEND_URL: [_FakeResponse(200)]})
+    monkeypatch.setattr(notify.requests, "post", post)
+
+    notify.main()
+
+    assert [url for url, _ in post.calls] == [TELEGRAM_SEND_URL]
+    assert {r["channel"] for r in _read_outbox_records()} == {"telegram"}
+    assert "CHANNEL NOT CONFIGURED: teams" in capsys.readouterr().err
+
+
+def test_two_watches_matching_same_offer_union_their_channels(
+    monkeypatch, tmp_path, _full_pipeline_env
+):
+    # T-41's in-run duplicate skip keeps only the first alert per offer, so
+    # routing must merge channels across every watch that matched it.
+    second = {**DEAL_ALERT, "query": "lenovo v15 16gb"}
+    _write_formatted(tmp_path, [DEAL_ALERT, second])
+    _write_modern_watchlist(
+        [
+            _deal_watch(channels=["telegram"]),
+            _deal_watch(query=second["query"], channels=["teams"]),
+        ]
+    )
+    monkeypatch.setenv("TEAMS_WEBHOOK_URL", TEAMS_URL)
+    post = _routed_post(
+        {TELEGRAM_SEND_URL: [_FakeResponse(200)], TEAMS_URL: [_FakeResponse(202)]}
+    )
+    monkeypatch.setattr(notify.requests, "post", post)
+
+    notify.main()
+
+    assert [url for url, _ in post.calls] == [TELEGRAM_SEND_URL, TEAMS_URL]
+
+
+def test_ntfy_channel_posts_json_with_topic_to_server_root(
+    monkeypatch, tmp_path, _full_pipeline_env
+):
+    _write_formatted(tmp_path, [DEAL_ALERT])
+    _write_modern_watchlist([_deal_watch(channels=["ntfy"])])
+    monkeypatch.setenv("NTFY_TOPIC", "bf-test-topic")
+    post = _routed_post({NTFY_URL: [_FakeResponse(200)]})
+    monkeypatch.setattr(notify.requests, "post", post)
+
+    notify.main()
+
+    url, body = post.calls[0]
+    assert url == NTFY_URL
+    assert body["topic"] == "bf-test-topic"
+    assert body["click"] == DEAL_ALERT["url"]
+    stored = _read_outbox_records()[-1]
+    assert stored["channel"] == "ntfy"
+    assert stored["status"] == "SENT"
+    assert "topic" not in stored["send_payload"]
+
+
+def test_email_channel_delivers_through_outbox(
+    monkeypatch, tmp_path, _full_pipeline_env
+):
+    _write_formatted(tmp_path, [DEAL_ALERT])
+    _write_modern_watchlist([_deal_watch(channels=["email"])])
+    _set_smtp_env(monkeypatch)
+    smtp = _FakeSMTPFactory([None])
+    monkeypatch.setattr(notify.smtplib, "SMTP", smtp)
+    monkeypatch.setattr(notify.requests, "post", _routed_post({}))
+
+    notify.main()
+
+    assert len(smtp.sent) == 1
+    assert DEAL_ALERT["url"] in smtp.sent[0].get_content()
+    assert [(r["channel"], r["status"]) for r in _read_outbox_records()] == [
+        ("email", "PENDING"),
+        ("email", "SENT"),
+    ]
+
+
+def test_email_missing_sender_or_recipient_is_not_configured(
+    monkeypatch, tmp_path, _full_pipeline_env, capsys
+):
+    _write_formatted(tmp_path, [DEAL_ALERT])
+    _write_modern_watchlist([_deal_watch(channels=["telegram", "email"])])
+    monkeypatch.setenv("SMTP_HOST", "smtp.example.com")
+    post = _routed_post({TELEGRAM_SEND_URL: [_FakeResponse(200)]})
+    monkeypatch.setattr(notify.requests, "post", post)
+
+    notify.main()
+
+    assert [url for url, _ in post.calls] == [TELEGRAM_SEND_URL]
+    err = capsys.readouterr().err
+    assert "EMAIL_FROM" in err
+    assert "CHANNEL NOT CONFIGURED: email" in err
+
+
+# Retry/DLQ and cooldown behave identically, independently per channel -------
+
+
+def test_teams_5xx_exhausts_retries_and_dead_letters_independently(
+    monkeypatch, tmp_path, _full_pipeline_env
+):
+    _write_formatted(tmp_path, [DEAL_ALERT])
+    _write_modern_watchlist([_deal_watch(channels=["telegram", "teams"])])
+    monkeypatch.setenv("TEAMS_WEBHOOK_URL", TEAMS_URL)
+    post = _routed_post(
+        {
+            TELEGRAM_SEND_URL: [_FakeResponse(200)],
+            TEAMS_URL: [_FakeResponse(502, text="bad gateway")] * notify.MAX_ATTEMPTS,
+        }
+    )
+    monkeypatch.setattr(notify.requests, "post", post)
+
+    notify.main()
+
+    assert sum(url == TEAMS_URL for url, _ in post.calls) == notify.MAX_ATTEMPTS
+    effective = notify._load_outbox_effective()
+    base_id = _base_event_id()
+    assert effective[base_id]["status"] == "SENT"
+    assert effective[f"{base_id}:teams"]["status"] == "DEAD_LETTER"
+    dlq = _read_dlq_records()
+    assert len(dlq) == 1
+    assert dlq[0]["final_status_code"] == 502
+    assert dlq[0]["store"] == DEAL_ALERT["site"]
+    rows = _delivery_attempt_rows(notify.DB_FILE)
+    assert {(r["channel"], r["final_state"]) for r in rows} == {
+        ("telegram", "delivered"),
+        ("teams", "failed"),
+    }
+
+
+def test_teams_permanent_4xx_dead_letters_after_one_attempt(
+    monkeypatch, tmp_path, _full_pipeline_env
+):
+    _write_formatted(tmp_path, [DEAL_ALERT])
+    _write_modern_watchlist([_deal_watch(channels=["teams"])])
+    monkeypatch.setenv("TEAMS_WEBHOOK_URL", TEAMS_URL)
+    post = _routed_post({TEAMS_URL: [_FakeResponse(400, text="bad card")]})
+    monkeypatch.setattr(notify.requests, "post", post)
+
+    notify.main()
+
+    assert len(post.calls) == 1
+    assert _read_outbox_records()[-1]["status"] == "DEAD_LETTER"
+    assert _read_dlq_records()[0]["final_status_code"] == 400
+
+
+def test_dead_lettered_teams_delivery_retried_next_run_without_resending_telegram(
+    monkeypatch, tmp_path, _full_pipeline_env
+):
+    _write_formatted(tmp_path, [DEAL_ALERT])
+    _write_modern_watchlist([_deal_watch(channels=["telegram", "teams"])])
+    monkeypatch.setenv("TEAMS_WEBHOOK_URL", TEAMS_URL)
+    monkeypatch.setattr(
+        notify.requests,
+        "post",
+        _routed_post(
+            {
+                TELEGRAM_SEND_URL: [_FakeResponse(200)],
+                TEAMS_URL: [_FakeResponse(403)],
+            }
+        ),
+    )
+    notify.main()
+
+    # Next run: Telegram's SENT is inside its cooldown, while Teams'
+    # DEAD_LETTER is retried and must not be suppressed by Telegram's SENT.
+    post2 = _routed_post({TEAMS_URL: [_FakeResponse(202)]})
+    monkeypatch.setattr(notify.requests, "post", post2)
+    notify.main()
+
+    assert [url for url, _ in post2.calls] == [TEAMS_URL]
+
+
+def test_cooldown_is_per_channel(monkeypatch, tmp_path, _full_pipeline_env):
+    _write_formatted(tmp_path, [DEAL_ALERT])
+    _write_modern_watchlist([_deal_watch(channels=["telegram", "teams"])])
+    monkeypatch.setenv("TEAMS_WEBHOOK_URL", TEAMS_URL)
+    dedup_key = notify._deal_dedup_key(DEAL_ALERT)
+    last_sent = (
+        notify.datetime.now(notify.UTC) - notify.timedelta(hours=1)
+    ).isoformat()
+    _seed_outbox_record(
+        event_id=f"{_base_event_id()}:teams",
+        channel="teams",
+        dedup_key=dedup_key,
+        last_attempt_at_utc=last_sent,
+        site=DEAL_ALERT["site"],
+    )
+    post = _routed_post({TELEGRAM_SEND_URL: [_FakeResponse(200)]})
+    monkeypatch.setattr(notify.requests, "post", post)
+
+    notify.main()
+
+    # Teams is in cooldown; Telegram, never sent, still goes out.
+    assert [url for url, _ in post.calls] == [TELEGRAM_SEND_URL]
+
+
+def test_replay_resends_pending_teams_record_via_teams_provider(
+    monkeypatch, tmp_path, _full_pipeline_env
+):
+    base_id = _base_event_id()
+    old_created = (
+        notify.datetime.now(notify.UTC) - notify.timedelta(minutes=10)
+    ).isoformat()
+    card = notify.build_teams_card(DEAL_ALERT)
+    notify._write_outbox_record(
+        f"{base_id}:teams",
+        "deal",
+        {"id": base_id, "evidence_urls": [DEAL_ALERT["url"]]},
+        card,
+        "PENDING",
+        old_created,
+        0,
+        DEAL_ALERT["site"],
+        dedup_key=notify._deal_dedup_key(DEAL_ALERT),
+        channel="teams",
+    )
+    _write_formatted(tmp_path, [])
+    monkeypatch.setenv("TEAMS_WEBHOOK_URL", TEAMS_URL)
+    post = _routed_post({TEAMS_URL: [_FakeResponse(202)]})
+    monkeypatch.setattr(notify.requests, "post", post)
+
+    notify.main()
+
+    assert post.calls == [(TEAMS_URL, card)]
+    last = _read_outbox_records()[-1]
+    assert (last["channel"], last["status"]) == ("teams", "SENT")
+    rows = _delivery_attempt_rows(notify.DB_FILE)
+    assert [(r["channel"], r["alert_decision_id"]) for r in rows] == [
+        ("teams", base_id)
+    ]
+
+
+def test_replay_of_unconfigured_channel_dead_letters_instead_of_hanging(
+    monkeypatch, tmp_path, _full_pipeline_env
+):
+    old_created = (
+        notify.datetime.now(notify.UTC) - notify.timedelta(minutes=10)
+    ).isoformat()
+    notify._write_outbox_record(
+        "evt:teams",
+        "deal",
+        {"id": "evt", "evidence_urls": [DEAL_ALERT["url"]]},
+        {"type": "message"},
+        "PENDING",
+        old_created,
+        0,
+        DEAL_ALERT["site"],
+        channel="teams",
+    )
+    _write_formatted(tmp_path, [])
+    post = _routed_post({})  # nothing may be posted anywhere
+    monkeypatch.setattr(notify.requests, "post", post)
+
+    notify.main()
+
+    last = _read_outbox_records()[-1]
+    assert (last["event_id"], last["status"]) == ("evt:teams", "DEAD_LETTER")
+    assert _read_dlq_records()[0]["final_status_code"] == "channel_not_configured"
+
+
+# Cross-channel outcome matrix --------------------------------------------------
+# One table drives every channel's real Provider.send (as built by
+# _load_providers) through the same four outcomes. HTTP and SMTP codes differ,
+# so each channel supplies its own equivalent: 2xx vs. None (delivered), 503
+# vs. SMTP 451 (transient), 4xx vs. SMTP 550 (permanent).
+
+MATRIX_NTFY_TOPIC = "bf-matrix-secret-topic"
+MATRIX_ENV = {
+    "TEAMS_WEBHOOK_URL": TEAMS_URL,
+    "NTFY_TOPIC": MATRIX_NTFY_TOPIC,
+    "SMTP_HOST": SMTP_CONFIG.host,
+    "SMTP_PORT": str(SMTP_CONFIG.port),
+    "SMTP_USERNAME": SMTP_CONFIG.username,
+    "SMTP_PASSWORD": SMTP_CONFIG.password,
+    "EMAIL_FROM": SMTP_CONFIG.sender,
+    "EMAIL_TO": SMTP_CONFIG.recipients,
+}
+
+
+def _smtp_reply(code):
+    return notify.smtplib.SMTPDataError(code, b"server reply")
+
+
+# channel -> (endpoint URL or None for SMTP, delivered, transient, permanent)
+CHANNEL_OUTCOMES = {
+    "telegram": (
+        TELEGRAM_SEND_URL,
+        lambda: _FakeResponse(200),
+        lambda: _FakeResponse(503, text="unavailable"),
+        lambda: _FakeResponse(403, text="Forbidden"),
+    ),
+    "teams": (
+        TEAMS_URL,
+        lambda: _FakeResponse(202),
+        lambda: _FakeResponse(503, text="unavailable"),
+        lambda: _FakeResponse(400, text="Bad Request"),
+    ),
+    "ntfy": (
+        NTFY_URL,
+        lambda: _FakeResponse(200),
+        lambda: _FakeResponse(503, text="unavailable"),
+        lambda: _FakeResponse(400, text="Bad Request"),
+    ),
+    "email": (
+        None,
+        lambda: None,
+        lambda: _smtp_reply(451),
+        lambda: _smtp_reply(550),
+    ),
+}
+
+TRANSIENT_CODE = {"telegram": 503, "teams": 503, "ntfy": 503, "email": 451}
+PERMANENT_CODE = {"telegram": 403, "teams": 400, "ntfy": 400, "email": 550}
+
+
+def _send_through_provider(monkeypatch, channel, script):
+    """Installs a strict fake for the channel's transport, sends one deal
+    through that channel's Provider, and returns (ok, attempts_made)."""
+    url = CHANNEL_OUTCOMES[channel][0]
+    if url is None:
+        smtp = _FakeSMTPFactory(script)
+        monkeypatch.setattr(notify.smtplib, "SMTP", smtp)
+        monkeypatch.setattr(notify.requests, "post", _routed_post({}))
+    else:
+        post = _routed_post({url: script})
+        monkeypatch.setattr(notify.requests, "post", post)
+
+    providers = notify._load_providers("12345", TELEGRAM_SEND_URL, env=MATRIX_ENV)
+    ok = providers[channel].send(
+        notify.DEAL_PAYLOAD_BUILDERS[channel](DEAL_ALERT),
+        alert=DEAL_ALERT,
+        store=DEAL_ALERT["site"],
+        alert_url=DEAL_ALERT["url"],
+    )
+    attempts = len(smtp.connections) if url is None else len(post.calls)
+    return ok, attempts
+
+
+@pytest.mark.parametrize("channel", list(CHANNEL_OUTCOMES))
+def test_matrix_success_delivers_once_without_dlq(monkeypatch, channel):
+    delivered = CHANNEL_OUTCOMES[channel][1]
+
+    ok, attempts = _send_through_provider(monkeypatch, channel, [delivered()])
+
+    assert ok is True
+    assert attempts == 1
+    assert _read_dlq_records() == []
+
+
+@pytest.mark.parametrize("channel", list(CHANNEL_OUTCOMES))
+def test_matrix_transient_failure_retries_then_succeeds(monkeypatch, channel):
+    _, delivered, transient, _ = CHANNEL_OUTCOMES[channel]
+
+    ok, attempts = _send_through_provider(
+        monkeypatch, channel, [transient(), delivered()]
+    )
+
+    assert ok is True
+    assert attempts == 2
+    assert _read_dlq_records() == []
+
+
+@pytest.mark.parametrize("channel", list(CHANNEL_OUTCOMES))
+def test_matrix_permanent_failure_dead_letters_after_one_attempt(monkeypatch, channel):
+    permanent = CHANNEL_OUTCOMES[channel][3]
+
+    ok, attempts = _send_through_provider(monkeypatch, channel, [permanent()])
+
+    assert ok is False
+    assert attempts == 1
+    records = _read_dlq_records()
+    assert len(records) == 1
+    assert records[0]["attempt_count"] == 1
+    assert records[0]["final_status_code"] == PERMANENT_CODE[channel]
+    assert records[0]["url"] == DEAL_ALERT["url"]
+
+
+@pytest.mark.parametrize("channel", list(CHANNEL_OUTCOMES))
+def test_matrix_transient_exhausts_retries_then_dead_letters(
+    monkeypatch, channel, capsys
+):
+    transient = CHANNEL_OUTCOMES[channel][2]
+
+    ok, attempts = _send_through_provider(
+        monkeypatch, channel, [transient() for _ in range(notify.MAX_ATTEMPTS)]
+    )
+
+    assert ok is False
+    assert attempts == notify.MAX_ATTEMPTS
+    records = _read_dlq_records()
+    assert len(records) == 1
+    assert records[0]["attempt_count"] == notify.MAX_ATTEMPTS
+    assert records[0]["final_status_code"] == TRANSIENT_CODE[channel]
+    # Endpoint secrets never reach the dead-letter file or the log.
+    leaked = notify.DLQ_FILE.read_text(encoding="utf-8") + capsys.readouterr().err
+    for secret in ("SECRETSIG123", MATRIX_NTFY_TOPIC, SMTP_CONFIG.password):
+        assert secret not in leaked
+
+
+@pytest.mark.parametrize("channel", ["telegram", "teams", "ntfy"])
+def test_matrix_http_network_error_exhausts_then_dead_letters(monkeypatch, channel):
+    url = CHANNEL_OUTCOMES[channel][0]
+    script = [
+        requests.ConnectionError(f"Max retries exceeded with url: {url}")
+        for _ in range(notify.MAX_ATTEMPTS)
+    ]
+
+    ok, attempts = _send_through_provider(monkeypatch, channel, script)
+
+    assert ok is False
+    assert attempts == notify.MAX_ATTEMPTS
+    record = _read_dlq_records()[0]
+    assert record["final_status_code"] == "network_error"
+    assert "SECRETSIG123" not in record["failure_reason"]
+    assert MATRIX_NTFY_TOPIC not in record["failure_reason"]
+
+
+# SMTP-specific classification not covered by the matrix ------------------------
+
+
+def test_send_email_recipients_refused_all_4xx_retries_then_succeeds(monkeypatch):
+    refused = notify.smtplib.SMTPRecipientsRefused(
+        {"me@example.com": (450, b"mailbox busy")}
+    )
+    smtp = _FakeSMTPFactory([refused, None])
+    monkeypatch.setattr(notify.smtplib, "SMTP", smtp)
+
+    ok = notify._send_email_with_retry(
+        SMTP_CONFIG, EMAIL_PAYLOAD, alert=None, store="emag", alert_url=""
+    )
+
+    assert ok is True
+    assert len(smtp.connections) == 2
+    assert _read_dlq_records() == []
+
+
+def test_send_email_recipients_refused_with_5xx_is_permanent(monkeypatch):
+    refused = notify.smtplib.SMTPRecipientsRefused(
+        {
+            "a@example.com": (450, b"mailbox busy"),
+            "b@example.com": (550, b"no such user"),
+        }
+    )
+    smtp = _FakeSMTPFactory([refused])
+    monkeypatch.setattr(notify.smtplib, "SMTP", smtp)
+
+    ok = notify._send_email_with_retry(
+        SMTP_CONFIG, EMAIL_PAYLOAD, alert=None, store="emag", alert_url=""
+    )
+
+    assert ok is False
+    assert len(smtp.connections) == 1
+    record = _read_dlq_records()[0]
+    assert record["attempt_count"] == 1
+    # Only reply codes are recorded, never the refused addresses.
+    assert "example.com" not in record["failure_reason"]
+
+
+def test_smtp_reply_echoing_one_of_several_recipients_is_redacted(monkeypatch, capsys):
+    # GitHub masks only a secret's exact value: with EMAIL_TO holding two
+    # addresses, a reply echoing just one of them would not be masked.
+    config = notify.SmtpConfig(
+        **{
+            **SMTP_CONFIG.__dict__,
+            "recipients": "alice@example.org, Bob.Smith@example.net",
+        }
+    )
+    reply = notify.smtplib.SMTPDataError(
+        550, b"5.1.1 <bob.smith@EXAMPLE.net>: Recipient address rejected"
+    )
+    smtp = _FakeSMTPFactory([reply])
+    monkeypatch.setattr(notify.smtplib, "SMTP", smtp)
+
+    ok = notify._send_email_with_retry(
+        config, EMAIL_PAYLOAD, alert=None, store="emag", alert_url=""
+    )
+
+    assert ok is False
+    reason = _read_dlq_records()[0]["failure_reason"]
+    assert reason == "SMTPDataError: 550 5.1.1 <[REDACTED]>: Recipient address rejected"
+    leaked = notify.DLQ_FILE.read_text(encoding="utf-8") + capsys.readouterr().err
+    assert "bob.smith" not in leaked.lower()
+
+
+def test_smtp_sender_echoed_in_transient_error_is_redacted(monkeypatch):
+    reply = notify.smtplib.SMTPSenderRefused(
+        451, f"4.7.1 <{SMTP_CONFIG.sender}>: try later".encode(), SMTP_CONFIG.sender
+    )
+    smtp = _FakeSMTPFactory([reply] * notify.MAX_ATTEMPTS)
+    monkeypatch.setattr(notify.smtplib, "SMTP", smtp)
+
+    notify._send_email_with_retry(
+        SMTP_CONFIG, EMAIL_PAYLOAD, alert=None, store="emag", alert_url=""
+    )
+
+    record = _read_dlq_records()[0]
+    assert record["final_status_code"] == 451
+    assert SMTP_CONFIG.sender not in record["failure_reason"]
+
+
+def test_secret_bearing_dataclass_fields_are_hidden_from_repr():
+    config_repr = repr(SMTP_CONFIG)
+    for value in (
+        SMTP_CONFIG.password,
+        SMTP_CONFIG.username,
+        SMTP_CONFIG.sender,
+        SMTP_CONFIG.recipients,
+    ):
+        assert value not in config_repr
+    assert SMTP_CONFIG.host in config_repr
+
+    providers = notify._load_providers("12345", TELEGRAM_SEND_URL, env=MATRIX_ENV)
+    for provider in providers.values():
+        # Field name, not value: the send closure's repr carries a memory
+        # address that could contain a short value like the chat id.
+        assert "destination=" not in repr(provider)
+    assert "SECRETSIG123" not in repr(providers["teams"])
+    assert MATRIX_NTFY_TOPIC not in repr(providers["ntfy"])
+
+
+def test_send_email_server_disconnect_is_transient(monkeypatch):
+    smtp = _FakeSMTPFactory(
+        [notify.smtplib.SMTPServerDisconnected("Connection unexpectedly closed"), None]
+    )
+    monkeypatch.setattr(notify.smtplib, "SMTP", smtp)
+
+    ok = notify._send_email_with_retry(
+        SMTP_CONFIG, EMAIL_PAYLOAD, alert=None, store="emag", alert_url=""
+    )
+
+    assert ok is True
+    assert len(smtp.connections) == 2
+
+
+# ntfy topic stays out of persisted state on the failure path ------------------
+
+
+def test_ntfy_topic_absent_from_outbox_dlq_and_logs_when_dead_lettered(
+    monkeypatch, tmp_path, _full_pipeline_env, capsys
+):
+    _write_formatted(tmp_path, [DEAL_ALERT])
+    _write_modern_watchlist([_deal_watch(channels=["ntfy"])])
+    monkeypatch.setenv("NTFY_TOPIC", MATRIX_NTFY_TOPIC)
+    post = _routed_post(
+        {
+            NTFY_URL: [
+                requests.ConnectionError(f"Max retries exceeded with url: {NTFY_URL}")
+                for _ in range(notify.MAX_ATTEMPTS)
+            ]
+        }
+    )
+    monkeypatch.setattr(notify.requests, "post", post)
+
+    notify.main()
+
+    # The topic does travel in the request body, as ntfy's JSON API requires,
+    # but nothing written to disk or to the log carries it.
+    assert all(body["topic"] == MATRIX_NTFY_TOPIC for _, body in post.calls)
+    assert [r["status"] for r in _read_outbox_records()] == ["PENDING", "DEAD_LETTER"]
+    assert MATRIX_NTFY_TOPIC not in notify.OUTBOX_FILE.read_text(encoding="utf-8")
+    assert MATRIX_NTFY_TOPIC not in notify.DLQ_FILE.read_text(encoding="utf-8")
+    assert MATRIX_NTFY_TOPIC not in capsys.readouterr().err
