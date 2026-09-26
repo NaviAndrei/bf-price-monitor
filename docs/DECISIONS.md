@@ -367,3 +367,32 @@ next to Telegram, routed per watch via a new `Watch.channels` field
   Whether ntfy sends a Retry-After header on 429 was not verified; without
   it the normal backoff applies. The legacy flat-array schema did not gain
   `channels`, since production already uses the modern format.
+
+## 2026-09-26 — Remove Microsoft Teams channel (#35 scope change)
+Removed Teams entirely as a follow-up to T-26 (above): `build_teams_card`,
+the `teams` entry in `DEAL_PAYLOAD_BUILDERS`, the `teams` provider in
+`_load_providers`, `TEAMS_WEBHOOK_URL` from the workflow's env and README,
+and `"teams"` from both the `Watch.channels` `Literal` and the watchlist
+JSON Schema enum. Telegram, email and ntfy, and their shared outbox,
+retry-with-backoff and dead-letter handling from T-26, are unchanged.
+
+- **Why remove rather than fix.** This is a scope decision, not a bug fix:
+  Teams support is no longer wanted, not broken. T-26's "known limits" note
+  above (a 202 only proves the workflow accepted the request, not that it
+  posted or rendered) still stands as the reason it was never verified live
+  — but that was not the reason for removal.
+- **Old PENDING/DEAD_LETTER outbox records with `channel: "teams"` are
+  handled safely, not specially.** Replay's existing
+  `channel_not_configured` path (T-26, since `_load_providers` no longer
+  registers *any* provider whose channel isn't backed by a configured
+  secret) already dead-letters a PENDING record whose channel has no
+  provider, without ever attempting delivery or touching a webhook URL.
+  Removing the `teams` provider makes every such record take that path
+  automatically; `test_replay_of_unconfigured_channel_dead_letters_instead_of_hanging`
+  locks this in for a channel value that no longer exists anywhere else in
+  the codebase.
+- **The Teams `sig=` redaction pattern in `_SECRET_PATTERNS` was deleted**,
+  not just left unused — it matched a Teams-specific webhook URL shape and
+  had no other purpose.
+- **`data/watchlist.json` needed no migration.** No live watch referenced
+  `"teams"` in its `channels` list before this change.
