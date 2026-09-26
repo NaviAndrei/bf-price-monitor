@@ -29,7 +29,7 @@ class Watch(BaseModel):
     enabled: bool = True
     # T-26 (#35): delivery channels for this watch's deal alerts. Each must
     # also be configured via env/secrets for notify.py to actually use it.
-    channels: list[Literal["telegram", "teams", "email", "ntfy"]] = Field(
+    channels: list[Literal["telegram", "email", "ntfy"]] = Field(
         default_factory=lambda: ["telegram"], min_length=1
     )
 

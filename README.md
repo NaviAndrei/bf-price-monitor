@@ -54,10 +54,9 @@ than crashing the run.
    per watchlist entry into `data/formatted_alerts.json`.
 3. `scripts/notify.py` sends each formatted message to Telegram, respecting
    Telegram's ~1 message/second rate limit and its `retry_after` value on a
-   429 response. A watch can also route its deal alerts to Microsoft Teams
-   (Workflows webhook, as an Adaptive Card), email (SMTP) or ntfy via its
-   `channels` field; every channel shares the same outbox, retry and
-   dead-letter handling.
+   429 response. A watch can also route its deal alerts to email (SMTP) or
+   ntfy via its `channels` field; every channel shares the same outbox,
+   retry and dead-letter handling.
 4. `.github/workflows/monitor.yml` runs all three scripts every 2 hours (and
    on manual trigger), then commits the updated `data/price_history.json`
    and `data/watchlist.json` back to the repo.
@@ -82,7 +81,6 @@ channels.
 
 | Secret | Channel | Notes |
 |---|---|---|
-| `TEAMS_WEBHOOK_URL` | `teams` | The HTTP POST URL of a Teams Workflows flow using the "When a Teams webhook request is received" trigger. It embeds a `sig=` signature, so treat the whole URL as a secret |
 | `NTFY_TOPIC` | `ntfy` | On the public ntfy.sh server anyone who knows the topic can read it, so pick an unguessable name |
 | `NTFY_SERVER` | `ntfy` | Optional; defaults to `https://ntfy.sh` |
 | `SMTP_HOST`, `SMTP_PORT` | `email` | Port defaults to 587 (STARTTLS); 465 uses implicit TLS |
@@ -116,7 +114,7 @@ recorded for that product, even if `target_price` hasn't been reached yet
 or `min_drop_percent` isn't met.
 
 In the `{"watches": [...]}` format, a watch may also set `channels`, a
-list of any of `telegram`, `teams`, `email` and `ntfy` (default:
+list of any of `telegram`, `email` and `ntfy` (default:
 `["telegram"]`). When several watches match the same offer, it is sent to
 the union of their channels. Health alerts (selector drift, dead-man
 checks) always go to Telegram only.

@@ -166,81 +166,6 @@ def format_plain_text_message(alert: dict) -> str:
     return _strip_html(format_telegram_message(alert))
 
 
-def build_teams_card(alert: dict) -> dict:
-    """Teams Workflows ("When a Teams webhook request is received") message
-    carrying one Adaptive Card. Teams renders a Markdown subset, not HTML."""
-    emoji, label = VERDICT_BADGES.get(
-        alert.get("verdict"), ("⚪", "VERDICT NECUNOSCUT")
-    )
-    facts = [
-        {"title": "Magazin", "value": alert["site"].upper()},
-        {"title": "Vânzător", "value": alert.get("seller") or "Neverificat"},
-        {"title": "Stoc", "value": alert.get("stock_status", "unknown")},
-        {"title": "Preț Nou", "value": f"{alert['new_price']:,.2f} RON"},
-        {
-            "title": "Preț Anterior",
-            "value": f"{alert['old_price']:,.2f} RON (-{alert['discount_vs_old_pct']}%)",
-        },
-        {
-            "title": "Minim 30 zile (Omnibus)",
-            "value": f"{alert['thirty_day_low']:,.2f} RON",
-        },
-        {"title": "Record Minim Istoric", "value": f"{alert['all_time_low']:,.2f} RON"},
-    ]
-    body = [
-        {
-            "type": "TextBlock",
-            "text": f"{emoji} {label} (Scor: {alert.get('verdict_score', '?')}/10)",
-            "weight": "Bolder",
-            "size": "Medium",
-            "wrap": True,
-        },
-        {"type": "TextBlock", "text": alert["title"], "weight": "Bolder", "wrap": True},
-        {"type": "FactSet", "facts": facts},
-        *(
-            {"type": "TextBlock", "text": _strip_html(line), "wrap": True}
-            for line in _omnibus_detail_lines(alert.get("deal_stats") or {})
-        ),
-        {
-            "type": "TextBlock",
-            "text": alert.get("summary", ""),
-            "wrap": True,
-            "isSubtle": True,
-        },
-    ]
-    if alert.get("is_recommended"):
-        body.append(
-            {
-                "type": "TextBlock",
-                "text": "✨ Recomandat pentru cumpărare!",
-                "weight": "Bolder",
-                "wrap": True,
-            }
-        )
-    return {
-        "type": "message",
-        "attachments": [
-            {
-                "contentType": "application/vnd.microsoft.card.adaptive",
-                "contentUrl": None,
-                "content": {
-                    "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
-                    "type": "AdaptiveCard",
-                    # Every element here dates from 1.0; 1.2 matches
-                    # Microsoft's Workflows-webhook sample, whereas 1.5
-                    # support in the Flow bot's post-card action is unverified.
-                    "version": "1.2",
-                    "body": body,
-                    "actions": [
-                        {"type": "Action.OpenUrl", "title": b["text"], "url": b["url"]}
-                        for b in _offer_links(alert)
-                    ],
-                },
-            }
-        ],
-    }
-
-
 def build_ntfy_payload(alert: dict) -> dict:
     """ntfy JSON publish body, minus "topic": the topic is added at send time
     so it is never persisted in the outbox (on ntfy.sh, knowing a topic is
@@ -283,7 +208,6 @@ def _telegram_deal_payload(alert: dict) -> dict:
 # builder returns is stored verbatim in the outbox and resent as-is on replay.
 DEAL_PAYLOAD_BUILDERS = {
     "telegram": _telegram_deal_payload,
-    "teams": build_teams_card,
     "email": build_email_payload,
     "ntfy": build_ntfy_payload,
 }
@@ -368,9 +292,6 @@ _SECRET_PATTERNS = [
     re.compile(
         r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
     ),
-    # T-26 (#35): a Teams Workflows webhook URL is authorized solely by its
-    # sig= query parameter.
-    re.compile(r"(?<=[?&]sig=)[^&\s]+"),
 ]
 
 
@@ -452,9 +373,9 @@ def _deliver_with_retry(
 
 
 def _http_attempt(url: str, payload: dict) -> _AttemptResult:
-    """Telegram/Teams/ntfy classification: 429 (honoring Retry-After), 5xx
+    """Telegram/ntfy classification: 429 (honoring Retry-After), 5xx
     and network errors are transient; any other 4xx is permanent. Any 2xx is
-    success -- Telegram and ntfy answer 200, a Teams Workflows webhook 202."""
+    success -- Telegram and ntfy both answer 200."""
     try:
         r = requests.post(url, json=payload, timeout=15)
     except requests.RequestException as e:
@@ -601,14 +522,6 @@ def _load_providers(
         )
 
     providers = {"telegram": Provider("telegram", chat_id, _telegram_send)}
-
-    teams_url = _get("TEAMS_WEBHOOK_URL")
-    if teams_url:
-
-        def _teams_send(payload: dict, **kwargs) -> bool:
-            return _send_with_retry(teams_url, payload, **kwargs)
-
-        providers["teams"] = Provider("teams", teams_url, _teams_send)
 
     ntfy_topic = _get("NTFY_TOPIC")
     if ntfy_topic:
@@ -920,7 +833,7 @@ def _find_cooldown_block(
     cooldown_hours of now, else None. Records without a dedup_key (None)
     never match, since dedup_key is always a non-empty hash — this is how
     pre-T-13 outbox records are guaranteed to never suppress anything.
-    T-26: cooldown is per channel, so a Teams SENT never suppresses a
+    T-26: cooldown is per channel, so an ntfy SENT never suppresses a
     Telegram delivery that hasn't happened (and vice versa); records from
     before T-26 all carry channel "telegram"."""
     for record in outbox_effective.values():

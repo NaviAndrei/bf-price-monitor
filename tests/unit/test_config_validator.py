@@ -151,13 +151,13 @@ def _modern_watch_with_channels(channels):
 
 def test_modern_watch_entry_accepts_channels(tmp_path):
     path = write_watchlist(
-        tmp_path, _modern_watch_with_channels(["telegram", "teams", "ntfy", "email"])
+        tmp_path, _modern_watch_with_channels(["telegram", "ntfy", "email"])
     )
     validate_watchlist(path)
-    assert load_watchlist(path)[0]["channels"] == ["telegram", "teams", "ntfy", "email"]
+    assert load_watchlist(path)[0]["channels"] == ["telegram", "ntfy", "email"]
 
 
-@pytest.mark.parametrize("channels", [["slack"], [], ["teams", "teams"]])
+@pytest.mark.parametrize("channels", [["slack"], ["teams"], [], ["ntfy", "ntfy"]])
 def test_modern_watch_entry_rejects_invalid_channels(tmp_path, channels):
     path = write_watchlist(tmp_path, _modern_watch_with_channels(channels))
     with pytest.raises(ValueError):

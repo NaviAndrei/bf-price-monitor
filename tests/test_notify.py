@@ -155,7 +155,6 @@ def _read_outbox_records():
 
 
 _OPTIONAL_CHANNEL_ENV_VARS = (
-    "TEAMS_WEBHOOK_URL",
     "NTFY_TOPIC",
     "NTFY_SERVER",
     "SMTP_HOST",
@@ -1230,10 +1229,6 @@ def test_no_fake_discount_reason_when_not_suspect(
 # and an undeclared URL fails the test instead of silently passing.
 
 TELEGRAM_SEND_URL = "https://api.telegram.org/bottesttoken/sendMessage"
-TEAMS_URL = (
-    "https://prod-00.westeurope.logic.azure.com/workflows/abc/triggers/manual/"
-    "paths/invoke?api-version=2016-06-01&sp=%2Ftriggers&sv=1.0&sig=SECRETSIG123"
-)
 NTFY_URL = "https://ntfy.sh/"
 
 
@@ -1348,45 +1343,6 @@ def test_format_plain_text_message_strips_markup_and_unescapes():
     assert "&lt;" not in text
 
 
-def test_build_teams_card_is_adaptive_card_with_offer_actions():
-    alert = {
-        **BASE_ALERT,
-        "deal_stats": {
-            "genuine_savings_percent": 11.11,
-            "fake_discount_suspect": False,
-            "fake_discount_reasons": [],
-        },
-    }
-    payload = notify.build_teams_card(alert)
-
-    # Workflows webhook envelope (Teams connector TeamsIncomingWebhookTrigger):
-    # type "message", and each attachment carries contentType, a contentUrl
-    # that must be null, and the card object as content.
-    assert set(payload) == {"type", "attachments"}
-    assert payload["type"] == "message"
-    assert len(payload["attachments"]) == 1
-    attachment = payload["attachments"][0]
-    assert set(attachment) == {"contentType", "contentUrl", "content"}
-    assert attachment["contentUrl"] is None
-    assert attachment["contentType"] == "application/vnd.microsoft.card.adaptive"
-    card = attachment["content"]
-    assert card["type"] == "AdaptiveCard"
-    # Only 1.0-era elements are used; 1.2 matches Microsoft's Workflows sample.
-    assert card["version"] == "1.2"
-    texts = [block.get("text", "") for block in card["body"]]
-    assert any("OFERTĂ REALĂ" in t for t in texts)
-    assert BASE_ALERT["title"] in texts
-    # T-25's deal_stats lines are carried over as plain text, not HTML.
-    assert any("Economie reală vs. minim 30 zile: 11.11%" in t for t in texts)
-    assert not any("<b>" in t for t in texts)
-    facts = next(b for b in card["body"] if b["type"] == "FactSet")["facts"]
-    assert {"title": "Preț Nou", "value": "80.00 RON"} in facts
-    urls = [a["url"] for a in card["actions"]]
-    assert urls[0] == BASE_ALERT["url"]
-    assert urls[1].startswith("https://www.compari.ro/CategorySearch.php?st=")
-    assert all(a["type"] == "Action.OpenUrl" for a in card["actions"])
-
-
 def test_build_ntfy_payload_has_click_url_and_no_topic():
     payload = notify.build_ntfy_payload(BASE_ALERT)
     assert payload["click"] == BASE_ALERT["url"]
@@ -1407,37 +1363,21 @@ def test_build_email_payload_has_subject_and_links():
     assert "<b>" not in payload["body"]
 
 
-# HTTP retry path shared by Telegram, Teams and ntfy -------------------------
+# HTTP retry path shared by Telegram and ntfy ---------------------------------
 
 
 def test_send_with_retry_accepts_202_accepted_as_success(monkeypatch):
-    # A Teams Workflows webhook answers 202 Accepted, not 200.
+    # Any 2xx counts as delivered, not just Telegram/ntfy's usual 200.
     post = _sequenced_post([_FakeResponse(202)])
     monkeypatch.setattr(notify.requests, "post", post)
 
     ok = notify._send_with_retry(
-        TEAMS_URL, {"type": "message"}, alert=None, store="emag", alert_url=""
+        NTFY_URL, {"type": "message"}, alert=None, store="emag", alert_url=""
     )
 
     assert ok is True
     assert post.call_count() == 1
     assert _read_dlq_records() == []
-
-
-def test_teams_webhook_signature_redacted_from_network_error_dlq(monkeypatch):
-    post = _sequenced_post(
-        [requests.ConnectionError(f"Max retries exceeded with url: {TEAMS_URL}")]
-        * notify.MAX_ATTEMPTS
-    )
-    monkeypatch.setattr(notify.requests, "post", post)
-
-    notify._send_with_retry(
-        TEAMS_URL, {"type": "message"}, alert=None, store="emag", alert_url=""
-    )
-
-    reason = _read_dlq_records()[0]["failure_reason"]
-    assert "SECRETSIG123" not in reason
-    assert "sig=[REDACTED]" in reason
 
 
 # SMTP retry path --------------------------------------------------------------
@@ -1543,7 +1483,6 @@ def test_watch_without_channels_routes_to_telegram_only(
 ):
     _write_formatted(tmp_path, [DEAL_ALERT])
     _write_modern_watchlist([_deal_watch()])
-    monkeypatch.setenv("TEAMS_WEBHOOK_URL", TEAMS_URL)
     post = _routed_post({TELEGRAM_SEND_URL: [_FakeResponse(200)]})
     monkeypatch.setattr(notify.requests, "post", post)
 
@@ -1552,62 +1491,53 @@ def test_watch_without_channels_routes_to_telegram_only(
     assert [url for url, _ in post.calls] == [TELEGRAM_SEND_URL]
 
 
-def test_watch_routed_to_telegram_and_teams_delivers_on_both(
+def test_watch_routed_to_telegram_and_ntfy_delivers_on_both(
     monkeypatch, tmp_path, _full_pipeline_env
 ):
     _write_formatted(tmp_path, [DEAL_ALERT])
-    _write_modern_watchlist([_deal_watch(channels=["telegram", "teams"])])
-    monkeypatch.setenv("TEAMS_WEBHOOK_URL", TEAMS_URL)
+    _write_modern_watchlist([_deal_watch(channels=["telegram", "ntfy"])])
+    monkeypatch.setenv("NTFY_TOPIC", "bf-test-topic")
     post = _routed_post(
-        {TELEGRAM_SEND_URL: [_FakeResponse(200)], TEAMS_URL: [_FakeResponse(202)]}
+        {TELEGRAM_SEND_URL: [_FakeResponse(200)], NTFY_URL: [_FakeResponse(200)]}
     )
     monkeypatch.setattr(notify.requests, "post", post)
 
     notify.main()
 
-    assert [url for url, _ in post.calls] == [TELEGRAM_SEND_URL, TEAMS_URL]
-    teams_body = post.calls[1][1]
-    assert teams_body["attachments"][0]["content"]["type"] == "AdaptiveCard"
+    assert [url for url, _ in post.calls] == [TELEGRAM_SEND_URL, NTFY_URL]
+    ntfy_body = post.calls[1][1]
+    assert ntfy_body["topic"] == "bf-test-topic"
 
     records = _read_outbox_records()
     assert [(r["channel"], r["status"]) for r in records] == [
         ("telegram", "PENDING"),
         ("telegram", "SENT"),
-        ("teams", "PENDING"),
-        ("teams", "SENT"),
+        ("ntfy", "PENDING"),
+        ("ntfy", "SENT"),
     ]
     base_id = _base_event_id()
     # Telegram keeps the pre-T-26 event id, so existing outbox history still
     # matches; every other channel gets its own derived id.
     assert records[0]["event_id"] == base_id
-    assert records[2]["event_id"] == f"{base_id}:teams"
-    # The Teams send_payload is what a replay resends verbatim.
-    assert records[3]["send_payload"] == teams_body
+    assert records[2]["event_id"] == f"{base_id}:ntfy"
+    # The stored send_payload is what a replay resends verbatim; topic is
+    # added at send time only and is never persisted into the outbox.
+    assert records[3]["send_payload"] == {
+        k: v for k, v in ntfy_body.items() if k != "topic"
+    }
 
     rows = _delivery_attempt_rows(notify.DB_FILE)
-    assert sorted(r["channel"] for r in rows) == ["teams", "telegram"]
+    assert sorted(r["channel"] for r in rows) == ["ntfy", "telegram"]
     assert {r["alert_decision_id"] for r in rows} == {base_id}
     assert all(r["final_state"] == "delivered" for r in rows)
-    assert all(TEAMS_URL not in r["destination_ref"] for r in rows)
-
-
-def test_watch_routed_to_teams_only_skips_telegram(
-    monkeypatch, tmp_path, _full_pipeline_env
-):
-    _write_formatted(tmp_path, [DEAL_ALERT])
-    _write_modern_watchlist([_deal_watch(channels=["teams"])])
-    monkeypatch.setenv("TEAMS_WEBHOOK_URL", TEAMS_URL)
-    post = _routed_post({TEAMS_URL: [_FakeResponse(202)]})
-    monkeypatch.setattr(notify.requests, "post", post)
-
-    notify.main()
-
-    assert [url for url, _ in post.calls] == [TEAMS_URL]
 
 
 def test_routed_channel_not_configured_is_reported_not_sent(
     monkeypatch, tmp_path, _full_pipeline_env, capsys
 ):
+    # "teams" here is a channel that no longer has any provider at all
+    # (Teams support was removed) rather than one whose env vars are merely
+    # unset -- the routing/reporting path is the same either way.
     _write_formatted(tmp_path, [DEAL_ALERT])
     _write_modern_watchlist([_deal_watch(channels=["telegram", "teams"])])
     post = _routed_post({TELEGRAM_SEND_URL: [_FakeResponse(200)]})
@@ -1630,18 +1560,18 @@ def test_two_watches_matching_same_offer_union_their_channels(
     _write_modern_watchlist(
         [
             _deal_watch(channels=["telegram"]),
-            _deal_watch(query=second["query"], channels=["teams"]),
+            _deal_watch(query=second["query"], channels=["ntfy"]),
         ]
     )
-    monkeypatch.setenv("TEAMS_WEBHOOK_URL", TEAMS_URL)
+    monkeypatch.setenv("NTFY_TOPIC", "bf-test-topic")
     post = _routed_post(
-        {TELEGRAM_SEND_URL: [_FakeResponse(200)], TEAMS_URL: [_FakeResponse(202)]}
+        {TELEGRAM_SEND_URL: [_FakeResponse(200)], NTFY_URL: [_FakeResponse(200)]}
     )
     monkeypatch.setattr(notify.requests, "post", post)
 
     notify.main()
 
-    assert [url for url, _ in post.calls] == [TELEGRAM_SEND_URL, TEAMS_URL]
+    assert [url for url, _ in post.calls] == [TELEGRAM_SEND_URL, NTFY_URL]
 
 
 def test_ntfy_channel_posts_json_with_topic_to_server_root(
@@ -1705,27 +1635,27 @@ def test_email_missing_sender_or_recipient_is_not_configured(
 # Retry/DLQ and cooldown behave identically, independently per channel -------
 
 
-def test_teams_5xx_exhausts_retries_and_dead_letters_independently(
+def test_ntfy_5xx_exhausts_retries_and_dead_letters_independently(
     monkeypatch, tmp_path, _full_pipeline_env
 ):
     _write_formatted(tmp_path, [DEAL_ALERT])
-    _write_modern_watchlist([_deal_watch(channels=["telegram", "teams"])])
-    monkeypatch.setenv("TEAMS_WEBHOOK_URL", TEAMS_URL)
+    _write_modern_watchlist([_deal_watch(channels=["telegram", "ntfy"])])
+    monkeypatch.setenv("NTFY_TOPIC", "bf-test-topic")
     post = _routed_post(
         {
             TELEGRAM_SEND_URL: [_FakeResponse(200)],
-            TEAMS_URL: [_FakeResponse(502, text="bad gateway")] * notify.MAX_ATTEMPTS,
+            NTFY_URL: [_FakeResponse(502, text="bad gateway")] * notify.MAX_ATTEMPTS,
         }
     )
     monkeypatch.setattr(notify.requests, "post", post)
 
     notify.main()
 
-    assert sum(url == TEAMS_URL for url, _ in post.calls) == notify.MAX_ATTEMPTS
+    assert sum(url == NTFY_URL for url, _ in post.calls) == notify.MAX_ATTEMPTS
     effective = notify._load_outbox_effective()
     base_id = _base_event_id()
     assert effective[base_id]["status"] == "SENT"
-    assert effective[f"{base_id}:teams"]["status"] == "DEAD_LETTER"
+    assert effective[f"{base_id}:ntfy"]["status"] == "DEAD_LETTER"
     dlq = _read_dlq_records()
     assert len(dlq) == 1
     assert dlq[0]["final_status_code"] == 502
@@ -1733,17 +1663,17 @@ def test_teams_5xx_exhausts_retries_and_dead_letters_independently(
     rows = _delivery_attempt_rows(notify.DB_FILE)
     assert {(r["channel"], r["final_state"]) for r in rows} == {
         ("telegram", "delivered"),
-        ("teams", "failed"),
+        ("ntfy", "failed"),
     }
 
 
-def test_teams_permanent_4xx_dead_letters_after_one_attempt(
+def test_ntfy_permanent_4xx_dead_letters_after_one_attempt(
     monkeypatch, tmp_path, _full_pipeline_env
 ):
     _write_formatted(tmp_path, [DEAL_ALERT])
-    _write_modern_watchlist([_deal_watch(channels=["teams"])])
-    monkeypatch.setenv("TEAMS_WEBHOOK_URL", TEAMS_URL)
-    post = _routed_post({TEAMS_URL: [_FakeResponse(400, text="bad card")]})
+    _write_modern_watchlist([_deal_watch(channels=["ntfy"])])
+    monkeypatch.setenv("NTFY_TOPIC", "bf-test-topic")
+    post = _routed_post({NTFY_URL: [_FakeResponse(400, text="bad request")]})
     monkeypatch.setattr(notify.requests, "post", post)
 
     notify.main()
@@ -1753,44 +1683,44 @@ def test_teams_permanent_4xx_dead_letters_after_one_attempt(
     assert _read_dlq_records()[0]["final_status_code"] == 400
 
 
-def test_dead_lettered_teams_delivery_retried_next_run_without_resending_telegram(
+def test_dead_lettered_ntfy_delivery_retried_next_run_without_resending_telegram(
     monkeypatch, tmp_path, _full_pipeline_env
 ):
     _write_formatted(tmp_path, [DEAL_ALERT])
-    _write_modern_watchlist([_deal_watch(channels=["telegram", "teams"])])
-    monkeypatch.setenv("TEAMS_WEBHOOK_URL", TEAMS_URL)
+    _write_modern_watchlist([_deal_watch(channels=["telegram", "ntfy"])])
+    monkeypatch.setenv("NTFY_TOPIC", "bf-test-topic")
     monkeypatch.setattr(
         notify.requests,
         "post",
         _routed_post(
             {
                 TELEGRAM_SEND_URL: [_FakeResponse(200)],
-                TEAMS_URL: [_FakeResponse(403)],
+                NTFY_URL: [_FakeResponse(403)],
             }
         ),
     )
     notify.main()
 
-    # Next run: Telegram's SENT is inside its cooldown, while Teams'
+    # Next run: Telegram's SENT is inside its cooldown, while ntfy's
     # DEAD_LETTER is retried and must not be suppressed by Telegram's SENT.
-    post2 = _routed_post({TEAMS_URL: [_FakeResponse(202)]})
+    post2 = _routed_post({NTFY_URL: [_FakeResponse(200)]})
     monkeypatch.setattr(notify.requests, "post", post2)
     notify.main()
 
-    assert [url for url, _ in post2.calls] == [TEAMS_URL]
+    assert [url for url, _ in post2.calls] == [NTFY_URL]
 
 
 def test_cooldown_is_per_channel(monkeypatch, tmp_path, _full_pipeline_env):
     _write_formatted(tmp_path, [DEAL_ALERT])
-    _write_modern_watchlist([_deal_watch(channels=["telegram", "teams"])])
-    monkeypatch.setenv("TEAMS_WEBHOOK_URL", TEAMS_URL)
+    _write_modern_watchlist([_deal_watch(channels=["telegram", "ntfy"])])
+    monkeypatch.setenv("NTFY_TOPIC", "bf-test-topic")
     dedup_key = notify._deal_dedup_key(DEAL_ALERT)
     last_sent = (
         notify.datetime.now(notify.UTC) - notify.timedelta(hours=1)
     ).isoformat()
     _seed_outbox_record(
-        event_id=f"{_base_event_id()}:teams",
-        channel="teams",
+        event_id=f"{_base_event_id()}:ntfy",
+        channel="ntfy",
         dedup_key=dedup_key,
         last_attempt_at_utc=last_sent,
         site=DEAL_ALERT["site"],
@@ -1800,49 +1730,51 @@ def test_cooldown_is_per_channel(monkeypatch, tmp_path, _full_pipeline_env):
 
     notify.main()
 
-    # Teams is in cooldown; Telegram, never sent, still goes out.
+    # ntfy is in cooldown; Telegram, never sent, still goes out.
     assert [url for url, _ in post.calls] == [TELEGRAM_SEND_URL]
 
 
-def test_replay_resends_pending_teams_record_via_teams_provider(
+def test_replay_resends_pending_ntfy_record_via_ntfy_provider(
     monkeypatch, tmp_path, _full_pipeline_env
 ):
     base_id = _base_event_id()
     old_created = (
         notify.datetime.now(notify.UTC) - notify.timedelta(minutes=10)
     ).isoformat()
-    card = notify.build_teams_card(DEAL_ALERT)
+    payload = notify.build_ntfy_payload(DEAL_ALERT)
     notify._write_outbox_record(
-        f"{base_id}:teams",
+        f"{base_id}:ntfy",
         "deal",
         {"id": base_id, "evidence_urls": [DEAL_ALERT["url"]]},
-        card,
+        payload,
         "PENDING",
         old_created,
         0,
         DEAL_ALERT["site"],
         dedup_key=notify._deal_dedup_key(DEAL_ALERT),
-        channel="teams",
+        channel="ntfy",
     )
     _write_formatted(tmp_path, [])
-    monkeypatch.setenv("TEAMS_WEBHOOK_URL", TEAMS_URL)
-    post = _routed_post({TEAMS_URL: [_FakeResponse(202)]})
+    monkeypatch.setenv("NTFY_TOPIC", "bf-test-topic")
+    post = _routed_post({NTFY_URL: [_FakeResponse(200)]})
     monkeypatch.setattr(notify.requests, "post", post)
 
     notify.main()
 
-    assert post.calls == [(TEAMS_URL, card)]
+    assert post.calls == [(NTFY_URL, {"topic": "bf-test-topic", **payload})]
     last = _read_outbox_records()[-1]
-    assert (last["channel"], last["status"]) == ("teams", "SENT")
+    assert (last["channel"], last["status"]) == ("ntfy", "SENT")
     rows = _delivery_attempt_rows(notify.DB_FILE)
-    assert [(r["channel"], r["alert_decision_id"]) for r in rows] == [
-        ("teams", base_id)
-    ]
+    assert [(r["channel"], r["alert_decision_id"]) for r in rows] == [("ntfy", base_id)]
 
 
 def test_replay_of_unconfigured_channel_dead_letters_instead_of_hanging(
     monkeypatch, tmp_path, _full_pipeline_env
 ):
+    # Regression for Teams removal: an old outbox record with channel="teams"
+    # (queued back when Teams was still supported) must be dead-lettered on
+    # replay, not attempted -- providers no longer has a "teams" entry at
+    # all, so this also covers any channel dropped from configuration.
     old_created = (
         notify.datetime.now(notify.UTC) - notify.timedelta(minutes=10)
     ).isoformat()
@@ -1865,7 +1797,11 @@ def test_replay_of_unconfigured_channel_dead_letters_instead_of_hanging(
 
     last = _read_outbox_records()[-1]
     assert (last["event_id"], last["status"]) == ("evt:teams", "DEAD_LETTER")
-    assert _read_dlq_records()[0]["final_status_code"] == "channel_not_configured"
+    dlq_record = _read_dlq_records()[0]
+    assert dlq_record["final_status_code"] == "channel_not_configured"
+    # No webhook URL was ever stored for this record and none was ever
+    # constructed, so there is nothing url-shaped to leak into the DLQ.
+    assert "://" not in dlq_record["failure_reason"]
 
 
 # Cross-channel outcome matrix --------------------------------------------------
@@ -1876,7 +1812,6 @@ def test_replay_of_unconfigured_channel_dead_letters_instead_of_hanging(
 
 MATRIX_NTFY_TOPIC = "bf-matrix-secret-topic"
 MATRIX_ENV = {
-    "TEAMS_WEBHOOK_URL": TEAMS_URL,
     "NTFY_TOPIC": MATRIX_NTFY_TOPIC,
     "SMTP_HOST": SMTP_CONFIG.host,
     "SMTP_PORT": str(SMTP_CONFIG.port),
@@ -1899,12 +1834,6 @@ CHANNEL_OUTCOMES = {
         lambda: _FakeResponse(503, text="unavailable"),
         lambda: _FakeResponse(403, text="Forbidden"),
     ),
-    "teams": (
-        TEAMS_URL,
-        lambda: _FakeResponse(202),
-        lambda: _FakeResponse(503, text="unavailable"),
-        lambda: _FakeResponse(400, text="Bad Request"),
-    ),
     "ntfy": (
         NTFY_URL,
         lambda: _FakeResponse(200),
@@ -1919,8 +1848,8 @@ CHANNEL_OUTCOMES = {
     ),
 }
 
-TRANSIENT_CODE = {"telegram": 503, "teams": 503, "ntfy": 503, "email": 451}
-PERMANENT_CODE = {"telegram": 403, "teams": 400, "ntfy": 400, "email": 550}
+TRANSIENT_CODE = {"telegram": 503, "ntfy": 503, "email": 451}
+PERMANENT_CODE = {"telegram": 403, "ntfy": 400, "email": 550}
 
 
 def _send_through_provider(monkeypatch, channel, script):
@@ -2003,11 +1932,11 @@ def test_matrix_transient_exhausts_retries_then_dead_letters(
     assert records[0]["final_status_code"] == TRANSIENT_CODE[channel]
     # Endpoint secrets never reach the dead-letter file or the log.
     leaked = notify.DLQ_FILE.read_text(encoding="utf-8") + capsys.readouterr().err
-    for secret in ("SECRETSIG123", MATRIX_NTFY_TOPIC, SMTP_CONFIG.password):
+    for secret in (MATRIX_NTFY_TOPIC, SMTP_CONFIG.password):
         assert secret not in leaked
 
 
-@pytest.mark.parametrize("channel", ["telegram", "teams", "ntfy"])
+@pytest.mark.parametrize("channel", ["telegram", "ntfy"])
 def test_matrix_http_network_error_exhausts_then_dead_letters(monkeypatch, channel):
     url = CHANNEL_OUTCOMES[channel][0]
     script = [
@@ -2021,7 +1950,6 @@ def test_matrix_http_network_error_exhausts_then_dead_letters(monkeypatch, chann
     assert attempts == notify.MAX_ATTEMPTS
     record = _read_dlq_records()[0]
     assert record["final_status_code"] == "network_error"
-    assert "SECRETSIG123" not in record["failure_reason"]
     assert MATRIX_NTFY_TOPIC not in record["failure_reason"]
 
 
@@ -2124,7 +2052,6 @@ def test_secret_bearing_dataclass_fields_are_hidden_from_repr():
         # Field name, not value: the send closure's repr carries a memory
         # address that could contain a short value like the chat id.
         assert "destination=" not in repr(provider)
-    assert "SECRETSIG123" not in repr(providers["teams"])
     assert MATRIX_NTFY_TOPIC not in repr(providers["ntfy"])
 
 
