@@ -2163,3 +2163,103 @@ def test_ntfy_topic_absent_from_outbox_dlq_and_logs_when_dead_lettered(
     assert MATRIX_NTFY_TOPIC not in notify.OUTBOX_FILE.read_text(encoding="utf-8")
     assert MATRIX_NTFY_TOPIC not in notify.DLQ_FILE.read_text(encoding="utf-8")
     assert MATRIX_NTFY_TOPIC not in capsys.readouterr().err
+
+
+# --- T-40 follow-up (#59): several retailer alerts from one fan-out watch ---
+
+
+def _fanout_alerts():
+    # One watch (site "all") produced an offer on each of three retailers in
+    # the same run: site is the offer's retailer, watch_site the watch's own.
+    return [
+        {
+            **DEAL_ALERT,
+            "site": site,
+            "watch_site": "all",
+            "url": f"https://www.{site}.ro/laptop-lenovo-v15/",
+        }
+        for site in ("emag", "pcgarage", "flanco")
+    ]
+
+
+def test_fanout_alerts_route_to_the_watch_channels(
+    monkeypatch, tmp_path, _full_pipeline_env
+):
+    _write_formatted(tmp_path, _fanout_alerts())
+    _write_modern_watchlist(
+        [
+            {
+                "site": "all",
+                "query": DEAL_ALERT["query"],
+                "channels": ["telegram", "ntfy"],
+            }
+        ]
+    )
+    monkeypatch.setenv("NTFY_TOPIC", "bf-test-topic")
+    post = _routed_post(
+        {
+            TELEGRAM_SEND_URL: [_FakeResponse(200)] * 3,
+            NTFY_URL: [_FakeResponse(200)] * 3,
+        }
+    )
+    monkeypatch.setattr(notify.requests, "post", post)
+
+    notify.main()
+
+    # Each retailer's offer is its own deal and goes to every channel the
+    # watch routes to, not just the Telegram default.
+    assert sorted(url for url, _ in post.calls) == sorted(
+        [TELEGRAM_SEND_URL] * 3 + [NTFY_URL] * 3
+    )
+    sent = [r for r in _read_outbox_records() if r["status"] == "SENT"]
+    assert sorted((r["site"], r["channel"]) for r in sent) == sorted(
+        (site, channel)
+        for site in ("emag", "pcgarage", "flanco")
+        for channel in ("telegram", "ntfy")
+    )
+
+
+def test_fanout_alerts_share_one_watch_id(monkeypatch, tmp_path, _full_pipeline_env):
+    _write_formatted(tmp_path, _fanout_alerts())
+    monkeypatch.setattr(
+        notify.requests, "post", _sequenced_post([_FakeResponse(200)] * 3)
+    )
+
+    notify.main()
+
+    sent = [r for r in _read_outbox_records() if r["status"] == "SENT"]
+    assert len(sent) == 3
+    assert {r["alert_payload"]["watch_id"] for r in sent} == {
+        str(uuid.uuid5(uuid.NAMESPACE_URL, f"all:{DEAL_ALERT['query']}"))
+    }
+
+
+def test_fanout_watch_cooldown_applies_to_every_retailer(
+    monkeypatch, tmp_path, _full_pipeline_env
+):
+    alerts = _fanout_alerts()
+    _write_formatted(tmp_path, alerts)
+    notify.WATCHLIST_FILE.write_text(
+        json.dumps(
+            [{"site": "all", "query": DEAL_ALERT["query"], "cooldown_hours": 2}]
+        ),
+        encoding="utf-8",
+    )
+    # Every offer was last sent 3h ago: blocked under the 24h default, but
+    # past the watch's own 2h cooldown, so all three must go out again.
+    three_hours_ago = (
+        notify.datetime.now(notify.UTC) - notify.timedelta(hours=3)
+    ).isoformat()
+    for i, alert in enumerate(alerts):
+        _seed_outbox_record(
+            event_id=f"evt-prior-{i}",
+            dedup_key=notify._deal_dedup_key(alert),
+            last_attempt_at_utc=three_hours_ago,
+            site=alert["site"],
+        )
+    post = _sequenced_post([_FakeResponse(200)] * 3)
+    monkeypatch.setattr(notify.requests, "post", post)
+
+    notify.main()
+
+    assert post.call_count() == 3

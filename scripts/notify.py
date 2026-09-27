@@ -16,7 +16,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from email.message import EmailMessage
 from pathlib import Path
-from typing import NamedTuple
+from typing import Any, NamedTuple
 
 import requests
 from pydantic import ValidationError
@@ -819,6 +819,14 @@ def _deal_event_id(dedup_key: str) -> str:
     return str(uuid.uuid5(uuid.NAMESPACE_URL, f"alert-decision:{dedup_key}"))
 
 
+def _watch_site(alert: Mapping[str, Any]) -> str:
+    # T-40 follow-up (#59): alert["site"] is the offer's retailer; watch-keyed
+    # lookups (channels, cooldown, watch_id) need the watch's own configured
+    # site instead, which differs for a fan-out watch. Alerts written before
+    # watch_site existed are always single-site, where the two are equal.
+    return str(alert.get("watch_site") or alert["site"])
+
+
 def _load_cooldown_by_site() -> dict[str, float]:
     """Maps site -> the most conservative (minimum) cooldown_hours among
     that site's watchlist entries. Reads the raw watchlist dict directly
@@ -1040,7 +1048,7 @@ def _run(
     for alert in alerts:
         key = _deal_dedup_key(alert)
         watch_channels = channels_by_watch.get(
-            (alert["site"], alert.get("query")), DEFAULT_CHANNELS
+            (_watch_site(alert), alert.get("query")), DEFAULT_CHANNELS
         )
         merged = channels_by_dedup_key.get(key, ())
         channels_by_dedup_key[key] = merged + tuple(
@@ -1074,7 +1082,7 @@ def _run(
                     "id": _deal_event_id(dedup_key),
                     "policy_version": "omnibus-v1",
                     "watch_id": uuid.uuid5(
-                        uuid.NAMESPACE_URL, f"{alert['site']}:{alert['query']}"
+                        uuid.NAMESPACE_URL, f"{_watch_site(alert)}:{alert['query']}"
                     ),
                     "observation_id": uuid.uuid5(uuid.NAMESPACE_URL, alert["url"]),
                     "verdict": "alert",
@@ -1098,7 +1106,9 @@ def _run(
 
         base_event_id = str(decision.id)
         alert_payload = decision.model_dump(mode="json")
-        cooldown_hours = cooldown_by_site.get(alert["site"], DEFAULT_COOLDOWN_HOURS)
+        cooldown_hours = cooldown_by_site.get(
+            _watch_site(alert), DEFAULT_COOLDOWN_HOURS
+        )
         attempted_any = False
 
         # T-26 (#35): each routed channel is its own outbox event going

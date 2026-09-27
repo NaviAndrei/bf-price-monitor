@@ -7,10 +7,11 @@ import re
 import sys
 import time
 import uuid
+from collections.abc import Iterator
 from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 from urllib.parse import parse_qsl, urlencode, urlparse, urlsplit, urlunsplit
 
 import requests
@@ -983,6 +984,23 @@ SCRAPERS = {
     "altex": with_retry(scrape_altex_listing),
 }
 
+# T-40 follow-up (#59): a watch whose site is this sentinel fans out across
+# every retailer in SCRAPERS for its query; any other site value keeps the
+# one-scraper-per-watch path unchanged. Watch.site stays a required string.
+FANOUT_SITE = "all"
+
+
+def _watch_retailers(
+    watchlist: list[dict[str, Any]],
+) -> Iterator[tuple[dict[str, Any], str]]:
+    """Yields (watch, retailer) pairs: every SCRAPERS key for a fan-out
+    watch, otherwise just the watch's own site (even an unknown one, so
+    main()'s "Unknown site" reporting is unchanged)."""
+    for item in watchlist:
+        sites = list(SCRAPERS) if item["site"] == FANOUT_SITE else [item["site"]]
+        for site in sites:
+            yield item, site
+
 
 AtlPolicy = Literal["conservative", "off", "aggressive"]
 
@@ -1194,8 +1212,10 @@ def _run(watchlist: list[dict]) -> None:
     quarantined_before = _quarantined_stores(health_records_before)
     per_store: dict[str, dict] = {}
 
-    for item in watchlist:
-        site = item["site"]
+    # site is the retailer being scraped for this pass, which differs from
+    # item["site"] for a fan-out watch; per-store stats, quarantine, and
+    # every per-offer tag below (history, SQLite, alert) key on it.
+    for item, site in _watch_retailers(watchlist):
         stats = per_store.setdefault(
             site,
             {
@@ -1238,7 +1258,7 @@ def _run(watchlist: list[dict]) -> None:
             # stable across a retailer swapping tracking params between runs.
             key = canonicalize_url(r["url"])
             entry = history.setdefault(
-                key, {"title": r["title"], "site": item["site"], "history": []}
+                key, {"title": r["title"], "site": site, "history": []}
             )
             entry["title"] = r["title"]
             entry["seller"] = r.get("seller")
@@ -1283,7 +1303,7 @@ def _run(watchlist: list[dict]) -> None:
                 )
             except ValidationError as e:
                 print(
-                    f"[{item['site']}] Observation validation failed for {key}: {e}",
+                    f"[{site}] Observation validation failed for {key}: {e}",
                     file=sys.stderr,
                 )
                 raise
@@ -1302,7 +1322,7 @@ def _run(watchlist: list[dict]) -> None:
                     "title": r["title"],
                     "price": r["price"],
                     "in_stock": stock_status != "out_of_stock",
-                    "retailer": item["site"],
+                    "retailer": site,
                     "url": key,
                     "scraped_at": observed_at,
                 },
@@ -1352,7 +1372,12 @@ def _run(watchlist: list[dict]) -> None:
                 alerts.append(
                     {
                         "title": r["title"],
-                        "site": item["site"],
+                        "site": site,
+                        # T-40 follow-up (#59): the watch's own configured
+                        # site ("all" for fan-out), so notify.py resolves
+                        # channels/cooldown/watch_id per watch, not per
+                        # retailer. Equal to site for single-site watches.
+                        "watch_site": item["site"],
                         "query": item["query"],
                         "url": key,
                         "old_price": prev_price,

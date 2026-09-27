@@ -1,4 +1,5 @@
 import json
+import sqlite3
 from datetime import UTC, date, datetime, timedelta
 
 import pytest
@@ -1136,3 +1137,227 @@ def test_empty_30_day_window_fallback_is_not_labeled_omnibus(tmp_path, monkeypat
         "Ultimul preț observat (fără observații în ultimele 30 zile):</b> 3,200.00 RON"
         in message
     )
+
+
+# --- T-40 follow-up (#59): multi-retailer fan-out per watch -----------------
+
+_FANOUT_URLS = {
+    "emag": "https://www.emag.ro/laptop-lenovo-v15/pd/EMAG1/",
+    "pcgarage": "https://www.pcgarage.ro/laptop-lenovo-v15/",
+    "flanco": "https://www.flanco.ro/laptop-lenovo-v15.html",
+}
+
+
+def _fanout_scrapers(calls, overrides=None, price=2499.99):
+    # One fake scraper per retailer, each returning its own retailer-specific
+    # listing. is_marketplace mirrors production: eMAG never resolves a
+    # seller (None), PC Garage/Flanco are hardcoded first-party (False).
+    overrides = overrides or {}
+
+    def _make(site):
+        def _scraper(query):
+            calls.append((site, query))
+            if site in overrides:
+                return overrides[site](query)
+            return [
+                _watchlist_entry(
+                    url=_FANOUT_URLS[site],
+                    price=price,
+                    seller=None if site == "emag" else site,
+                    is_marketplace=None if site == "emag" else False,
+                )
+            ]
+
+        return _scraper
+
+    return {site: _make(site) for site in _FANOUT_URLS}
+
+
+def _seed_prior_prices(history_file, prior_price=2999.99):
+    products = {}
+    for site, url in _FANOUT_URLS.items():
+        products[canonicalize_url(url)] = {
+            "title": "Laptop Lenovo V15",
+            "site": site,
+            "all_time_low": prior_price,
+            "all_time_high": prior_price,
+            "first_seen": "2026-01-01",
+            "history": [
+                {
+                    "date": "2026-01-01",
+                    "observed_at": "2026-01-01T09:00:00+00:00",
+                    "price": prior_price,
+                    "stock_status": "in_stock",
+                }
+            ],
+        }
+    history_file.write_text(
+        json.dumps({"schema_version": 1, "products": products}), encoding="utf-8"
+    )
+
+
+def _fanout_watchlist(**overrides):
+    return {
+        "watches": [
+            {
+                "id": "babebbc9-2a56-5d0c-b57c-9ca8ad44d7b4",
+                "site": scrape.FANOUT_SITE,
+                "query": "laptop lenovo v15",
+                **overrides,
+            }
+        ]
+    }
+
+
+def test_fanout_watch_queries_every_registered_retailer(tmp_path, monkeypatch):
+    calls = []
+    _configure_run(tmp_path, monkeypatch, _fanout_watchlist(), _fanout_scrapers(calls))
+
+    scrape.main()
+
+    assert sorted(calls) == sorted((site, "laptop lenovo v15") for site in _FANOUT_URLS)
+    products = json.loads(scrape.HISTORY_FILE.read_text(encoding="utf-8"))["products"]
+    # Per-offer tagging: each history entry carries the retailer whose
+    # scraper produced it, never the watch's "all" sentinel.
+    assert {key: entry["site"] for key, entry in products.items()} == {
+        canonicalize_url(url): site for site, url in _FANOUT_URLS.items()
+    }
+
+    records = {r["store"]: r for r in _health_records()}
+    assert set(records) == set(_FANOUT_URLS)
+    for record in records.values():
+        assert record["watches_requested"] == 1
+        assert record["products_parsed"] == 1
+
+
+def test_fanout_persists_one_sqlite_offer_per_retailer(tmp_path, monkeypatch):
+    _configure_run(tmp_path, monkeypatch, _fanout_watchlist(), _fanout_scrapers([]))
+
+    scrape.main()
+
+    conn = sqlite3.connect(scrape.DB_FILE)
+    try:
+        offers = conn.execute("SELECT retailer, url FROM offers").fetchall()
+        observations = conn.execute(
+            "SELECT o.retailer, p.price FROM price_observations p "
+            "JOIN offers o ON o.id = p.offer_id"
+        ).fetchall()
+    finally:
+        conn.close()
+    assert sorted(offers) == sorted(
+        (site, canonicalize_url(url)) for site, url in _FANOUT_URLS.items()
+    )
+    assert sorted(observations) == sorted((site, 2499.99) for site in _FANOUT_URLS)
+
+
+def test_fanout_emits_one_alert_per_retailer_tagged_per_offer(tmp_path, monkeypatch):
+    _configure_run(tmp_path, monkeypatch, _fanout_watchlist(), _fanout_scrapers([]))
+    _seed_prior_prices(scrape.HISTORY_FILE)
+
+    scrape.main()
+
+    alerts = _alerts(scrape.ALERTS_FILE)
+    assert sorted((a["site"], a["url"]) for a in alerts) == sorted(
+        (site, canonicalize_url(url)) for site, url in _FANOUT_URLS.items()
+    )
+    # watch_site is the watch's own configured site, so notify.py can
+    # resolve channels/cooldown/watch_id per watch, not per retailer.
+    assert {a["watch_site"] for a in alerts} == {scrape.FANOUT_SITE}
+    assert {a["query"] for a in alerts} == {"laptop lenovo v15"}
+    records = {r["store"]: r for r in _health_records()}
+    assert all(r["matched_count"] == 1 for r in records.values())
+
+
+def test_fanout_trusted_policy_is_applied_per_offer(tmp_path, monkeypatch):
+    _configure_run(
+        tmp_path,
+        monkeypatch,
+        _fanout_watchlist(seller_policy="trusted"),
+        _fanout_scrapers([]),
+    )
+    _seed_prior_prices(scrape.HISTORY_FILE)
+
+    scrape.main()
+
+    # eMAG's is_marketplace is None, so the unchanged trusted gate blocks
+    # only that offer; the first-party retailers still alert.
+    alerts = _alerts(scrape.ALERTS_FILE)
+    assert sorted(a["site"] for a in alerts) == ["flanco", "pcgarage"]
+    records = {r["store"]: r for r in _health_records()}
+    assert records["emag"]["policy_blocked_count"] == 1
+    assert records["emag"]["matched_count"] == 0
+    assert records["pcgarage"]["policy_blocked_count"] == 0
+    assert records["flanco"]["policy_blocked_count"] == 0
+    # A blocked offer is still observed: history keeps every retailer.
+    products = json.loads(scrape.HISTORY_FILE.read_text(encoding="utf-8"))["products"]
+    assert len(products[canonicalize_url(_FANOUT_URLS["emag"])]["history"]) == 2
+
+
+def test_fanout_watch_with_no_results_from_any_retailer(tmp_path, monkeypatch):
+    def _boom(query):
+        raise RuntimeError("selector drift")
+
+    _configure_run(
+        tmp_path,
+        monkeypatch,
+        _fanout_watchlist(),
+        _fanout_scrapers(
+            [],
+            overrides={
+                "emag": lambda query: [],
+                "pcgarage": lambda query: [],
+                "flanco": _boom,
+            },
+        ),
+    )
+
+    scrape.main()
+
+    assert _alerts(scrape.ALERTS_FILE) == []
+    products = json.loads(scrape.HISTORY_FILE.read_text(encoding="utf-8"))["products"]
+    assert products == {}
+    records = {r["store"]: r for r in _health_records()}
+    assert set(records) == set(_FANOUT_URLS)
+    assert all(r["products_parsed"] == 0 for r in records.values())
+
+
+def test_fanout_skips_only_the_quarantined_retailer(tmp_path, monkeypatch):
+    # Two prior runs where emag parsed zero while pcgarage succeeded, so
+    # emag is quarantined; a fan-out watch must still reach the others.
+    prior = [
+        {
+            "store": store,
+            "run_id": run_id,
+            "products_parsed": parsed,
+            "last_known_good_utc": None,
+        }
+        for run_id in ("r1", "r2")
+        for store, parsed in (("emag", 0), ("pcgarage", 3))
+    ]
+    scrape.SCRAPE_HEALTH_FILE.write_text(
+        "".join(json.dumps(r) + "\n" for r in prior), encoding="utf-8"
+    )
+    calls = []
+    _configure_run(tmp_path, monkeypatch, _fanout_watchlist(), _fanout_scrapers(calls))
+
+    scrape.main()
+
+    assert sorted(site for site, _ in calls) == ["flanco", "pcgarage"]
+
+
+def test_single_site_watch_still_uses_only_its_own_scraper(tmp_path, monkeypatch):
+    calls = []
+    _configure_run(
+        tmp_path,
+        monkeypatch,
+        [{"site": "pcgarage", "query": "laptop lenovo v15"}],
+        _fanout_scrapers(calls),
+    )
+    _seed_prior_prices(scrape.HISTORY_FILE)
+
+    scrape.main()
+
+    assert calls == [("pcgarage", "laptop lenovo v15")]
+    [alert] = _alerts(scrape.ALERTS_FILE)
+    assert alert["site"] == alert["watch_site"] == "pcgarage"
+    assert {r["store"] for r in _health_records()} == {"pcgarage"}
