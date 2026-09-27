@@ -8,6 +8,10 @@ from uuid import UUID, uuid4
 from pydantic import BaseModel, ConfigDict, Field, HttpUrl, computed_field
 
 
+def _default_channels() -> list[Literal["telegram", "email", "ntfy"]]:
+    return ["telegram"]
+
+
 class Watch(BaseModel):
     model_config = ConfigDict(frozen=True, str_strip_whitespace=True)
 
@@ -30,7 +34,7 @@ class Watch(BaseModel):
     # T-26 (#35): delivery channels for this watch's deal alerts. Each must
     # also be configured via env/secrets for notify.py to actually use it.
     channels: list[Literal["telegram", "email", "ntfy"]] = Field(
-        default_factory=lambda: ["telegram"], min_length=1
+        default_factory=_default_channels, min_length=1
     )
 
 
