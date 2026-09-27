@@ -9,7 +9,8 @@
       "track_all_time_low": true,
       "seller_policy": "any",
       "cadence_minutes": 120,
-      "enabled": true
+      "enabled": true,
+      "channels": ["telegram", "email", "ntfy"]
     },
     {
       "id": "4d24a18d-89d8-59f0-8798-68babdceb715",
