@@ -104,6 +104,41 @@ T-40's remaining scope — fan-out across multiple retailers per watch
 change and was not implemented. #57 is being closed for the seller_policy
 piece only; the fan-out rewrite is tracked as a fresh issue if still wanted.
 
+## 2026-09-28 — T-40 follow-up (#59): multi-retailer fan-out per watch
+Fan-out is opt-in through a sentinel value, `site: "all"` (`FANOUT_SITE` in
+scrape.py), which runs the watch's query through every retailer in the
+`SCRAPERS` registry. Every other `site` value keeps the one-scraper path
+exactly as before. Chosen over adding a new `sites`/`retailers` list field
+because `Watch.site` has to stay a required string (explicitly out of scope
+on #59), and a sentinel needs no schema, model or migration change: the
+current validator already accepts any non-empty string. main() now iterates
+(watch, retailer) pairs, so per-store health stats, the quarantine skip, and
+every per-offer tag (history `site`, SQLite `retailer`, alert `site`) key on
+the retailer that produced the offer. One quarantined retailer skips only
+itself, not the whole fan-out watch.
+The "one alert per watch per run" assumption flagged on #57 was checked
+against the live code. Nothing depends on it: scrape.py already emitted one
+alert per matching listing, analyze.py judges each alert on its own, and
+notify.py's dedup key and event id are per offer. #58's in-run dedup covers
+the same offer arriving twice. What did break is that three notify.py lookups
+were keyed on the watch's `site` but read `alert["site"]`: channel routing,
+cooldown, and the derived `AlertDecision.watch_id`. Under fan-out those would
+have silently fallen back to Telegram-only routing and the 24h default
+cooldown, and split one watch into several watch ids. Alerts now carry a
+`watch_site` field (the watch's own configured site), which notify.py uses
+for those three lookups, falling back to `site` when it is absent. For a
+single-site watch `watch_site == site`, so every existing key (dedup_key,
+event_id, watch_id, cooldown, channels) is byte-identical to before.
+seller_policy under fan-out: the watch's policy applies uniformly to every
+retailer it fans out to, and the unchanged gate is evaluated per offer
+against that offer's own `is_marketplace`. A "trusted" fan-out watch
+therefore alerts on PC Garage and Flanco but never on eMAG, whose
+`is_marketplace` is always None, and each blocked eMAG offer is counted in
+eMAG's own `policy_blocked_count`. Rejected: skipping retailers that can
+never satisfy "trusted". That would hide the gap instead of counting it, and
+would stop recording eMAG observations, which history and the 30-day
+reference price still need.
+
 ## 2026-09-23: data/price_history.db is git-ignored by design. It is
 runner-local, regenerable state (via migrate_history_to_sqlite.py from
 data/price_history.json), not a git-tracked artifact — matches T-18's
