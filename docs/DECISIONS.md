@@ -138,6 +138,18 @@ eMAG's own `policy_blocked_count`. Rejected: skipping retailers that can
 never satisfy "trusted". That would hide the gap instead of counting it, and
 would stop recording eMAG observations, which history and the 30-day
 reference price still need.
+Addendum (same day): placeholder scrapers are excluded from fan-out. Altex's
+scraper is a stub that always returns zero products, and the Critical
+Selector Drift check quarantines any store with two zero runs while another
+store succeeds, so fanning out to it would have raised a false "SCRAPER
+BREAKDOWN: Altex" alert after two runs. The stub is marked in the `SCRAPERS`
+registry itself with `placeholder_scraper(...)`, and fan-out skips any
+marked entry, so a future stub only needs the marker, never a name list in
+main(). A placeholder that is never scraped gets no health record, so it
+can never be quarantined through fan-out. Altex stays in the registry, and a
+watch explicitly set to `site: "altex"` behaves as before. report.py treats
+an `"all"` watch as matching any retailer's products by query, reusing
+`FANOUT_SITE` rather than a second sentinel.
 
 ## 2026-09-23: data/price_history.db is git-ignored by design. It is
 runner-local, regenerable state (via migrate_history_to_sqlite.py from
