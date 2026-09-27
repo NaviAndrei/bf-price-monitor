@@ -99,11 +99,21 @@ def _omnibus_detail_lines(deal_stats: dict) -> list[str]:
 
 
 def _thirty_day_low_line(alert: dict) -> str:
-    # T-45 (#63): scrape.py falls back to the previous observed price when
-    # the prior 30-day window is empty. deal_stats.observation_count is that
-    # window's length, so 0 means the figure is not a 30-day low at all.
+    # T-45 (#63) follow-up: three distinct provenance states for
+    # thirty_day_low, told apart via deal_stats (build_deal_stats() in
+    # analyze.py). "history_30d_recorded" False -- or deal_stats missing
+    # entirely, a pre-T-25 alert -- means the window's provenance was never
+    # captured, so the figure is presented as neither a verified 30-day low
+    # nor a confirmed-empty fallback. Only "history_30d_recorded" True with
+    # observation_count == 0 confirms scrape.py found no observations and
+    # fell back to the previous observed price.
     price = f"{alert['thirty_day_low']:,.2f} RON"
-    if (alert.get("deal_stats") or {}).get("observation_count") == 0:
+    deal_stats = alert.get("deal_stats") or {}
+    if not deal_stats.get("history_30d_recorded"):
+        return (
+            f"⚖️ <b>Preț de referință (istoric pe 30 de zile neconfirmat):</b> {price}"
+        )
+    if deal_stats.get("observation_count") == 0:
         return f"⚖️ <b>Ultimul preț observat (fără observații în ultimele 30 zile):</b> {price}"
     return f"⚖️ <b>Minim 30 zile (Omnibus):</b> {price}"
 

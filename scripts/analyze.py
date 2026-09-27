@@ -100,7 +100,7 @@ OLLAMA_MODEL = "qwen3:8b"
 # Bumped whenever build_omnibus_prompt()'s instructions or requested fields
 # change, so data/ai_audit.jsonl records can be grouped by which prompt
 # shape actually produced them (T-24 / #32).
-PROMPT_TEMPLATE_VERSION = "omnibus-v1"
+PROMPT_TEMPLATE_VERSION = "omnibus-v2"
 
 # The JSON payload (verdict + verdict_score + summary + is_recommended) needs
 # more room than a one-sentence verdict did; 250 keeps the Romanian summary
@@ -156,21 +156,59 @@ def build_deal_stats(alert: dict) -> dict:
         if observed_at
         else datetime.now(UTC).date()
     )
-    return compute_deal_stats(
+    stats = compute_deal_stats(
         alert.get("history_30d") or [],
         alert["new_price"],
         alert.get("old_price"),
         alert.get("reference_price"),
         as_of,
     )
+    # T-45 (#63) follow-up: observation_count alone can't tell notify.py
+    # apart a *known*-empty window (history_30d == [], scrape.py ran and
+    # found nothing) from an *unknown* one (history_30d missing entirely --
+    # a pre-T-25 alert that never recorded this field). Only the former
+    # means thirty_day_low is confirmed to be the previous-price fallback;
+    # the latter must not be presented as if it were.
+    stats["history_30d_recorded"] = alert.get("history_30d") is not None
+    return stats
+
+
+# T-45 (#63) follow-up: the three possible provenance states for
+# thirty_day_low. "genuine" means history_30d is a nonempty list -- a real
+# 30-day-derived minimum. "confirmed_empty" means history_30d is present and
+# []: scrape.py ran, found no observations in the window, and fell back to
+# the previous observed price. "unknown" means history_30d is missing
+# entirely (a pre-T-25 alert, or a hand-built legacy alert) -- in that case
+# thirty_day_low's basis was never recorded, so it must be presented as
+# neither a verified 30-day low nor a confirmed-empty fallback.
+WINDOW_GENUINE = "genuine"
+WINDOW_CONFIRMED_EMPTY = "confirmed_empty"
+WINDOW_UNKNOWN = "unknown"
+
+
+def thirty_day_window_provenance(alert: dict) -> str:
+    history = alert.get("history_30d")
+    if history is None:
+        return WINDOW_UNKNOWN
+    return WINDOW_CONFIRMED_EMPTY if not history else WINDOW_GENUINE
+
+
+_THIRTY_DAY_LOW_PROMPT_LABELS = {
+    WINDOW_GENUINE: "Cel mai mic preț din ultimele 30 zile",
+    WINDOW_CONFIRMED_EMPTY: "Ultimul preț observat (fără observații în ultimele 30 zile)",
+    WINDOW_UNKNOWN: "Preț de referință (istoric pe 30 de zile neconfirmat)",
+}
 
 
 def build_omnibus_prompt(alert: dict, metrics: dict) -> str:
+    thirty_day_low_label = _THIRTY_DAY_LOW_PROMPT_LABELS[
+        thirty_day_window_provenance(alert)
+    ]
     return (
         "Ești un auditor de protecție a consumatorului (Directiva Omnibus / OUG 58/2022).\n"
         f"Produs: {alert['title']} ({alert['site']}, Vânzător: {alert.get('seller') or 'Neverificat'})\n"
         f"Preț Nou: {alert['new_price']} RON | Preț Anterior: {alert['old_price']} RON\n"
-        f"Cel mai mic preț din ultimele 30 zile: {alert.get('thirty_day_low')} RON\n"
+        f"{thirty_day_low_label}: {alert.get('thirty_day_low')} RON\n"
         f"Preț de Referință (tăiat): {alert.get('reference_price') or 'N/A'} RON\n"
         f"Zile de istoric observate: {alert.get('history_days', 0)}\n"
         f"Verdict Matematic Calculat: {metrics['rule_verdict']}\n\n"
@@ -304,12 +342,49 @@ def _queue_dual_failure_alert(hf_reason: str, ollama_reason: str) -> None:
         )
 
 
-def default_analysis(rule_verdict: str, thirty_day_low: float | None) -> dict:
+# T-45 (#63) follow-up: per-provenance phrasing for default_analysis()'s
+# rule-based summaries: (phrase used with the price value inline, phrase
+# used bare, phrase used for INFLATED_REFERENCE). "genuine" is the
+# pre-existing wording, kept byte-for-byte -- no test or consumer depends on
+# the other two states matching its exact phrasing.
+_BASELINE_PHRASES = {
+    WINDOW_GENUINE: (
+        "minimul ultimelor 30 de zile ({price} RON)",
+        "minimul ultimelor 30 de zile",
+        "minimul real recent",
+    ),
+    WINDOW_CONFIRMED_EMPTY: (
+        "ultimul preț observat ({price} RON; fără observații în ultimele 30 de zile)",
+        "ultimul preț observat (fără observații în ultimele 30 de zile)",
+        "ultimul preț observat (fără observații în ultimele 30 de zile)",
+    ),
+    WINDOW_UNKNOWN: (
+        "prețul de referință ({price} RON; istoric pe 30 de zile neconfirmat)",
+        "prețul de referință (istoric pe 30 de zile neconfirmat)",
+        "prețul de referință (istoric pe 30 de zile neconfirmat)",
+    ),
+}
+
+
+def default_analysis(
+    rule_verdict: str,
+    thirty_day_low: float | None,
+    *,
+    window_provenance: str = WINDOW_GENUINE,
+) -> dict:
+    # The figure's provenance decides how the rule-based summaries may
+    # describe thirty_day_low: as a verified 30-day minimum, as the
+    # confirmed-empty-window fallback, or -- for legacy alerts that never
+    # recorded history_30d -- as neither.
+    baseline_template, baseline_no_price, inflated_reference_baseline = (
+        _BASELINE_PHRASES[window_provenance]
+    )
+    baseline = baseline_template.format(price=thirty_day_low)
     summaries = {
-        "GENUINE_DEAL": f"Prețul este sub minimul ultimelor 30 de zile ({thirty_day_low} RON).",
-        "FALSE_DISCOUNT": f"Prețul nou nu este sub minimul ultimelor 30 de zile ({thirty_day_low} RON) — posibilă majorare artificială înaintea reducerii.",
-        "INFLATED_REFERENCE": "Prețul de referință afișat este exagerat față de minimul real recent.",
-        "NORMAL_DROP": "Scăderea de preț este sub 5% față de minimul ultimelor 30 de zile.",
+        "GENUINE_DEAL": f"Prețul este sub {baseline}.",
+        "FALSE_DISCOUNT": f"Prețul nou nu este sub {baseline} — posibilă majorare artificială înaintea reducerii.",
+        "INFLATED_REFERENCE": f"Prețul de referință afișat este exagerat față de {inflated_reference_baseline}.",
+        "NORMAL_DROP": f"Scăderea de preț este sub 5% față de {baseline_no_price}.",
         "INSUFFICIENT_HISTORY": "Istoricul de preț este prea scurt pentru a confirma o reducere reală.",
     }
     analysis = {
@@ -408,6 +483,8 @@ def get_analysis(
     prompt: str,
     rule_verdict: str,
     thirty_day_low: float | None,
+    *,
+    window_provenance: str = WINDOW_GENUINE,
 ) -> dict:
     raw = None
     usage = None
@@ -445,12 +522,16 @@ def get_analysis(
                 file=sys.stderr,
             )
             fallback_path = f"{network_path}_malformed_output"
-        result = default_analysis(rule_verdict, thirty_day_low)
+        result = default_analysis(
+            rule_verdict, thirty_day_low, window_provenance=window_provenance
+        )
     else:
         validated = validate_ai_evaluation(parsed, provider, model_name)
         if validated is None:
             fallback_path = f"{network_path}_schema_invalid"
-            result = default_analysis(rule_verdict, thirty_day_low)
+            result = default_analysis(
+                rule_verdict, thirty_day_low, window_provenance=window_provenance
+            )
         else:
             result = enforce_deterministic_invariant(
                 validated.model_dump(), rule_verdict
@@ -500,7 +581,13 @@ def main():
             a.get("history_days", 0),
         )
         prompt = build_omnibus_prompt(a, metrics)
-        analysis = get_analysis(client, prompt, metrics["rule_verdict"], thirty_day_low)
+        analysis = get_analysis(
+            client,
+            prompt,
+            metrics["rule_verdict"],
+            thirty_day_low,
+            window_provenance=thirty_day_window_provenance(a),
+        )
         deal_stats = build_deal_stats(a)
         # The raw window is summarized by deal_stats; dropping it keeps
         # formatted_alerts.json (and the outbox payloads built from it) small.

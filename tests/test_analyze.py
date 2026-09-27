@@ -3,14 +3,19 @@ from unittest.mock import MagicMock
 
 import pytest
 from analyze import (
+    WINDOW_CONFIRMED_EMPTY,
+    WINDOW_GENUINE,
+    WINDOW_UNKNOWN,
     AIDealEvaluation,
     RawAlertCandidate,
     build_deal_stats,
+    build_omnibus_prompt,
     default_analysis,
     enforce_deterministic_invariant,
     evaluate_omnibus_rule,
     extract_json,
     get_analysis,
+    thirty_day_window_provenance,
     validate_ai_evaluation,
 )
 from analyze import main as analyze_main
@@ -575,6 +580,23 @@ def test_build_deal_stats_tolerates_pre_t25_alert_without_window():
     assert stats["observation_count"] == 0
     assert stats["reference_price_30d"] is None
     assert stats["fake_discount_suspect"] is False
+    # T-45 (#63) follow-up: history_30d was never recorded on this alert, so
+    # its provenance is unknown, not confirmed-empty -- distinct from a
+    # freshly-computed empty window.
+    assert stats["history_30d_recorded"] is False
+
+
+def test_build_deal_stats_records_confirmed_empty_window():
+    alert = {**HIKE_THEN_DROP_ALERT, "history_30d": []}
+    stats = build_deal_stats(alert)
+    assert stats["observation_count"] == 0
+    assert stats["history_30d_recorded"] is True
+
+
+def test_build_deal_stats_records_populated_window():
+    stats = build_deal_stats(HIKE_THEN_DROP_ALERT)
+    assert stats["observation_count"] == len(HIKE_THEN_DROP_ALERT["history_30d"])
+    assert stats["history_30d_recorded"] is True
 
 
 def test_main_attaches_deal_stats_without_changing_rule_verdict(monkeypatch, tmp_path):
@@ -585,8 +607,8 @@ def test_main_attaches_deal_stats_without_changing_rule_verdict(monkeypatch, tmp
     monkeypatch.setattr("analyze.FORMATTED_FILE", formatted_file)
     monkeypatch.setattr(
         "analyze.get_analysis",
-        lambda client, prompt, rule_verdict, thirty_day_low: default_analysis(
-            rule_verdict, thirty_day_low
+        lambda client, prompt, rule_verdict, thirty_day_low, **kw: default_analysis(
+            rule_verdict, thirty_day_low, **kw
         ),
     )
 
@@ -602,3 +624,183 @@ def test_main_attaches_deal_stats_without_changing_rule_verdict(monkeypatch, tmp
     assert out["deal_stats"]["reference_price_30d"] == 2500.0
     # The raw window is summarized, not copied into the formatted output.
     assert "history_30d" not in out
+
+
+# --- T-45 (#63) follow-up: empty 30-day window fallback wording ----------------
+
+# Last seen 45 days ago (history_days >= 14, so the rule engine runs), nothing
+# inside the 30-day window: scrape.py sets thirty_day_low = previous price.
+EMPTY_WINDOW_ALERT = {
+    **HIKE_THEN_DROP_ALERT,
+    "old_price": 2500.0,
+    "new_price": 2300.0,
+    "thirty_day_low": 2500.0,
+    "history_days": 45,
+    "history_30d": [],
+}
+
+# A pre-T-25 alert: history_30d was never recorded at all, so thirty_day_low's
+# provenance is unknown -- neither a verified 30-day low nor a confirmed-empty
+# fallback.
+UNKNOWN_WINDOW_ALERT = {
+    k: v for k, v in HIKE_THEN_DROP_ALERT.items() if k != "history_30d"
+}
+
+
+def test_build_omnibus_prompt_labels_thirty_day_low_when_window_populated():
+    metrics = {"rule_verdict": "FALSE_DISCOUNT"}
+    prompt = build_omnibus_prompt(HIKE_THEN_DROP_ALERT, metrics)
+    assert "Cel mai mic preț din ultimele 30 zile: 2500.0 RON" in prompt
+    assert "Ultimul preț observat" not in prompt
+    assert "istoric pe 30 de zile neconfirmat" not in prompt
+
+
+def test_build_omnibus_prompt_labels_fallback_when_window_empty():
+    metrics = {"rule_verdict": "GENUINE_DEAL"}
+    prompt = build_omnibus_prompt(EMPTY_WINDOW_ALERT, metrics)
+    assert (
+        "Ultimul preț observat (fără observații în ultimele 30 zile): 2500.0 RON"
+        in prompt
+    )
+    assert "Cel mai mic preț din ultimele 30 zile" not in prompt
+
+
+def test_build_omnibus_prompt_uses_neutral_label_when_window_unknown():
+    # A legacy alert with no history_30d key at all must not be presented as
+    # either a genuine 30-day low or a confirmed-empty window.
+    metrics = {"rule_verdict": "FALSE_DISCOUNT"}
+    prompt = build_omnibus_prompt(UNKNOWN_WINDOW_ALERT, metrics)
+    assert "Preț de referință (istoric pe 30 de zile neconfirmat): 2500.0 RON" in prompt
+    assert "Cel mai mic preț din ultimele 30 zile" not in prompt
+    assert "Ultimul preț observat" not in prompt
+
+
+def test_thirty_day_window_provenance_distinguishes_all_three_states():
+    # Missing history_30d (pre-T-25 alert) is unknown provenance, not
+    # confirmed-empty -- only an explicit [] means scrape.py ran and found
+    # no prior observations.
+    assert thirty_day_window_provenance(UNKNOWN_WINDOW_ALERT) == WINDOW_UNKNOWN
+    assert thirty_day_window_provenance(EMPTY_WINDOW_ALERT) == WINDOW_CONFIRMED_EMPTY
+    assert thirty_day_window_provenance(HIKE_THEN_DROP_ALERT) == WINDOW_GENUINE
+
+
+@pytest.mark.parametrize("verdict", ["GENUINE_DEAL", "FALSE_DISCOUNT", "NORMAL_DROP"])
+def test_default_analysis_claims_thirty_day_minimum_when_window_populated(verdict):
+    summary = default_analysis(verdict, 90.0)["summary"]
+    assert "minimul ultimelor 30 de zile" in summary
+    assert "ultimul preț observat" not in summary
+    assert "istoric pe 30 de zile neconfirmat" not in summary
+
+
+@pytest.mark.parametrize("verdict", ["GENUINE_DEAL", "FALSE_DISCOUNT", "NORMAL_DROP"])
+def test_default_analysis_never_claims_thirty_day_minimum_when_window_empty(verdict):
+    result = default_analysis(verdict, 90.0, window_provenance=WINDOW_CONFIRMED_EMPTY)
+    assert "minimul ultimelor 30 de zile" not in result["summary"]
+    assert "ultimul preț observat" in result["summary"]
+    # Wording only: verdict, recommendation and score are unchanged.
+    baseline = default_analysis(verdict, 90.0)
+    assert {k: v for k, v in result.items() if k != "summary"} == {
+        k: v for k, v in baseline.items() if k != "summary"
+    }
+
+
+@pytest.mark.parametrize("verdict", ["GENUINE_DEAL", "FALSE_DISCOUNT", "NORMAL_DROP"])
+def test_default_analysis_uses_neutral_wording_when_window_unknown(verdict):
+    result = default_analysis(verdict, 90.0, window_provenance=WINDOW_UNKNOWN)
+    assert "minimul ultimelor 30 de zile" not in result["summary"]
+    assert "ultimul preț observat" not in result["summary"]
+    assert "istoric pe 30 de zile neconfirmat" in result["summary"]
+    # Wording only: verdict, recommendation and score are unchanged.
+    baseline = default_analysis(verdict, 90.0)
+    assert {k: v for k, v in result.items() if k != "summary"} == {
+        k: v for k, v in baseline.items() if k != "summary"
+    }
+
+
+def test_inflated_reference_claims_recent_minimum_when_window_populated():
+    summary = default_analysis("INFLATED_REFERENCE", 90.0)["summary"]
+    assert "minimul real recent" in summary
+    assert "ultimul preț observat" not in summary
+    assert "istoric pe 30 de zile neconfirmat" not in summary
+
+
+def test_inflated_reference_no_recent_minimum_claim_when_window_empty():
+    result = default_analysis(
+        "INFLATED_REFERENCE", 90.0, window_provenance=WINDOW_CONFIRMED_EMPTY
+    )
+    assert "minimul real recent" not in result["summary"]
+    assert "ultimul preț observat" in result["summary"]
+
+
+def test_inflated_reference_no_recent_minimum_claim_when_window_unknown():
+    result = default_analysis(
+        "INFLATED_REFERENCE", 90.0, window_provenance=WINDOW_UNKNOWN
+    )
+    assert "minimul real recent" not in result["summary"]
+    assert "istoric pe 30 de zile neconfirmat" in result["summary"]
+
+
+def test_get_analysis_fallback_uses_window_empty_wording(monkeypatch):
+    monkeypatch.setattr(
+        "analyze.ask_hf",
+        lambda client, prompt: (_ for _ in ()).throw(RuntimeError("HF down")),
+    )
+    monkeypatch.setattr(
+        "analyze.ask_ollama",
+        lambda prompt: (_ for _ in ()).throw(RuntimeError("Ollama down")),
+    )
+    result = get_analysis(
+        client=None,
+        prompt="irrelevant",
+        rule_verdict="GENUINE_DEAL",
+        thirty_day_low=90.0,
+        window_provenance=WINDOW_CONFIRMED_EMPTY,
+    )
+    assert result == default_analysis(
+        "GENUINE_DEAL", 90.0, window_provenance=WINDOW_CONFIRMED_EMPTY
+    )
+
+
+@pytest.mark.parametrize(
+    ("alert", "expected_provenance"),
+    [
+        (HIKE_THEN_DROP_ALERT, WINDOW_GENUINE),
+        (EMPTY_WINDOW_ALERT, WINDOW_CONFIRMED_EMPTY),
+        (UNKNOWN_WINDOW_ALERT, WINDOW_UNKNOWN),
+    ],
+)
+def test_main_passes_window_provenance_without_changing_rule_verdict(
+    monkeypatch, tmp_path, alert, expected_provenance
+):
+    alerts_file = tmp_path / "alerts.json"
+    formatted_file = tmp_path / "formatted_alerts.json"
+    alerts_file.write_text(json.dumps([alert]), encoding="utf-8")
+    monkeypatch.setattr("analyze.ALERTS_FILE", alerts_file)
+    monkeypatch.setattr("analyze.FORMATTED_FILE", formatted_file)
+    seen = {}
+
+    def fake_get_analysis(client, prompt, rule_verdict, thirty_day_low, **kw):
+        seen.update(kw, prompt=prompt)
+        return default_analysis(rule_verdict, thirty_day_low, **kw)
+
+    monkeypatch.setattr("analyze.get_analysis", fake_get_analysis)
+
+    analyze_main()
+
+    [out] = json.loads(formatted_file.read_text(encoding="utf-8"))
+    assert seen["window_provenance"] == expected_provenance
+    # Same rule verdict the engine computes directly: wording never feeds it.
+    assert (
+        out["rule_verdict"]
+        == evaluate_omnibus_rule(
+            alert["new_price"],
+            alert["old_price"],
+            alert["thirty_day_low"],
+            alert["reference_price"],
+            alert["history_days"],
+        )["rule_verdict"]
+    )
+    assert out["deal_stats"]["observation_count"] == len(alert.get("history_30d") or [])
+    assert out["deal_stats"]["history_30d_recorded"] == (
+        expected_provenance != WINDOW_UNKNOWN
+    )

@@ -1184,30 +1184,46 @@ def test_format_telegram_message_flags_non_discount_and_fake_discount():
 
 
 def test_format_telegram_message_without_deal_stats_is_unchanged():
-    # formatted_alerts.json written before T-25 has no deal_stats key.
+    # formatted_alerts.json written before T-25 has no deal_stats key, so
+    # thirty_day_low's provenance is unknown -- not a verified 30-day low,
+    # nor a confirmed-empty fallback.
     message = format_telegram_message(BASE_ALERT)
     assert "Economie reală" not in message
     assert "SUSPICIUNE" not in message
+    assert (
+        "<b>Preț de referință (istoric pe 30 de zile neconfirmat):</b> 90.00 RON"
+        in message
+    )
 
 
 # --- T-45 (#63): fallback thirty_day_low is not labeled as Omnibus ----------
 
 
 def test_format_telegram_message_labels_genuine_30_day_low_as_omnibus():
-    alert = {**BASE_ALERT, "deal_stats": {"observation_count": 3}}
+    alert = {
+        **BASE_ALERT,
+        "deal_stats": {"observation_count": 3, "history_30d_recorded": True},
+    }
     message = format_telegram_message(alert)
     assert "<b>Minim 30 zile (Omnibus):</b> 90.00 RON" in message
     assert "Ultimul preț observat" not in message
+    assert "istoric pe 30 de zile neconfirmat" not in message
 
 
 def test_format_telegram_message_labels_empty_window_fallback_distinctly():
     # scrape.py falls back to the previous observed price when the prior
     # 30-day window is empty; deal_stats.observation_count is that window's
-    # length, so 0 means thirty_day_low is the fallback, not a 30-day low.
-    alert = {**BASE_ALERT, "deal_stats": {"observation_count": 0}}
+    # length, so 0 means thirty_day_low is the fallback, not a 30-day low --
+    # confirmed by history_30d_recorded (the window was computed and found
+    # empty, not just never recorded at all).
+    alert = {
+        **BASE_ALERT,
+        "deal_stats": {"observation_count": 0, "history_30d_recorded": True},
+    }
     message = format_telegram_message(alert)
     assert "Omnibus" not in message
     assert "Minim 30 zile" not in message
+    assert "istoric pe 30 de zile neconfirmat" not in message
     assert (
         "<b>Ultimul preț observat (fără observații în ultimele 30 zile):</b> 90.00 RON"
         in message
@@ -1218,6 +1234,25 @@ def test_format_telegram_message_labels_empty_window_fallback_distinctly():
     assert (
         "Ultimul preț observat (fără observații în ultimele 30 zile): 90.00 RON"
         in plain
+    )
+
+
+def test_format_telegram_message_uses_neutral_label_when_window_unknown():
+    # deal_stats present (e.g. built by the current build_deal_stats()) but
+    # history_30d_recorded is False: a legacy alert whose history_30d was
+    # never captured. observation_count is 0 here too, but that 0 means
+    # "never recorded", not "confirmed empty" -- it must be presented as
+    # neither a verified 30-day low nor the T-45 confirmed-empty fallback.
+    alert = {
+        **BASE_ALERT,
+        "deal_stats": {"observation_count": 0, "history_30d_recorded": False},
+    }
+    message = format_telegram_message(alert)
+    assert "Omnibus" not in message
+    assert "Ultimul preț observat" not in message
+    assert (
+        "<b>Preț de referință (istoric pe 30 de zile neconfirmat):</b> 90.00 RON"
+        in message
     )
 
 
