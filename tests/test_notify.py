@@ -1190,6 +1190,37 @@ def test_format_telegram_message_without_deal_stats_is_unchanged():
     assert "SUSPICIUNE" not in message
 
 
+# --- T-45 (#63): fallback thirty_day_low is not labeled as Omnibus ----------
+
+
+def test_format_telegram_message_labels_genuine_30_day_low_as_omnibus():
+    alert = {**BASE_ALERT, "deal_stats": {"observation_count": 3}}
+    message = format_telegram_message(alert)
+    assert "<b>Minim 30 zile (Omnibus):</b> 90.00 RON" in message
+    assert "Ultimul preț observat" not in message
+
+
+def test_format_telegram_message_labels_empty_window_fallback_distinctly():
+    # scrape.py falls back to the previous observed price when the prior
+    # 30-day window is empty; deal_stats.observation_count is that window's
+    # length, so 0 means thirty_day_low is the fallback, not a 30-day low.
+    alert = {**BASE_ALERT, "deal_stats": {"observation_count": 0}}
+    message = format_telegram_message(alert)
+    assert "Omnibus" not in message
+    assert "Minim 30 zile" not in message
+    assert (
+        "<b>Ultimul preț observat (fără observații în ultimele 30 zile):</b> 90.00 RON"
+        in message
+    )
+    # ntfy and email bodies are derived from the same text.
+    plain = notify.format_plain_text_message(alert)
+    assert "Omnibus" not in plain
+    assert (
+        "Ultimul preț observat (fără observații în ultimele 30 zile): 90.00 RON"
+        in plain
+    )
+
+
 def test_fake_discount_suspect_recorded_as_distinct_alert_reason(
     monkeypatch, tmp_path, _full_pipeline_env
 ):

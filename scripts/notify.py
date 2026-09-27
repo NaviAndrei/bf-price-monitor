@@ -98,6 +98,16 @@ def _omnibus_detail_lines(deal_stats: dict) -> list[str]:
     return lines
 
 
+def _thirty_day_low_line(alert: dict) -> str:
+    # T-45 (#63): scrape.py falls back to the previous observed price when
+    # the prior 30-day window is empty. deal_stats.observation_count is that
+    # window's length, so 0 means the figure is not a 30-day low at all.
+    price = f"{alert['thirty_day_low']:,.2f} RON"
+    if (alert.get("deal_stats") or {}).get("observation_count") == 0:
+        return f"⚖️ <b>Ultimul preț observat (fără observații în ultimele 30 zile):</b> {price}"
+    return f"⚖️ <b>Minim 30 zile (Omnibus):</b> {price}"
+
+
 def format_telegram_message(alert: dict) -> str:
     emoji, label = VERDICT_BADGES.get(
         alert.get("verdict"), ("⚪", "VERDICT NECUNOSCUT")
@@ -117,7 +127,7 @@ def format_telegram_message(alert: dict) -> str:
         "",
         f"\U0001f4b0 <b>Preț Nou:</b> {alert['new_price']:,.2f} RON",
         f"\U0001f4c9 <b>Preț Anterior:</b> {alert['old_price']:,.2f} RON (-{alert['discount_vs_old_pct']}%)",
-        f"⚖️ <b>Minim 30 zile (Omnibus):</b> {alert['thirty_day_low']:,.2f} RON",
+        _thirty_day_low_line(alert),
         *_omnibus_detail_lines(alert.get("deal_stats") or {}),
         f"\U0001f3c6 <b>Record Minim Istoric:</b> {alert['all_time_low']:,.2f} RON",
         "",

@@ -1067,3 +1067,72 @@ def test_alert_carries_prior_30_day_window_for_deal_stats(tmp_path, monkeypatch)
     assert [h["price"] for h in alert["history_30d"]] == [2900.0, 3200.0]
     assert alert["thirty_day_low"] == 2900.0
     assert alert["observed_at"].endswith("+00:00")
+
+
+def test_empty_30_day_window_fallback_is_not_labeled_omnibus(tmp_path, monkeypatch):
+    # T-45 (#63): with no prior observation inside the 30-day window,
+    # thirty_day_low falls back to the previous observed price. That value
+    # must stay unchanged but reach the alert text labeled as a fallback.
+    from analyze import build_deal_stats
+    from notify import format_telegram_message
+
+    today = datetime.now(UTC).date()
+    url = _watchlist_entry()["url"]
+    history_file = tmp_path / "price_history.json"
+    history_file.write_text(
+        json.dumps(
+            {
+                "schema_version": scrape.HISTORY_SCHEMA_VERSION,
+                "products": {
+                    scrape.canonicalize_url(url): {
+                        "title": "Laptop Lenovo V15",
+                        "site": "emag",
+                        "history": [
+                            {
+                                "date": (today - timedelta(days=d)).isoformat(),
+                                "price": p,
+                            }
+                            for d, p in ((40, 2000.0), (31, 3200.0))
+                        ],
+                    }
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    watchlist_file = tmp_path / "watchlist.json"
+    watchlist_file.write_text(
+        json.dumps([{"site": "emag", "query": "laptop lenovo v15"}]),
+        encoding="utf-8",
+    )
+    alerts_file = tmp_path / "alerts.json"
+    monkeypatch.setattr(scrape, "WATCHLIST_FILE", watchlist_file)
+    monkeypatch.setattr(scrape, "HISTORY_FILE", history_file)
+    monkeypatch.setattr(scrape, "ALERTS_FILE", alerts_file)
+    monkeypatch.setattr(scrape, "DB_FILE", tmp_path / "price_history.db")
+    monkeypatch.setattr(
+        scrape, "SCRAPERS", {"emag": lambda query: [_watchlist_entry(price=2950.0)]}
+    )
+    monkeypatch.setattr(scrape.time, "sleep", lambda *_: None)
+
+    scrape.main()
+
+    [alert] = json.loads(alerts_file.read_text(encoding="utf-8"))
+    assert alert["history_30d"] == []
+    assert alert["thirty_day_low"] == alert["old_price"] == 3200.0
+
+    deal_stats = build_deal_stats(alert)
+    assert deal_stats["observation_count"] == 0
+    message = format_telegram_message(
+        {
+            **alert,
+            "discount_vs_old_pct": 7.81,
+            "verdict": "GENUINE_DEAL",
+            "deal_stats": deal_stats,
+        }
+    )
+    assert "Omnibus" not in message
+    assert (
+        "Ultimul preț observat (fără observații în ultimele 30 zile):</b> 3,200.00 RON"
+        in message
+    )
