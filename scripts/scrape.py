@@ -7,11 +7,11 @@ import re
 import sys
 import time
 import uuid
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Literal, TypeVar
 from urllib.parse import parse_qsl, urlencode, urlparse, urlsplit, urlunsplit
 
 import requests
@@ -958,6 +958,23 @@ def scrape_flanco_listing(query: str) -> list[dict]:
     return results
 
 
+_ScraperT = TypeVar("_ScraperT", bound=Callable[..., Any])
+
+
+def placeholder_scraper(func: _ScraperT) -> _ScraperT:
+    # Marks a registry entry as a stub that never returns products. Fan-out
+    # watches skip it, so its permanent zero can't read as selector drift
+    # (#59 follow-up). functools.wraps in with_retry copies the attribute
+    # onto the wrapper, so the marker survives either wrapping order.
+    # setattr, because mypy rejects attribute assignment on a Callable.
+    setattr(func, "is_placeholder", True)
+    return func
+
+
+def is_placeholder_scraper(func: Callable[..., Any]) -> bool:
+    return getattr(func, "is_placeholder", False) is True
+
+
 def scrape_altex_listing(query: str) -> list[dict]:
     # altex.ro is fronted by Akamai and stalls the TLS handshake for a plain
     # `requests` client (confirmed unreachable from two independent
@@ -981,7 +998,7 @@ SCRAPERS = {
     "emag": with_retry(scrape_emag_listing),
     "pcgarage": with_retry(scrape_pcgarage_listing, site_name="pcgarage"),
     "flanco": with_retry(scrape_flanco_listing, site_name="flanco"),
-    "altex": with_retry(scrape_altex_listing),
+    "altex": placeholder_scraper(with_retry(scrape_altex_listing)),
 }
 
 # T-40 follow-up (#59): a watch whose site is this sentinel fans out across
@@ -993,11 +1010,16 @@ FANOUT_SITE = "all"
 def _watch_retailers(
     watchlist: list[dict[str, Any]],
 ) -> Iterator[tuple[dict[str, Any], str]]:
-    """Yields (watch, retailer) pairs: every SCRAPERS key for a fan-out
-    watch, otherwise just the watch's own site (even an unknown one, so
-    main()'s "Unknown site" reporting is unchanged)."""
+    """Yields (watch, retailer) pairs: every non-placeholder SCRAPERS key
+    for a fan-out watch, otherwise just the watch's own site (even an
+    unknown or placeholder one, so single-site behavior is unchanged)."""
+    fanout_sites = [
+        site
+        for site, scraper in SCRAPERS.items()
+        if not is_placeholder_scraper(scraper)
+    ]
     for item in watchlist:
-        sites = list(SCRAPERS) if item["site"] == FANOUT_SITE else [item["site"]]
+        sites = fanout_sites if item["site"] == FANOUT_SITE else [item["site"]]
         for site in sites:
             yield item, site
 

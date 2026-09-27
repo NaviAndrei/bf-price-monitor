@@ -1361,3 +1361,104 @@ def test_single_site_watch_still_uses_only_its_own_scraper(tmp_path, monkeypatch
     [alert] = _alerts(scrape.ALERTS_FILE)
     assert alert["site"] == alert["watch_site"] == "pcgarage"
     assert {r["store"] for r in _health_records()} == {"pcgarage"}
+
+
+# --- #59 follow-up: placeholder scrapers are excluded from fan-out ----------
+
+
+def _fanout_scrapers_with_placeholder(calls):
+    scrapers = _fanout_scrapers(calls)
+
+    @scrape.placeholder_scraper
+    def _stub(query):
+        calls.append(("altex", query))
+        return []
+
+    scrapers["altex"] = _stub
+    return scrapers
+
+
+def test_production_registry_marks_only_altex_as_placeholder():
+    assert {
+        site
+        for site, fn in scrape.SCRAPERS.items()
+        if scrape.is_placeholder_scraper(fn)
+    } == {"altex"}
+
+
+def test_fanout_watch_never_calls_a_placeholder_scraper(tmp_path, monkeypatch):
+    calls = []
+    _configure_run(
+        tmp_path,
+        monkeypatch,
+        _fanout_watchlist(),
+        _fanout_scrapers_with_placeholder(calls),
+    )
+
+    scrape.main()
+
+    assert sorted(site for site, _ in calls) == sorted(_FANOUT_URLS)
+    assert {r["store"] for r in _health_records()} == set(_FANOUT_URLS)
+
+
+def test_placeholder_can_never_trip_the_breakdown_check_under_fanout(
+    tmp_path, monkeypatch
+):
+    # Quarantine fires after two runs of zero products while another store
+    # succeeds; a placeholder always returns zero, so three fan-out runs
+    # would trip it if the placeholder were ever scraped.
+    calls = []
+    _configure_run(
+        tmp_path,
+        monkeypatch,
+        _fanout_watchlist(),
+        _fanout_scrapers_with_placeholder(calls),
+    )
+
+    for _ in range(3):
+        scrape.main()
+        assert _health_alerts() == []
+
+    assert "altex" not in {site for site, _ in calls}
+    records = _health_records()
+    assert "altex" not in {r["store"] for r in records}
+    assert scrape._quarantined_stores(records) == set()
+
+
+def test_single_site_watch_on_a_placeholder_site_keeps_todays_behavior(
+    tmp_path, monkeypatch
+):
+    calls = []
+    _configure_run(
+        tmp_path,
+        monkeypatch,
+        [{"site": "altex", "query": "laptop lenovo v15"}],
+        _fanout_scrapers_with_placeholder(calls),
+    )
+
+    scrape.main()
+
+    assert calls == [("altex", "laptop lenovo v15")]
+    [record] = _health_records()
+    assert record["store"] == "altex"
+    assert record["watches_requested"] == 1
+    assert record["products_parsed"] == 0
+
+
+def test_real_scraper_quarantine_is_unaffected_by_the_placeholder_marker(
+    tmp_path, monkeypatch
+):
+    # A real (unmarked) retailer returning zero for two fan-out runs while
+    # others succeed is still quarantined and still raises the alert.
+    calls = []
+    scrapers = _fanout_scrapers_with_placeholder(calls)
+    scrapers["flanco"] = lambda query: []
+    _configure_run(tmp_path, monkeypatch, _fanout_watchlist(), scrapers)
+
+    scrape.main()
+    assert _health_alerts() == []
+    scrape.main()
+
+    [alert] = _health_alerts()
+    assert "SCRAPER BREAKDOWN: Flanco" in alert
+    assert scrape._quarantined_stores(_health_records()) == {"flanco"}

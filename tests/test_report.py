@@ -440,3 +440,56 @@ def test_main_writes_report_without_touching_sqlite(tmp_path, monkeypatch):
     written = output.read_text(encoding="utf-8")
     assert written.startswith("<!DOCTYPE html>")
     assert "Laptop Lenovo V15 G4" in written
+
+
+def _watch_blocks(html: str) -> dict[str, str]:
+    blocks = [b.split("</div>")[0] for b in html.split('<div class="watch">')[1:]]
+    return {b.split("</h3>")[0]: b for b in blocks}
+
+
+def test_fanout_watch_lists_products_from_every_retailer(tmp_path):
+    # #59 follow-up: an "all" watch fans out across retailers, so its
+    # products are matched by query alone, whichever retailer they came from.
+    data_dir = _write_data_dir(tmp_path)
+    (data_dir / "watchlist.json").write_text(
+        json.dumps(
+            {
+                "watches": [
+                    {
+                        "id": "babebbc9-2a56-5d0c-b57c-9ca8ad44d7b4",
+                        "site": "all",
+                        "query": "laptop lenovo v15",
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    html = _render(data_dir)
+
+    _assert_well_formed(html)
+    [fanout] = [b for h, b in _watch_blocks(html).items() if "laptop lenovo v15" in h]
+    assert "3 matching product(s)" in fanout
+    for title in (
+        "Laptop Lenovo V15 G4",
+        "Laptop Lenovo V15 old stock",
+        "Laptop Lenovo V15 single",
+    ):
+        assert title in fanout
+    # Only the non-matching ASUS product is left over.
+    [others] = [b for h, b in _watch_blocks(html).items() if "Other tracked" in h]
+    assert "1 product(s)" in others
+    assert "Laptop ASUS Vivobook X" in others
+    assert "Lenovo" not in others
+
+
+def test_single_site_watch_still_matches_only_its_own_retailer(tmp_path):
+    html = _render(_write_data_dir(tmp_path))
+
+    blocks = _watch_blocks(html)
+    [emag] = [b for h, b in blocks.items() if "laptop lenovo v15" in h]
+    assert "2 matching product(s)" in emag
+    assert "Laptop Lenovo V15 single" not in emag
+    [others] = [b for h, b in blocks.items() if "Other tracked" in h]
+    assert "Laptop Lenovo V15 single" in others

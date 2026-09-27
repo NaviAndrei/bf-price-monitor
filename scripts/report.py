@@ -422,7 +422,9 @@ def _render_watches(data: dict[str, Any], rows: list[dict[str, Any]]) -> str:
         watch_rows = [
             r
             for r in rows
-            if r["site"] == site and scrape.title_matches_query(r["title"], query)
+            # A fan-out watch spans every retailer, so match on query alone.
+            if site in (r["site"], scrape.FANOUT_SITE)
+            and scrape.title_matches_query(r["title"], query)
         ]
         matched.update(r["url"] for r in watch_rows)
         rules = []
