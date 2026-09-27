@@ -174,6 +174,30 @@ jobs:
             data/scrape_health.jsonl
           retention-days: 1
 
+      # T-27 (#34): static, self-contained HTML report of this run (inline
+      # CSS/SVG, no JavaScript, no CDN). Placed after the data upload and
+      # marked continue-on-error so a report bug can never fail this job
+      # and block the persist job's price-history commit.
+      #
+      # PRIVACY: the report holds the owner's watchlist and price data, so
+      # it is published ONLY as a short-lived artifact, never GitHub Pages.
+      # This repo is public and artifact downloads need only read access,
+      # so the artifact is unlisted and expiring, not access-controlled.
+      - name: Build HTML report
+        if: always()
+        continue-on-error: true
+        run: uv run --no-sync scripts/report.py --data-dir data --output report/index.html
+
+      - name: Upload HTML report
+        if: always()
+        continue-on-error: true
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: price-report
+          path: report/index.html
+          if-no-files-found: warn
+          retention-days: 7
+
       # T-16 (#26): runs even if scrape/analyze/notify failed, so a crashed
       # or timed-out run never leaves an orphaned Chromium process or stale
       # temp profile behind for the next scheduled run to inherit.

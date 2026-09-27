@@ -18,3 +18,4 @@ data/price_history.db-shm
 .specstory/
 /pitems2.json
 /target_items.json
+/report/
