@@ -26,6 +26,10 @@ def _isolate_health_and_failure_logs(monkeypatch, tmp_path):
     monkeypatch.setattr(
         scrape, "EXTRACTION_FAILURES_FILE", tmp_path / "extraction_failures.jsonl"
     )
+    # T-46 (#64): main() also unconditionally calls init_db(DB_FILE); redirect
+    # it here so every test in this file gets isolation by default instead of
+    # relying on each test to patch it individually.
+    monkeypatch.setattr(scrape, "DB_FILE", tmp_path / "price_history.db")
 
 
 def test_price_decrease_no_thresholds_alerts():
