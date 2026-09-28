@@ -26,6 +26,15 @@ spots in one commit, mixing unrelated cosmetic changes into a security-task comm
 This is why `ruff format --check scripts/analyze.py` still fails after 8a1b5fd — that
 failure is expected and tracked by #54, not a sign the fix was incomplete.
 
+## 2026-09-28 — #54 resolved: Quality Gate enforces ruff format --check (option a)
+Supersedes the two #54 entries above. By 2026-09-28 the repo-wide baseline was
+already clean (`ruff format --check .` passes on every file with the locked ruff
+0.16.8; the analyze.py drift was fixed by later commits), so option (a) needed no
+formatting-only commit — only the enforcement step. `quality.yml` now runs
+`uv run ruff format --check .` right after `ruff check`, and README "Quality gate"
+lists the exact local commands. Rejected option (b) (documenting formatting as
+unenforced) because drift already slipped through four Dependabot merges once.
+
 ## 2026-09-22 — T-18 re-prioritized ahead of T-16
 T-18 re-prioritized ahead of T-16 — today's outage was a PyPI-fetch failure,
 not a runner-hardening gap; a cached/immutable environment (T-18) would have

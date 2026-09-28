@@ -164,6 +164,22 @@ and pull the model referenced by `OLLAMA_MODEL` in `scripts/analyze.py`
 On Windows, run these directly in PowerShell or inside WSL — no path
 differences beyond the usual `python` vs `python3` naming.
 
+### 4. Quality gate
+
+`.github/workflows/quality.yml` runs these on every push and pull request.
+Run the same commands locally before committing:
+
+```bash
+uv sync --frozen --extra dev
+uv run ruff check .
+uv run ruff format --check .     # fix with: uv run ruff format .
+uv run mypy bf_price_monitor/
+uv run pytest --cov=bf_price_monitor --cov-report=term-missing --cov-fail-under=70
+uv run pre-commit run --all-files --show-diff-on-failure
+```
+
+The ruff version comes from `uv.lock`, so local and CI formatting agree.
+
 ## Watchlist QA audit
 
 ```bash
