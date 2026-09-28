@@ -80,3 +80,23 @@ jobs:
       # commit still fails the build.
       - name: Secret scan (pre-commit / Gitleaks)
         run: uv run pre-commit run --all-files --show-diff-on-failure
+
+  # T-29 (#36): the offline anomaly pilot's optional `anomaly` extra
+  # (scikit-learn, ruptures) is installed only in this job -- never by
+  # monitor.yml or the Docker image. REQUIRE_ANOMALY_EXTRA makes a missing
+  # extra fail the job instead of silently skipping tests/anomaly.
+  anomaly-pilot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          version: "latest"
+      - name: Install deps (dev + anomaly extra)
+        run: uv sync --frozen --extra dev --extra anomaly
+      - name: Anomaly pilot tests
+        env:
+          REQUIRE_ANOMALY_EXTRA: "1"
+        run: >-
+          uv run pytest tests/anomaly
+          tests/unit/test_anomaly_dataset.py tests/unit/test_anomaly_metrics.py
