@@ -333,12 +333,26 @@ jobs:
           try {
             $response = Invoke-WebRequest -Uri $env:HEALTHCHECK_URL -TimeoutSec 15
             if ($response.StatusCode -ge 200 -and $response.StatusCode -lt 300) {
-              Write-Output "[healthcheck] ping succeeded"
+              Write-Output "[healthcheck] ping succeeded (HTTP $($response.StatusCode))"
             } else {
-              Write-Warning "[healthcheck] ping failed or returned a non-success status; monitor job remains successful"
+              Write-Warning "[healthcheck] ping returned non-success HTTP status $($response.StatusCode); monitor job remains successful"
             }
           } catch {
-            Write-Warning "[healthcheck] ping failed or returned a non-success status; monitor job remains successful"
+            # Never log $_.Exception.Message here -- Invoke-WebRequest's own
+            # exception messages can embed the request URI, and this URL is
+            # the Healthchecks.io credential (docs/security/secret-rotation-runbook.md).
+            # Only the numeric HTTP status (if any) and the .NET exception
+            # type name are safe to log.
+            $statusCode = $null
+            if ($_.Exception.PSObject.Properties.Name -contains 'Response' -and $_.Exception.Response) {
+              try { $statusCode = [int]$_.Exception.Response.StatusCode } catch {}
+            }
+            $exType = $_.Exception.GetType().Name
+            if ($statusCode) {
+              Write-Warning "[healthcheck] ping received non-success HTTP status $statusCode (exception type: $exType); monitor job remains successful"
+            } else {
+              Write-Warning "[healthcheck] ping did not receive an HTTP response (exception type: $exType); monitor job remains successful"
+            }
           }
 
       # B2 (#42): runs after price history is already committed, so a
