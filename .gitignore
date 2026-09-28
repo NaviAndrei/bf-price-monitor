@@ -19,3 +19,4 @@ data/price_history.db-shm
 /pitems2.json
 /target_items.json
 /report/
+data/exports/

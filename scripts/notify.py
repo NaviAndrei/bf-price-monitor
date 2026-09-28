@@ -22,6 +22,10 @@ import requests
 from pydantic import ValidationError
 
 from bf_price_monitor.domain import AlertDecision
+from bf_price_monitor.feedback import (
+    build_feedback_keyboard_rows,
+    parse_allowed_user_ids,
+)
 from bf_price_monitor.storage.sqlite import init_db, record_delivery_attempt_new_cycle
 
 FORMATTED_FILE = Path("data/formatted_alerts.json")
@@ -216,11 +220,26 @@ def build_email_payload(alert: dict) -> dict:
     }
 
 
+def _feedback_buttons_enabled() -> bool:
+    # T-28 (#37): buttons only when someone is authorized to press them;
+    # otherwise every press would just be rejected by scripts/feedback.py.
+    return bool(
+        parse_allowed_user_ids(os.environ.get("TELEGRAM_FEEDBACK_ALLOWED_USER_IDS"))
+    )
+
+
 def _telegram_deal_payload(alert: dict) -> dict:
+    keyboard = build_inline_keyboard(alert)
+    if _feedback_buttons_enabled():
+        # Same deterministic id _run() gives this alert's AlertDecision, so a
+        # press maps back to exactly the decision that was delivered. Rows
+        # are appended after row 0, which _offer_links reuses for ntfy/email.
+        decision_id = uuid.UUID(_deal_event_id(_deal_dedup_key(alert)))
+        keyboard["inline_keyboard"].extend(build_feedback_keyboard_rows(decision_id))
     return {
         "text": format_telegram_message(alert),
         "parse_mode": "HTML",
-        "reply_markup": build_inline_keyboard(alert),
+        "reply_markup": keyboard,
     }
 
 

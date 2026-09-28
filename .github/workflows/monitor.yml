@@ -161,6 +161,20 @@ jobs:
             --run-id "${{ github.run_id }}" `
             --modify-principal "$env:BF_STATE_MODIFY_PRINCIPAL"
 
+      # T-28 (#37): pulls pending alert-feedback button presses (getUpdates)
+      # into the just-restored SQLite store, so the save step below carries
+      # them forward. A no-op unless TELEGRAM_FEEDBACK_ALLOWED_USER_IDS is
+      # set. continue-on-error: feedback must never block scraping or alerts.
+      # Telegram keeps unconsumed updates for at most 24h, so gaps between
+      # runs longer than that lose presses -- see docs/feedback-labels.md.
+      - name: Collect alert feedback
+        continue-on-error: true
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TELEGRAM_FEEDBACK_ALLOWED_USER_IDS: ${{ secrets.TELEGRAM_FEEDBACK_ALLOWED_USER_IDS }}
+        run: uv run --no-sync scripts/feedback.py collect
+
       - name: Scrape prices
         run: uv run --no-sync scripts/scrape.py
 
@@ -175,6 +189,7 @@ jobs:
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TELEGRAM_FEEDBACK_ALLOWED_USER_IDS: ${{ secrets.TELEGRAM_FEEDBACK_ALLOWED_USER_IDS }}
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
           NTFY_SERVER: ${{ secrets.NTFY_SERVER }}
           SMTP_HOST: ${{ secrets.SMTP_HOST }}

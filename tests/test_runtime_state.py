@@ -798,3 +798,100 @@ def test_workflow_all_actions_are_sha_pinned(workflow_text):
         assert "@" in ref, f"action ref not pinned at all: {ref}"
         sha = ref.split("@", 1)[1]
         assert re.fullmatch(r"[0-9a-f]{40}", sha), f"action ref not SHA-pinned: {ref}"
+
+
+# ---------------------------------------------------------------------------
+# T-28 (#37): feedback labels exist only in this database, so the snapshot
+# path must carry and verify them.
+# ---------------------------------------------------------------------------
+
+
+def _seed_feedback(conn):
+    conn.execute(
+        "INSERT INTO alert_feedback (callback_query_id, update_id, "
+        "alert_decision_id, label, user_ref, chat_ref, callback_version, "
+        "received_at_utc) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        (
+            "q1",
+            10,
+            "12345678-1234-5678-1234-567812345678",
+            "useful",
+            "a" * 64,
+            "c" * 64,
+            "fb1",
+            "2026-11-27T12:00:00+00:00",
+        ),
+    )
+    conn.execute(
+        "INSERT INTO feedback_consumer_state VALUES (?, ?, ?)",
+        ("telegram-getupdates", 10, "2026-11-27T12:00:00+00:00"),
+    )
+    conn.commit()
+
+
+def test_feedback_labels_offset_and_salt_survive_save_and_restore(tmp_path):
+    state_root = tmp_path / "state"
+    sources = _paths(tmp_path)
+    conn = sqlite_storage.init_db(sources.db)
+    _seed_feedback(conn)
+    salt = conn.execute(
+        "SELECT value FROM feedback_settings WHERE key = 'pseudonym_salt'"
+    ).fetchone()[0]
+    conn.close()
+    kwargs = {
+        "acl_snapshot": _secure_acl(),
+        "expected_owner": SECURE_OWNER,
+        "modify_principal": SERVICE_PRINCIPAL,
+    }
+    assert rs.save(state_root, sources, run_id="1", **kwargs).status == "saved"
+
+    sources.db.unlink()  # actions/checkout wiping the workspace
+    assert rs.restore(state_root, sources, run_id="2", **kwargs).status == "restored"
+
+    restored = sqlite_storage.init_db(sources.db)
+    try:
+        assert restored.execute("PRAGMA user_version").fetchone()[0] == 1
+        labels = restored.execute("SELECT label FROM alert_feedback_current")
+        assert [tuple(row) for row in labels] == [("useful",)]
+        assert (
+            restored.execute(
+                "SELECT last_update_id FROM feedback_consumer_state"
+            ).fetchone()[0]
+            == 10
+        )
+        assert (
+            restored.execute(
+                "SELECT value FROM feedback_settings WHERE key = 'pseudonym_salt'"
+            ).fetchone()[0]
+            == salt
+        )
+    finally:
+        restored.close()
+
+
+def test_save_refuses_snapshot_whose_table_counts_differ(tmp_path, monkeypatch):
+    state_root = tmp_path / "state"
+    sources = _paths(tmp_path)
+    conn = sqlite_storage.init_db(sources.db)
+    _seed_feedback(conn)
+    conn.close()
+    real_snapshot = rs._snapshot_sqlite
+
+    def lossy_snapshot(source_db, dest_db):
+        real_snapshot(source_db, dest_db)
+        lossy = sqlite3.connect(str(dest_db))
+        lossy.execute("DELETE FROM alert_feedback")
+        lossy.commit()
+        lossy.close()
+
+    monkeypatch.setattr(rs, "_snapshot_sqlite", lossy_snapshot)
+    result = rs.save(
+        state_root,
+        sources,
+        run_id="1",
+        acl_snapshot=_secure_acl(),
+        expected_owner=SECURE_OWNER,
+        modify_principal=SERVICE_PRINCIPAL,
+    )
+    assert result.status == "save_failed"
+    assert "table counts differ" in result.detail

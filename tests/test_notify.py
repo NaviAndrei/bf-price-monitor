@@ -75,6 +75,36 @@ def test_build_inline_keyboard_produces_valid_urls():
     assert "AMN" not in compari_url
 
 
+def test_telegram_payload_has_no_feedback_buttons_when_feedback_disabled(monkeypatch):
+    monkeypatch.delenv("TELEGRAM_FEEDBACK_ALLOWED_USER_IDS", raising=False)
+    rows = notify._telegram_deal_payload(BASE_ALERT)["reply_markup"]["inline_keyboard"]
+    assert len(rows) == 1
+
+
+def test_telegram_payload_feedback_buttons_target_this_alerts_decision(monkeypatch):
+    # T-28 (#37): the callback must carry the same deterministic id _run()
+    # gives this alert's AlertDecision (and outbox event), within 64 bytes.
+    from bf_price_monitor.feedback import FeedbackLabel, decode_callback
+
+    monkeypatch.setenv("TELEGRAM_FEEDBACK_ALLOWED_USER_IDS", "42")
+    rows = notify._telegram_deal_payload(BASE_ALERT)["reply_markup"]["inline_keyboard"]
+    assert rows[0] == build_inline_keyboard(BASE_ALERT)["inline_keyboard"][0]
+    feedback_buttons = [b for row in rows[1:] for b in row]
+    expected_id = uuid.UUID(notify._deal_event_id(notify._deal_dedup_key(BASE_ALERT)))
+    decoded = [decode_callback(b["callback_data"]) for b in feedback_buttons]
+    assert {d for d, _ in decoded} == {expected_id}
+    assert {label for _, label in decoded} == set(FeedbackLabel)
+    assert all(len(b["callback_data"].encode()) <= 64 for b in feedback_buttons)
+
+
+def test_feedback_buttons_do_not_leak_into_ntfy_or_email(monkeypatch):
+    monkeypatch.setenv("TELEGRAM_FEEDBACK_ALLOWED_USER_IDS", "42")
+    ntfy = notify.build_ntfy_payload(BASE_ALERT)
+    email = notify.build_email_payload(BASE_ALERT)
+    assert len(ntfy["actions"]) == 2
+    assert "fb1:" not in json.dumps(ntfy) and "fb1:" not in email["body"]
+
+
 def test_generate_quickchart_url_returns_none_below_three_points():
     history = [
         {"date": "2026-09-01", "price": 100.0},
@@ -163,6 +193,8 @@ _OPTIONAL_CHANNEL_ENV_VARS = (
     "SMTP_PASSWORD",
     "EMAIL_FROM",
     "EMAIL_TO",
+    # T-28 (#37): feedback buttons stay off unless a test opts in.
+    "TELEGRAM_FEEDBACK_ALLOWED_USER_IDS",
 )
 
 

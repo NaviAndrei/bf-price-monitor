@@ -346,6 +346,27 @@ def _sqlite_integrity_ok(db_path: Path) -> bool:
         conn.close()
 
 
+def _sqlite_table_counts(db_path: Path) -> dict[str, int]:
+    """Row count per table. T-28 (#37): compared between the live database and
+    its candidate snapshot, so a save that silently lost a table (e.g. the
+    alert_feedback labels, which exist nowhere else) is never promoted."""
+    conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
+    try:
+        names = [
+            row[0]
+            for row in conn.execute(
+                "SELECT name FROM sqlite_master WHERE type = 'table' "
+                "AND name NOT LIKE 'sqlite_%' ORDER BY name"
+            )
+        ]
+        return {
+            name: int(conn.execute(f'SELECT COUNT(*) FROM "{name}"').fetchone()[0])
+            for name in names
+        }
+    finally:
+        conn.close()
+
+
 def _jsonl_valid(path: Path) -> bool:
     if not path.is_file():
         return True
@@ -536,6 +557,10 @@ def save(
         _snapshot_sqlite(sources.db, db_dest)
         if not _sqlite_integrity_ok(db_dest):
             raise RuntimeStateError("candidate SQLite snapshot failed integrity_check")
+        if sources.db.exists() and _sqlite_table_counts(
+            sources.db
+        ) != _sqlite_table_counts(db_dest):
+            raise RuntimeStateError("candidate SQLite snapshot table counts differ")
 
         files: dict[str, str] = {STATE_FILENAMES["db"]: _sha256(db_dest)}
         for key, src_path in (("health", sources.health), ("outbox", sources.outbox)):

@@ -60,6 +60,105 @@ CREATE INDEX IF NOT EXISTS idx_delivery_attempts_dedup_key
     ON delivery_attempts(dedup_key);
 """
 
+# T-28 (#37): versioned, additive migrations on top of the idempotent base
+# schema above (implicitly version 0). Each entry runs once, in one
+# transaction together with its PRAGMA user_version bump, so a crash leaves
+# the database at either the old or the new version, never in between.
+# Append new versions; never edit an applied one.
+_MIGRATIONS: tuple[tuple[int, tuple[str, ...]], ...] = (
+    (
+        1,
+        (
+            # Append-only label history. seq is ingestion order and decides
+            # which label is current (see alert_feedback_current); update_id
+            # is kept for audit only, since Telegram may restart update ids
+            # at a random value after a week without updates.
+            """
+            CREATE TABLE alert_feedback (
+                seq INTEGER PRIMARY KEY AUTOINCREMENT,
+                callback_query_id TEXT NOT NULL UNIQUE,
+                update_id INTEGER NOT NULL CHECK(update_id >= 0),
+                alert_decision_id TEXT NOT NULL
+                    CHECK(length(alert_decision_id) = 36),
+                label TEXT NOT NULL CHECK(label IN ('useful', 'fake_discount',
+                    'wrong_product', 'wrong_price', 'duplicate', 'purchased')),
+                user_ref TEXT NOT NULL CHECK(length(user_ref) = 64),
+                chat_ref TEXT NOT NULL CHECK(length(chat_ref) = 64),
+                callback_version TEXT NOT NULL,
+                received_at_utc TEXT NOT NULL
+                    CHECK(received_at_utc LIKE '%+00:00')
+            )
+            """,
+            """
+            CREATE INDEX idx_alert_feedback_decision_user
+                ON alert_feedback(alert_decision_id, user_ref, seq)
+            """,
+            # Relabel policy: one current label per (alert, rater) -- the
+            # most recently ingested press wins; earlier presses stay in
+            # alert_feedback as history.
+            """
+            CREATE VIEW alert_feedback_current AS
+            SELECT f.* FROM alert_feedback f
+            WHERE f.seq = (
+                SELECT MAX(g.seq) FROM alert_feedback g
+                WHERE g.alert_decision_id = f.alert_decision_id
+                  AND g.user_ref = f.user_ref
+            )
+            """,
+            """
+            CREATE TABLE feedback_consumer_state (
+                consumer TEXT PRIMARY KEY NOT NULL,
+                last_update_id INTEGER NOT NULL,
+                updated_at_utc TEXT NOT NULL
+            )
+            """,
+            """
+            CREATE TABLE feedback_consumer_lease (
+                consumer TEXT PRIMARY KEY NOT NULL,
+                holder TEXT NOT NULL,
+                expires_at_utc TEXT NOT NULL
+            )
+            """,
+            """
+            CREATE TABLE feedback_settings (
+                key TEXT PRIMARY KEY NOT NULL,
+                value BLOB NOT NULL
+            )
+            """,
+            # HMAC key for Telegram identity pseudonyms; lives only in this
+            # runner-local file and is never exported.
+            """
+            INSERT INTO feedback_settings (key, value)
+            VALUES ('pseudonym_salt', randomblob(32))
+            """,
+        ),
+    ),
+)
+
+SCHEMA_VERSION = _MIGRATIONS[-1][0]
+
+
+def _user_version(conn: sqlite3.Connection) -> int:
+    return cast(int, conn.execute("PRAGMA user_version;").fetchone()[0])
+
+
+def _apply_migrations(conn: sqlite3.Connection) -> None:
+    for version, statements in _MIGRATIONS:
+        if _user_version(conn) >= version:
+            continue
+        # IMMEDIATE takes the write lock first, then re-checks, so two
+        # processes opening the same database can't both apply a version.
+        conn.execute("BEGIN IMMEDIATE;")
+        try:
+            if _user_version(conn) < version:
+                for statement in statements:
+                    conn.execute(statement)
+                conn.execute(f"PRAGMA user_version = {int(version)};")
+            conn.execute("COMMIT;")
+        except BaseException:
+            conn.execute("ROLLBACK;")
+            raise
+
 
 def init_db(db_path: Path | str) -> sqlite3.Connection:
     """Open (creating if needed) the SQLite store with WAL mode and schema applied."""
@@ -70,6 +169,7 @@ def init_db(db_path: Path | str) -> sqlite3.Connection:
     conn.execute("PRAGMA foreign_keys = ON;")
     conn.execute("PRAGMA busy_timeout = 5000;")
     conn.executescript(_SCHEMA_SQL)
+    _apply_migrations(conn)
     return conn
 
 
