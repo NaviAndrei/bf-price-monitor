@@ -1462,3 +1462,16 @@ def test_real_scraper_quarantine_is_unaffected_by_the_placeholder_marker(
     [alert] = _health_alerts()
     assert "SCRAPER BREAKDOWN: Flanco" in alert
     assert scrape._quarantined_stores(_health_records()) == {"flanco"}
+
+
+def test_offer_sku_uses_retailer_adapter_and_logs_pattern_mismatch(capsys):
+    # T-38b (#49): adapter result for a normal URL; a URL outside the
+    # retailer's pattern still gets the legacy SKU, with a reason code.
+    assert (
+        scrape.offer_sku("emag", "https://emag.ro/laptop-x/pd/DX1TPW3BM") == "DX1TPW3BM"
+    )
+    assert scrape.offer_sku("emag", "https://emag.ro/laptop-x/other/ABC") == "ABC"
+    err = capsys.readouterr().err
+    assert "URL_PATTERN_MISMATCH" in err
+    assert "fingerprint=pid-v1:" in err
+    assert scrape.offer_sku("flanco", "https://flanco.ro/") == ""

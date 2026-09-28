@@ -1,0 +1,68 @@
+{
+  "emag": [
+    {
+      "url": "https://emag.ro/laptop-lenovo-v15-g4-amn-cu-procesor-amd-ryzentm-5-7520u-pana-la-4-3ghz-15-6-full-hd-16gb-lpddr5-ram-512gb-ssd-amd-radeontm-610m-graphics-windowsr-11-pro-business-black-82yu00sjrm/pd/DX1TPW3BM",
+      "title": "Laptop Lenovo V15 G4 AMN cu procesor AMD Ryzen™ 5 7520U pana la 4.3GHz, 15.6\" Full HD, 16GB LPDDR5 RAM, 512GB SSD, AMD Radeon™ 610M Graphics, Windows® 11 Pro, Business Black",
+      "legacy_sku": "DX1TPW3BM"
+    },
+    {
+      "url": "https://emag.ro/laptop-lenovo-v15-g4-abp-cu-procesor-amd-ryzentm-7-7730u-pana-la-4-5ghz-15-6-full-hd-ips-16gb-ddr4-512gb-ssd-video-integrated-amd-radeontm-graphic-no-os-business-black-82yy001drm/pd/DF8YX5YBM",
+      "title": "Laptop Lenovo V15 G4 ABP cu procesor AMD Ryzen™ 7 7730U pana la 4.5GHz, 15.6\" Full HD, IPS, 16GB DDR4, 512GB SSD, Video Integrated AMD Radeon™ Graphic, No OS, Business Black",
+      "legacy_sku": "DF8YX5YBM"
+    },
+    {
+      "url": "https://emag.ro/laptop-lenovo-v15-g5-irl-cu-procesor-intelr-core-i5-13420h-pana-la-4-60-ghz-15-6-fhd-32gb-ram-1tb-ssd-intelr-uhd-graphics-no-os-83gw00alri/pd/DBGRKZ3BM",
+      "title": "Laptop Lenovo V15 G5 IRL cu procesor Intel® Core i5-13420H pana la 4.60 GHz, 15.6\" FHD, 32GB RAM, 1TB SSD, Intel® UHD Graphics, No OS",
+      "legacy_sku": "DBGRKZ3BM"
+    },
+    {
+      "url": "https://emag.ro/laptop-lenovo-v15-g5-irl-cu-procesor-intelr-coretm-i5-13420h-pana-la-4-6ghz-15-6-full-hd-16gb-ddr5-ram-512gb-ssd-intelr-uhd-graphics-windowsr-11-pro-business-black-3y-83gw00acri/pd/D91TPW3BM",
+      "title": "Laptop Lenovo V15 G5 IRL cu procesor Intel® Core™ i5-13420H pana la 4.6GHz, 15.6\" Full HD, 16GB DDR5 RAM, 512GB SSD, Intel® UHD Graphics, Windows® 11 Pro, Business Black, 3y",
+      "legacy_sku": "D91TPW3BM"
+    }
+  ],
+  "pcgarage": [
+    {
+      "url": "https://pcgarage.ro/notebook-laptop/asus/156-vivobook-15-r1504va-fhd-procesor-intel-core-i3-1315u-10m-cache-up-to-450-ghz-with-ipu-8gb-ddr4-512gb-ssd-intel-uhd-no-os-quiet-blue",
+      "title": "Laptop ASUS 15.6'' Vivobook 15 R1504VA, FHD, Procesor Intel® Core™ i3-1315U (10M Cache, up to 4.50 GHz, with IPU), 8GB DDR4, 512GB SSD, Intel UHD, No OS, Quiet Blue",
+      "legacy_sku": "156-vivobook-15-r1504va-fhd-procesor-intel-core-i3-1315u-10m-cache-up-to-450-ghz-with-ipu-8gb-ddr4-512gb-ssd-intel-uhd-no-os-quiet-blue"
+    },
+    {
+      "url": "https://pcgarage.ro/notebook-laptop/asus/156-vivobook-go-15-e1504fa-fhd-procesor-amd-ryzen-3-30-4m-cache-up-to-41-ghz-8gb-lpddr5-512gb-ssd-amd-radeon-610m-no-os-mixed-black",
+      "title": "Laptop ASUS 15.6'' Vivobook Go 15 E1504FA, FHD, Procesor AMD Ryzen™ 3 30 (4M Cache, up to 4.1 GHz), 8GB LPDDR5, 512GB SSD, AMD Radeon 610M, No OS, Mixed Black",
+      "legacy_sku": "156-vivobook-go-15-e1504fa-fhd-procesor-amd-ryzen-3-30-4m-cache-up-to-41-ghz-8gb-lpddr5-512gb-ssd-amd-radeon-610m-no-os-mixed-black"
+    },
+    {
+      "url": "https://pcgarage.ro/notebook-laptop/asus/156-vivobook-15-r1504va-fhd-procesor-intel-core-i3-1315u-10m-cache-up-to-450-ghz-with-ipu-8gb-ddr4-512gb-ssd-intel-uhd-win-11-home-quiet-blue",
+      "title": "Laptop ASUS 15.6'' Vivobook 15 R1504VA, FHD, Procesor Intel® Core™ i3-1315U (10M Cache, up to 4.50 GHz, with IPU), 8GB DDR4, 512GB SSD, Intel UHD, Win 11 Home, Quiet Blue",
+      "legacy_sku": "156-vivobook-15-r1504va-fhd-procesor-intel-core-i3-1315u-10m-cache-up-to-450-ghz-with-ipu-8gb-ddr4-512gb-ssd-intel-uhd-win-11-home-quiet-blue"
+    },
+    {
+      "url": "https://pcgarage.ro/notebook-laptop/asus/156-vivobook-go-15-e1504ta-fhd-procesor-intel-n150-6m-cache-up-to-360-ghz-8gb-lpddr5-256gb-ufs-intel-graphics-no-os-cool-silver",
+      "title": "Laptop ASUS 15.6'' Vivobook Go 15 E1504TA, FHD, Procesor Intel® N150 (6M Cache, up to 3.60 GHz), 8GB LPDDR5, 256GB UFS, Intel Graphics, No OS, Cool Silver",
+      "legacy_sku": "156-vivobook-go-15-e1504ta-fhd-procesor-intel-n150-6m-cache-up-to-360-ghz-8gb-lpddr5-256gb-ufs-intel-graphics-no-os-cool-silver"
+    }
+  ],
+  "flanco": [
+    {
+      "url": "https://flanco.ro/laptop-asus-vivobook-m1607ka-mb224-16-amd-ryzen-ai-5-330-16gb-512gb-ssd-no-os-quiet-blue.html",
+      "title": "Laptop Asus Vivobook M1607KA-MB224, 16\", AMD Ryzen AI 5 330, 16GB, 512GB SSD, No OS, Quiet Blue",
+      "legacy_sku": "laptop-asus-vivobook-m1607ka-mb224-16-amd-ryzen-ai-5-330-16gb-512gb-ssd-no-os-quiet-blue.html"
+    },
+    {
+      "url": "https://flanco.ro/laptop-asus-vivobook-m1502naq-bq104-amd-ryzen-r5-150-15-6-8gb-512gb-no-os-quiet-blue.html",
+      "title": "Laptop Asus Vivobook M1502NAQ-BQ104, AMD Ryzen R5-150, 15.6\", 8GB, 512GB, No OS, Quiet Blue",
+      "legacy_sku": "laptop-asus-vivobook-m1502naq-bq104-amd-ryzen-r5-150-15-6-8gb-512gb-no-os-quiet-blue.html"
+    },
+    {
+      "url": "https://flanco.ro/laptop-asus-vivobook-15-x1502va-15-6-intel-core-i5-13420h-8gb-ddr4-512gb-ssd-intel-uhd-no-os-quiet-blue.html",
+      "title": "Laptop Asus Vivobook 15 X1502VA 15.6\", Intel Core i5-13420H, 8GB DDR4, 512GB SSD, Intel UHD, No OS, Quiet Blue",
+      "legacy_sku": "laptop-asus-vivobook-15-x1502va-15-6-intel-core-i5-13420h-8gb-ddr4-512gb-ssd-intel-uhd-no-os-quiet-blue.html"
+    },
+    {
+      "url": "https://flanco.ro/laptop-asus-vivobook-16-a1605va-mb1947-intel-core-i5-13420h-16-inch-ram-8gb-ssd-512gb-intel-uhd-graphics-no-os-cool-silver.html",
+      "title": "Laptop ASUS Vivobook 16 A1605VA-MB1947, Intel Core i5-13420H, 16 inch, RAM 8GB, SSD 512GB, Intel UHD Graphics, No OS, Cool Silver",
+      "legacy_sku": "laptop-asus-vivobook-16-a1605va-mb1947-intel-core-i5-13420h-16-inch-ram-8gb-ssd-512gb-intel-uhd-graphics-no-os-cool-silver.html"
+    }
+  ]
+}

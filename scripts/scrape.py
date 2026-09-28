@@ -31,6 +31,11 @@ from pydantic import ValidationError
 
 from bf_price_monitor.config import load_watchlist
 from bf_price_monitor.domain import Observation
+from bf_price_monitor.identity import (
+    IdentityError,
+    extract_retailer_sku,
+    offer_fingerprint,
+)
 from bf_price_monitor.storage.sqlite import init_db
 from bf_price_monitor.storage.sqlite import (
     record_observation as sqlite_record_observation,
@@ -607,6 +612,26 @@ def canonicalize_url(url: str) -> str:
     )
     query = urlencode(kept_params)
     return urlunsplit((parsed.scheme, host, path, query, ""))
+
+
+def offer_sku(site: str, key: str) -> str:
+    # T-38b (#49): the retailer's own product id via an explicit adapter
+    # (eMAG /pd/<id>, PC Garage slug, Flanco <slug>.html). For every URL
+    # already in history this equals the old last-path-segment rule, so
+    # SQLite offer ids don't change. A URL that doesn't fit its retailer's
+    # pattern falls back to that rule and is logged, never dropped.
+    try:
+        extraction = extract_retailer_sku(site, key)
+    except IdentityError:
+        sku = urlparse(key).path.rstrip("/").rsplit("/", 1)[-1]
+        fingerprint = offer_fingerprint(site, sku) if sku else "none"
+        print(
+            f"[{site}] identity: URL_PATTERN_MISMATCH, legacy SKU used "
+            f"fingerprint={fingerprint}",
+            file=sys.stderr,
+        )
+        return sku
+    return extraction.sku
 
 
 def title_matches_query(title: str, query: str) -> bool:
@@ -1336,7 +1361,7 @@ def _run(watchlist: list[dict]) -> None:
             # migrate_history_to_sqlite.py already established, so retailer
             # SKU-derived offer/product ids line up with the historical
             # migration.
-            sku = urlparse(key).path.rstrip("/").rsplit("/", 1)[-1]
+            sku = offer_sku(site, key)
             sqlite_record_observation(
                 db,
                 {
