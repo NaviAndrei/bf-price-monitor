@@ -1,0 +1,59 @@
+# T-38 (#38): always-on Docker mode. Quick start (docs/docker.md):
+#   cp .env.example .env   # fill in secrets; .env is git- and docker-ignored
+#   docker compose up -d --build
+# Optional near-instant feedback acknowledgement (#37) -- run only if the
+# GitHub Actions monitor is NOT using the same bot token:
+#   docker compose --profile feedback up -d
+name: bf-price-monitor
+
+x-hardened: &hardened
+  image: bf-price-monitor:local
+  read_only: true
+  tmpfs:
+    - /tmp:size=512m,mode=1777
+  security_opt:
+    - no-new-privileges:true
+  cap_drop:
+    - ALL
+  env_file:
+    - path: .env
+      required: false
+  volumes:
+    - monitor-data:/app/data
+  restart: unless-stopped
+
+services:
+  monitor:
+    <<: *hardened
+    build: .
+    environment:
+      MONITOR_INTERVAL_MINUTES: ${MONITOR_INTERVAL_MINUTES:-120}
+      MONITOR_STAGES: ${MONITOR_STAGES:-scrape,analyze,notify}
+    # Chromium needs more than Docker's 64 MB default /dev/shm.
+    shm_size: 1gb
+    # A stage gets SIGTERM and up to this long to finish before SIGKILL.
+    stop_grace_period: 90s
+    deploy:
+      resources:
+        limits:
+          cpus: "1.5"
+          memory: 2g
+
+  feedback:
+    <<: *hardened
+    profiles: ["feedback"]
+    depends_on:
+      - monitor
+    entrypoint: ["tini", "--", "python", "scripts/feedback.py", "collect", "--loop"]
+    command: []
+    healthcheck:
+      disable: true
+    stop_grace_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 256m
+
+volumes:
+  monitor-data:

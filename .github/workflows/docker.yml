@@ -1,0 +1,148 @@
+name: Docker Image
+
+# T-38 (#38): clean-machine acceptance test for Docker mode on a
+# GitHub-hosted runner. Builds and smoke-tests only -- nothing is published,
+# and no retailer site is contacted (the smoke run uses the offline
+# `selfcheck` stage). monitor.yml (zero-cost GitHub Actions mode) does not
+# use this image.
+on:
+  pull_request:
+    branches: [master, main]
+    paths:
+      - Dockerfile
+      - .dockerignore
+      - docker-compose.yml
+      - pyproject.toml
+      - uv.lock
+      - bf_price_monitor/**
+      - scripts/**
+      - data/watchlist.json
+      - .github/workflows/docker.yml
+  push:
+    branches: [master, main]
+    paths:
+      - Dockerfile
+      - .dockerignore
+      - docker-compose.yml
+      - pyproject.toml
+      - uv.lock
+      - bf_price_monitor/**
+      - scripts/**
+      - data/watchlist.json
+      - .github/workflows/docker.yml
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  build-and-smoke:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      IMAGE: bf-price-monitor:local
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Build image
+        run: docker build --pull -t "$IMAGE" .
+
+      - name: Runs as numeric non-root UID/GID
+        run: |
+          set -euo pipefail
+          uid=$(docker run --rm --entrypoint id "$IMAGE" -u)
+          gid=$(docker run --rm --entrypoint id "$IMAGE" -g)
+          echo "uid=$uid gid=$gid"
+          test "$uid" = 10001 && test "$gid" = 10001
+          test "$(docker inspect -f '{{.Config.User}}' "$IMAGE")" = "10001:10001"
+
+      - name: Installed packages match uv.lock exactly
+        run: |
+          set -euo pipefail
+          docker run --rm --entrypoint python "$IMAGE" -c \
+            "import importlib.metadata as m, json; print(json.dumps({d.metadata['Name']: d.version for d in m.distributions()}))" \
+            > installed.json
+          python3 - <<'EOF'
+          import json, re, tomllib
+          norm = lambda n: re.sub(r"[-_.]+", "-", n).lower()
+          locked = {}
+          for pkg in tomllib.load(open("uv.lock", "rb"))["package"]:
+              locked.setdefault(norm(pkg["name"]), set()).add(pkg["version"])
+          installed = {norm(k): v for k, v in json.load(open("installed.json")).items()}
+          bad = {n: v for n, v in installed.items() if v not in locked.get(n, set())}
+          if bad:
+              raise SystemExit(f"packages not pinned by uv.lock: {bad}")
+          for dev_only in ("pytest", "ruff", "mypy", "pre-commit", "scikit-learn", "ruptures"):
+              if dev_only in installed:
+                  raise SystemExit(f"non-production package in image: {dev_only}")
+          print(f"{len(installed)} installed distributions all match uv.lock")
+          EOF
+
+      - name: Chromium headless shell is the only browser
+        run: |
+          set -euo pipefail
+          browsers=$(docker run --rm --entrypoint ls "$IMAGE" /ms-playwright)
+          echo "$browsers"
+          grep -q '^chromium_headless_shell-' <<< "$browsers"
+          if grep -Eq '^(firefox|webkit|chromium-)' <<< "$browsers"; then
+            echo "::error::unexpected browser installed"; exit 1
+          fi
+
+      - name: No state, secrets or browser profiles baked in
+        run: |
+          set -euo pipefail
+          files=$(docker run --rm --entrypoint find "$IMAGE" /app/data -type f)
+          echo "$files"
+          test "$files" = "/app/data/watchlist.json"
+          leaked=$(docker run --rm --entrypoint find "$IMAGE" /app /tmp \
+              \( -name '.env' -o -name '*.db' -o -name '*.jsonl' -o -name 'storage_state*' \) \
+              -not -path '/app/.venv/*')
+          if [ -n "$leaked" ]; then
+            echo "::error::state or secrets baked into image: $leaked"; exit 1
+          fi
+
+      - name: Hardened self-check (read-only root, no caps, persistent volume)
+        run: |
+          set -euo pipefail
+          docker volume create smoke-data
+          docker run --rm --read-only --tmpfs /tmp:size=512m,mode=1777 \
+            --cap-drop ALL --security-opt no-new-privileges:true --shm-size 1g \
+            -v smoke-data:/app/data "$IMAGE" selfcheck
+          # A second, fresh container sees the SQLite store the first wrote.
+          docker run --rm --read-only -v smoke-data:/app/data --entrypoint python "$IMAGE" -c \
+            "import sqlite3; c = sqlite3.connect('data/price_history.db'); print('user_version', c.execute('PRAGMA user_version').fetchone()[0]); assert c.execute(\"SELECT COUNT(*) FROM sqlite_master WHERE name='alert_feedback'\").fetchone()[0] == 1"
+          docker volume rm smoke-data
+
+      - name: Compose up, healthy, graceful stop
+        env:
+          MONITOR_STAGES: selfcheck
+          MONITOR_INTERVAL_MINUTES: "1"
+        run: |
+          set -euo pipefail
+          docker compose config --quiet
+          docker compose up -d --no-build monitor
+          cid=$(docker compose ps -q monitor)
+          for i in $(seq 1 36); do
+            status=$(docker inspect -f '{{.State.Health.Status}}' "$cid")
+            echo "health=$status"
+            [ "$status" = healthy ] && break
+            [ "$i" = 36 ] && { docker compose logs monitor; exit 1; }
+            sleep 5
+          done
+          start=$(date +%s)
+          docker compose stop monitor
+          elapsed=$(( $(date +%s) - start ))
+          code=$(docker inspect -f '{{.State.ExitCode}}' "$cid")
+          docker compose logs --no-color monitor > monitor.log
+          cat monitor.log
+          echo "stopped in ${elapsed}s with exit code $code"
+          test "$code" = 0
+          test "$elapsed" -lt 90
+          grep -q 'selfcheck ok' monitor.log
+          grep -q '\[run_loop\] stopped' monitor.log
+
+      - name: Tear down
+        if: always()
+        run: docker compose down -v --remove-orphans || true

@@ -1,0 +1,11 @@
+# T-38 (#38): allowlist. Everything is excluded unless listed below, so .env
+# files, SQLite databases, outboxes, browser profiles/storage state, .git and
+# local caches can never enter the build context or an image layer.
+*
+!pyproject.toml
+!uv.lock
+!bf_price_monitor/
+!scripts/*.py
+!data/watchlist.json
+**/__pycache__
+**/*.pyc
