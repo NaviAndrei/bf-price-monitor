@@ -443,3 +443,85 @@ retry-with-backoff and dead-letter handling from T-26, are unchanged.
   had no other purpose.
 - **`data/watchlist.json` needed no migration.** No live watch referenced
   `"teams"` in its `channels` list before this change.
+
+## 2026-09-28 — Runner-local runtime-state persistence (#42 B2 blocker)
+The Black Friday readiness rehearsal (#42) went No-Go on two blockers; this
+closes B2. `actions/checkout` cleans the self-hosted runner's workspace on
+every run, which erases `data/price_history.db`, `data/scrape_health.jsonl`
+and `data/alert_outbox.jsonl` before the next run starts — the exact files
+the cooldown, dead-man and scraper-quarantine safeguards read from the
+previous run. Every rehearsal run was therefore starting from empty state.
+
+- **GitHub artifacts were rejected as the persistence mechanism.** This
+  repository is public. Artifact *listing* is visible to anonymous callers,
+  and GitHub's own documentation states artifact *download* requires only
+  read access to the repository — which every signed-in GitHub account
+  already has on a public repo. An artifact cannot hold operational state
+  that safeguards depend on without also making that state readable by
+  anyone with a GitHub account, so it fails the privacy requirement outright
+  and was never implemented.
+- **`clean: false` on `actions/checkout` was rejected.** It would keep the
+  workspace itself dirty between runs, which persists *everything*
+  untracked in the workspace, not just the three files the safeguards
+  need — including any accidental leftovers from a previous run's crash —
+  and offers no ACL boundary, no validation, and no atomic promotion. It
+  also could not be scoped to the required files, unlike a dedicated state
+  directory outside the workspace entirely.
+- **The state root is `C:\bf-monitor-runtime-state`, outside the job
+  workspace, so `actions/checkout`'s clean never touches it.** Access is
+  restricted to exactly `NT AUTHORITY\SYSTEM` and `BUILTIN\Administrators`
+  (Full Control) plus this runner's own service SID,
+  `NT SERVICE\actions.runner.NaviAndrei-bf-price-monitor.PC-A1208` (Modify),
+  granted via `sc.exe sidtype unrestricted` rather than the shared
+  `NETWORK SERVICE` identity every other NETWORK SERVICE-logon service also
+  uses. `bf_price_monitor/runtime_state.py` reads and validates this ACL
+  itself before every restore or save — an unprotected ACL, an inherited
+  entry, an unexpected owner, or any principal outside that set (in
+  particular `NETWORK SERVICE`, `BUILTIN\Users`, `Authenticated Users` or
+  `Everyone`) disables state persistence for that run (`state_status =
+  "disabled_insecure_state_dir"`) rather than operating against a directory
+  it can't prove is private.
+- **Durable state is exactly three files, never more.** `price_history.db`
+  is captured via the SQLite backup API against a read-only connection to
+  the live WAL-mode database, never a raw file copy, so a snapshot is
+  always internally consistent even if the source is mid-write.
+  `scrape_health.jsonl` and `alert_outbox.jsonl` are copied and validated
+  line by line. `alerts.json`, `formatted_alerts.json`,
+  `scrape_health_alerts.json`, `dlq.jsonl`, `extraction_failures.jsonl` and
+  `ai_audit.jsonl` are deliberately excluded — they are per-run report
+  output, not state a safeguard reads back on the next run.
+- **Restore runs before scraping; save runs with `if: always()` after
+  notify**, so a run that crashes partway through still gets its outbox and
+  health state captured, instead of losing a PENDING or SENT record that
+  the next run's cooldown or replay logic needed to see. A save is only
+  *promoted* to `CURRENT` after its candidate passes every check: SQLite
+  `integrity_check`, JSONL line-by-line parsing, and a manifest of
+  per-file SHA-256 hashes matching the files actually on disk. `CURRENT` is
+  switched via `os.replace`, so no reader ever observes a half-written
+  pointer. A candidate that fails validation is moved to a `quarantine/`
+  subdirectory instead of being deleted, and the previous valid `CURRENT`
+  is left completely untouched.
+- **Retention is the last three valid snapshots; quarantine is not
+  pruned.** Quarantined snapshots exist for forensic inspection after an
+  incident, not as a resource to reclaim automatically. This is a known
+  gap, not an oversight: over months of runs a busy quarantine directory
+  will accumulate and eventually needs a manual cleanup pass.
+- **Known limitation: rebuilding the runner or renaming its service breaks
+  this without warning.** The ACL is pinned to the exact service SID
+  string `NT SERVICE\actions.runner.NaviAndrei-bf-price-monitor.PC-A1208`.
+  If the runner is ever re-registered under a different name, or the
+  service is rebuilt from scratch, the new service gets a new SID and the
+  existing ACL grant no longer matches it — `runtime_state.py` will see an
+  ACL with no valid `modify_principal` entry and disable persistence
+  (`disabled_insecure_state_dir`) rather than silently granting the new
+  service access. Recovering from this requires manually re-running the
+  Phase 2 SID/ACL hardening steps against the new service, then verifying
+  the ACL again before the next run.
+- **Verified locally only.** All 30 tests in `tests/test_runtime_state.py`
+  pass, including a two-run simulation that wipes the workspace between
+  runs and confirms cooldown, dead-man detection, scraper quarantine and
+  SQLite observation continuity all survive using the real
+  `scrape._quarantined_stores` and `notify._find_cooldown_block` functions.
+  None of this has yet run against the real `C:\bf-monitor-runtime-state`
+  directory or the real runner service SID — that requires an actual
+  monitor run, which was explicitly out of scope for this change.
