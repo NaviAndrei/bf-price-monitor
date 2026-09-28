@@ -1,5 +1,11 @@
 # Black Friday Go/No-Go Readiness Signoff (T-31, #42)
 
+> **Update, later on 2026-09-28:** the two NO-GO blockers recorded below
+> (B1, B2) are resolved with production evidence. Nothing in the original
+> assessment below is rewritten -- see "Post-rehearsal validation" at the
+> end of this document for the current status and what is still not
+> resolved.
+
 Status: **rehearsal executed** (2026-09-28). One manual production run was
 triggered and measured; the matrix below combines that run with earlier
 scheduled-run evidence and owner-confirmed channel evidence. NOT YET
@@ -194,3 +200,106 @@ hygiene, 4-watch latency, and Telegram rendering for one alert.
   "laptop lenovo v15" watch and the owner's confirmation.
 - `price-data` artifacts expire after 1 day; the rehearsal's expires
   2026-09-29.
+
+## Post-rehearsal validation (2026-09-28, following B1/B2 fixes)
+
+This section documents work done after the assessment above, later the
+same day, that resolves blockers B1 and B2. It does not alter the
+historical record above -- both problems were real when found -- and it
+does not constitute owner approval; the sign-off checkboxes throughout
+this document, including the two below, are still unchecked.
+
+### B1 resolved -- Healthchecks.io ping (gate 6)
+
+- Diagnosis: commit [bdf4da5](https://github.com/NaviAndrei/bf-price-monitor/commit/bdf4da53d247c996afcd692a0721d8c8414e5567)
+  added diagnostic logging to the "Ping healthcheck" step without changing
+  its (already non-blocking) behavior. Manual run
+  [36421170743](https://github.com/NaviAndrei/bf-price-monitor/actions/runs/36421170743),
+  running at that commit, logged `shell: C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.EXE`
+  for that step -- not `pwsh` -- and caught a `NotSupportedException`: the
+  documented signature of `Invoke-WebRequest` failing to use the Internet
+  Explorer rendering engine under the runner's headless service account
+  (`NT SERVICE\actions.runner...`), which has never completed IE's
+  first-launch configuration.
+- Fix: commit [d0d453d](https://github.com/NaviAndrei/bf-price-monitor/commit/d0d453d20bcd10cf3c5932eeb0dba4d144a40ca4)
+  added `-UseBasicParsing` to the same call, reproduced and confirmed
+  against real Windows PowerShell 5.1 before shipping (session evidence,
+  not published in this repo).
+- Production validation: manual run
+  [36421774811](https://github.com/NaviAndrei/bf-price-monitor/actions/runs/36421774811),
+  running at commit d0d453d, logged `[healthcheck] ping succeeded (HTTP 200)`
+  in the persist job's "Ping healthcheck" step.
+- Remote-side confirmation: owner-supplied Healthchecks.io dashboard
+  screenshots (not stored in this repository) show the check UP, a
+  down-to-up transition at 13:08 UTC on 2026-09-28, and further OK GET
+  events at 13:14, 15:22 and 15:27 UTC. This is remote-side receipt
+  evidence, not merely a locally-returned HTTP status. I have not
+  independently matched each of those dashboard timestamps to a specific
+  workflow run ID, so this is reported as owner-observed dashboard
+  activity, not as three independently verified scheduled-run pings.
+- The 15 pre-fix failures recorded above under "B1" are unchanged and
+  remain the historical record of real failures, not a false alarm.
+- Gate 6: **RESOLVED (PASS)**. Owner sign-off: [ ]
+
+### B2 resolved -- cross-run state (gate 10)
+
+- Code: commit [5972c67](https://github.com/NaviAndrei/bf-price-monitor/commit/5972c67d9942aae9b175868dff8c66469eee0a4b)
+  and decision record [06ecc89](https://github.com/NaviAndrei/bf-price-monitor/commit/06ecc89c201c454d83a92444a8b5da619d62a3a4).
+- Manual run [36407596552](https://github.com/NaviAndrei/bf-price-monitor/actions/runs/36407596552)
+  (`fresh_first_run`, first secure snapshot created) followed by scheduled
+  run [36408345226](https://github.com/NaviAndrei/bf-price-monitor/actions/runs/36408345226),
+  whose persist job logged `[state-gate] restore_status=restored save_status=saved`.
+- SQLite `price_observations` grew 86 to 173 rows between the two runs
+  while the minimum `scraped_at` in run 2's data matched run 1's own
+  timestamp (`2026-09-28T10:06:24.376455+00:00`) exactly -- proving
+  retention of run 1's data across the checkout that wipes the workspace,
+  not merely that a snapshot was created.
+- `scrape_health.jsonl` grew 3 to 6 lines across the same two runs,
+  consistent with health history surviving the checkout as well. No
+  dead-man or quarantine event was observed to fire in either run; neither
+  run met the conditions that would trigger one.
+- The protected state-directory ACL and owner were independently
+  re-checked on the runner after both runs (session evidence: owner
+  `BUILTIN\Administrators`, exactly `SYSTEM`, `Administrators` and the
+  runner's own service account holding the expected permissions) and
+  matched the original preflight values -- no drift.
+- Gate 10: **RESOLVED (PASS)**. Owner sign-off: [ ]
+
+### Delivery gates updated (5, 11b, 11c)
+
+- The same B2 run (36407596552) also produced 6 alert decisions, which
+  fanned out to 10 channel-level events: 6 Telegram, 2 email, 2 ntfy. The
+  outbox's effective (latest-record) status for all 10 is SENT, confirmed
+  independently by the `delivery_attempts` SQLite table (10 rows, all
+  `delivered` / `2xx`).
+- Owner directly confirmed, from screenshots and direct phone observation:
+  the Telegram alert (consistent with gate 11a's existing PASS), the
+  Gmail message's receipt and rendering, and ntfy receipt on their phone,
+  with delivery under 30 seconds for the specific messages they observed.
+- Gate 5 (every generated alert delivered within 30s): the owner's direct
+  observation of specific messages is real evidence but not a systematic,
+  independently-timestamped measurement of all 10 channel-level events.
+  Reported as **OWNER-CONFIRMED (partial)**, not a full PASS against the
+  gate's original all-events wording.
+- Gate 11b (email): **OWNER-CONFIRMED**, superseding "NOT YET MEASURED."
+- Gate 11c (ntfy): **OWNER-CONFIRMED**, superseding "NOT YET MEASURED."
+
+### Unchanged limitations
+
+- Gate 4b (50-watch latency): still NOT YET MEASURED -- the watchlist has
+  4 watches.
+- No shadow-mode or staging channel exists; the blueprint's shadow-run
+  requirement is still not met.
+- Flanco's recurring single-product parse failure is unchanged.
+- Teams remains removed by the prior 2026-09-26 decision.
+
+### Document status
+
+This document is now a **provisional readiness assessment**, not a
+historical No-Go record only -- the two blockers (B1, B2) that produced
+the original NO-GO are resolved with production evidence, and delivery
+across all three live channels is owner-confirmed. It is also **not an
+owner-approved Go decision**: every sign-off checkbox in this document,
+original and above, is still unchecked and requires the owner's explicit
+action. Gate 4b (50-watch latency) and the no-shadow-channel scope
+deviation remain open and are unrelated to B1/B2.
