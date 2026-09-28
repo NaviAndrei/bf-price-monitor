@@ -583,3 +583,22 @@ distribution.
   asserts it never references Docker.
 - Docker Desktop was not running on the development machine, so the
   GitHub-hosted workflow is the clean-machine acceptance test of record.
+
+## 2026-09-28 — T-38b (#49): product identity adapters stay SKU-compatible
+Per-retailer SKU adapters (`bf_price_monitor/identity.py`) replace the ad-hoc
+last-segment derivation in `scrape.py`. This explicitly supersedes the
+`_derive_sku` convention flagged by T-41, while returning byte-identical SKUs
+for all 307 URLs in history, so SQLite offer ids do not churn. A test guards
+this.
+- Evidence contradicted the issue text. Real PC Garage URLs have no
+  `[slug]-[ID]` numeric id, so the slug is the identity.
+- The fingerprint is `pid-v1:` + sha256(`retailer:sku`), the issue's
+  formula plus a version prefix.
+- Fuzzy title matching is a scored fallback for cross-retailer links only.
+  Running it over real data exposed chassis-code false positives (same
+  E1504FA, different CPU), which led to the CPU, capacity and
+  unverified-spec penalties. The result is 6 accepted pairs, all consistent.
+- Not done, and deliberately out of scope: re-keying SQLite
+  `canonical_products` away from titles, or persisting fuzzy links. Both
+  change stored product ids and need their own migration decision. See
+  docs/product-identity.md.
