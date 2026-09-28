@@ -86,6 +86,7 @@ channels.
 | `SMTP_HOST`, `SMTP_PORT` | `email` | Port defaults to 587 (STARTTLS); 465 uses implicit TLS |
 | `SMTP_USERNAME`, `SMTP_PASSWORD` | `email` | Login is skipped when `SMTP_USERNAME` is unset. For Gmail use an app password |
 | `EMAIL_FROM`, `EMAIL_TO` | `email` | Both required; `EMAIL_TO` may be a comma-separated list |
+| `TELEGRAM_FEEDBACK_ALLOWED_USER_IDS` | feedback buttons | Numeric Telegram user id(s), comma-separated, allowed to label alerts. Unset = no buttons, no collection. See [docs/feedback-labels.md](docs/feedback-labels.md) |
 
 No secrets are needed for the local Ollama fallback since it never leaves
 your machine — it's only used when the HF call fails during a manual local

@@ -534,3 +534,29 @@ previous run. Every rehearsal run was therefore starting from empty state.
   None of this has yet run against the real `C:\bf-monitor-runtime-state`
   directory or the real runner service SID — that requires an actual
   monitor run, which was explicitly out of scope for this change.
+
+## 2026-09-28 — T-28 (#37): feedback labels via scheduled getUpdates polling
+The monitor runs only as scheduled GitHub Actions jobs with no host listening
+between runs, so button presses are pulled with Telegram `getUpdates` in a new
+`Collect alert feedback` step rather than received by a webhook, which would
+need a public HTTPS endpoint (paid or always-on host). Trade-offs accepted
+and documented in docs/feedback-labels.md: a delayed spinner until the next
+run, and presses lost when runs are more than 24 hours apart (Telegram's
+retention). An always-on `collect --loop` worker covers Docker mode (#38).
+Key choices:
+- Labels live in the existing runner-local `price_history.db`, not a new
+  file, so the #42 runtime-state snapshot carries them. Save now also
+  compares per-table row counts before promoting a snapshot.
+- First versioned migration mechanism (`PRAGMA user_version`, one
+  transaction per version). The base `_SCHEMA_SQL` stays as implicit
+  version 0.
+- Referential check against `delivery_attempts` (a delivered Telegram row
+  for the decision id), since there is still no `alert_decisions` table
+  (see T-37b).
+- Identities are stored as HMAC-SHA256 with a per-database random salt, not
+  plain sha256 like `delivery_attempts.destination_ref`. A plain hash of a
+  ~10-digit Telegram id is brute-forceable. `destination_ref` was left
+  unchanged (out of scope).
+- The stored offset is trusted for only 6 days, because the Bot API docs say
+  `update_id` restarts at a random value after a week with no updates.
+  Idempotency therefore keys on `callback_query.id`, never on `update_id`.
