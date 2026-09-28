@@ -560,3 +560,26 @@ Key choices:
 - The stored offset is trusted for only 6 days, because the Bot API docs say
   `update_id` restarts at a random value after a week with no updates.
   Idempotency therefore keys on `callback_query.id`, never on `update_id`.
+
+## 2026-09-28 — T-38 (#38): Docker mode on python-slim + headless shell, not the Playwright image
+The issue blueprint's base, `mcr.microsoft.com/playwright/python`, bundles
+Chromium, Firefox and WebKit, which contradicts the "Chromium only"
+acceptance criterion. Instead the image is `python:3.12-slim-bookworm`
+(digest-pinned) plus `playwright install --with-deps --only-shell chromium`.
+Per the Playwright docs, the headless shell is what `launch(headless=True)`
+uses. Dependencies come from `uv sync --frozen --no-editable` in a builder
+stage, so the image installs exactly `uv.lock`, and CI verifies that per
+distribution.
+- The blueprint's `bf_price_monitor.cli.daemon` does not exist. The
+  entrypoint is instead `scripts/run_loop.py`, which runs the same three
+  scripts as `monitor.yml` as child processes, so there is still one
+  pipeline.
+- Chromium runs without its sandbox (the Playwright default). Container
+  hardening (UID 10001, `cap_drop: ALL`, `no-new-privileges`, read-only
+  root) replaces a custom seccomp profile. `--ipc=host` was rejected in
+  favor of `shm_size`.
+- Nothing is published; the image is built and smoke-tested on
+  ubuntu-latest (`docker.yml`). `monitor.yml` is untouched, and a test
+  asserts it never references Docker.
+- Docker Desktop was not running on the development machine, so the
+  GitHub-hosted workflow is the clean-machine acceptance test of record.

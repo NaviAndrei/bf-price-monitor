@@ -181,6 +181,18 @@ uv run pre-commit run --all-files --show-diff-on-failure
 
 The ruff version comes from `uv.lock`, so local and CI formatting agree.
 
+### 5. Optional: Docker (always-on mode)
+
+GitHub Actions stays the zero-cost default. For a home server or VPS:
+
+```bash
+cp .env.example .env
+docker compose up -d --build
+```
+
+Non-root, read-only, Chromium-only image built from `uv.lock`; see
+[docs/docker.md](docs/docker.md). Run only one mode per Telegram bot.
+
 ## Watchlist QA audit
 
 ```bash
