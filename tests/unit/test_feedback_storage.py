@@ -67,7 +67,7 @@ def _tables(conn):
 
 
 def test_fresh_database_is_migrated_to_current_version(db):
-    assert sqlite_storage._user_version(db) == sqlite_storage.SCHEMA_VERSION == 1
+    assert sqlite_storage._user_version(db) == sqlite_storage.SCHEMA_VERSION
     assert {
         "alert_feedback",
         "alert_feedback_current",
@@ -89,7 +89,7 @@ def test_legacy_v0_database_upgrades_in_place_keeping_its_data(tmp_path):
 
     conn = sqlite_storage.init_db(path)
     try:
-        assert sqlite_storage._user_version(conn) == 1
+        assert sqlite_storage._user_version(conn) == sqlite_storage.SCHEMA_VERSION
         assert (
             conn.execute("SELECT title FROM canonical_products").fetchone()[0]
             == "Laptop"

@@ -157,6 +157,155 @@ def test_record_observation_from_pydantic_observation_raises_on_unknown_offer(db
         record_observation(db, observation)
 
 
+# --- T-47 (#66): durable cross-retailer identity links -----------------------
+
+PCG_URL = "https://pcgarage.ro/notebook-laptop/asus/156-vivobook-15-x1504ma-fhd"
+FLANCO_URL = "https://flanco.ro/laptop-asus-vivobook-15-x1504ma-bq200.html"
+# What the pcgarage/flanco adapters actually derive from those URLs (last
+# path segment, lowercased) -- kept consistent with the stored offer's sku
+# since production always stores exactly this value (scripts/scrape.py's
+# offer_sku()), and _resolve_product_id's sku_exact path depends on it.
+PCG_SKU = "156-vivobook-15-x1504ma-fhd"
+FLANCO_SKU = "laptop-asus-vivobook-15-x1504ma-bq200.html"
+
+# Real titles from tests/unit/test_identity.py's fixtures: identical model
+# code and configuration, scores 0.8143 ("medium", below HIGH_CONFIDENCE).
+PCG_X1504MA = (
+    "Laptop ASUS 15.6'' Vivobook 15 X1504MA, FHD, Procesor Intel® Core™ 3 304 "
+    "(6M Cache, up to 4.30 GHz), 8GB DDR5, 512GB SSD, Intel Graphics, No OS, Blue"
+)
+FLANCO_X1504MA_MEDIUM = (
+    'Laptop Asus Vivobook 15 X1504MA-BQ200, 15.6" FHD, Intel Core 3 304, 8GB, '
+    "512GB SSD, Free Dos, Quiet Blue"
+)
+# Case-folded variant of PCG_X1504MA: normalize_title() folds case, so the
+# token set -- and therefore the match score -- is identical (1.0, "high"),
+# but the raw string differs, so it doesn't collide with PCG_X1504MA's own
+# uuid5(title) hash by coincidence. No real fixture pair reaches
+# HIGH_CONFIDENCE yet (see docs/DECISIONS.md); this exercises that path
+# deliberately.
+FLANCO_X1504MA_HIGH = PCG_X1504MA.upper()
+
+
+def test_high_confidence_cross_retailer_match_merges_into_one_product_row(db):
+    record_observation(
+        db, _obs(sku=PCG_SKU, retailer="pcgarage", url=PCG_URL, title=PCG_X1504MA)
+    )
+    record_observation(
+        db,
+        _obs(
+            sku=FLANCO_SKU,
+            retailer="flanco",
+            url=FLANCO_URL,
+            title=FLANCO_X1504MA_HIGH,
+        ),
+    )
+
+    assert db.execute("SELECT COUNT(*) FROM canonical_products").fetchone()[0] == 1
+    pcg_product = get_latest_price(db, "pcgarage", PCG_SKU)["product_id"]
+    flanco_product = get_latest_price(db, "flanco", FLANCO_SKU)["product_id"]
+    assert pcg_product == flanco_product
+
+    links = db.execute("SELECT * FROM cross_retailer_links").fetchall()
+    assert len(links) == 1
+    assert links[0]["method"] == "fuzzy_title"
+    assert links[0]["linked_product_id"] == pcg_product
+
+    remaps = db.execute("SELECT * FROM product_id_remaps").fetchall()
+    assert len(remaps) == 1
+    assert remaps[0]["new_product_id"] == pcg_product
+
+
+def test_medium_confidence_cross_retailer_match_links_without_merging(db):
+    record_observation(
+        db, _obs(sku=PCG_SKU, retailer="pcgarage", url=PCG_URL, title=PCG_X1504MA)
+    )
+    record_observation(
+        db,
+        _obs(
+            sku=FLANCO_SKU,
+            retailer="flanco",
+            url=FLANCO_URL,
+            title=FLANCO_X1504MA_MEDIUM,
+        ),
+    )
+
+    # Below HIGH_CONFIDENCE: the link is recorded, but each retailer keeps
+    # its own canonical_products row -- no merge on a medium-confidence guess.
+    assert db.execute("SELECT COUNT(*) FROM canonical_products").fetchone()[0] == 2
+    pcg_product = get_latest_price(db, "pcgarage", PCG_SKU)["product_id"]
+    flanco_product = get_latest_price(db, "flanco", FLANCO_SKU)["product_id"]
+    assert pcg_product != flanco_product
+
+    links = db.execute("SELECT * FROM cross_retailer_links").fetchall()
+    assert len(links) == 1
+    assert links[0]["method"] == "fuzzy_title"
+    assert links[0]["confidence"] < 0.85
+    assert links[0]["linked_product_id"] == pcg_product
+
+    assert db.execute("SELECT COUNT(*) FROM product_id_remaps").fetchone()[0] == 0
+
+
+def test_cross_retailer_link_is_durable_across_a_reopened_connection(tmp_path):
+    db_path = tmp_path / "durable.sqlite3"
+    conn = init_db(db_path)
+    record_observation(
+        conn,
+        _obs(sku=PCG_SKU, retailer="pcgarage", url=PCG_URL, title=PCG_X1504MA),
+    )
+    record_observation(
+        conn,
+        _obs(
+            sku=FLANCO_SKU,
+            retailer="flanco",
+            url=FLANCO_URL,
+            title=FLANCO_X1504MA_HIGH,
+        ),
+    )
+    conn.close()
+
+    reopened = init_db(db_path)
+    try:
+        links = reopened.execute("SELECT * FROM cross_retailer_links").fetchall()
+        assert len(links) == 1
+        products = reopened.execute(
+            "SELECT COUNT(*) FROM canonical_products"
+        ).fetchone()[0]
+        assert products == 1
+    finally:
+        reopened.close()
+
+
+def test_sku_exact_match_keeps_product_id_stable_across_title_text_edits(db):
+    # sku must match what the emag adapter derives from url (the id after
+    # /pd/), since that's what _resolve_product_id's own extraction uses --
+    # not the stored sku field, which record_observation never re-derives.
+    emag_sku = "SKU1AAAAAA"
+    emag_url = f"https://emag.ro/laptop-original/pd/{emag_sku}"
+    record_observation(
+        db,
+        _obs(sku=emag_sku, retailer="emag", url=emag_url, title="Laptop Original"),
+    )
+    first_product_id = get_latest_price(db, "emag", emag_sku)["product_id"]
+
+    # Retailer edits the listed title text; same retailer+sku is still the
+    # same offer, so its product_id must not churn on the next scrape.
+    record_observation(
+        db,
+        _obs(
+            sku=emag_sku,
+            retailer="emag",
+            url=emag_url,
+            title="Laptop Original (Updated Listing Text)",
+            scraped_at="2026-09-21T10:00:00+00:00",
+        ),
+    )
+    second_product_id = get_latest_price(db, "emag", emag_sku)["product_id"]
+
+    assert second_product_id == first_product_id
+    assert db.execute("SELECT COUNT(*) FROM canonical_products").fetchone()[0] == 1
+
+
 # --- T-37b (#55): delivery_attempts audit table ------------------------------
 
 

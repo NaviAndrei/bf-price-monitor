@@ -7,6 +7,14 @@ from typing import Any, cast
 from uuid import NAMESPACE_URL, uuid4, uuid5
 
 from bf_price_monitor.domain.models import DeliveryAttempt, Observation
+from bf_price_monitor.identity import (
+    HIGH_CONFIDENCE,
+    IdentityError,
+    KnownProduct,
+    Resolution,
+    offer_fingerprint,
+    resolve_offer,
+)
 
 _SCHEMA_SQL = """
 CREATE TABLE IF NOT EXISTS canonical_products (
@@ -133,6 +141,42 @@ _MIGRATIONS: tuple[tuple[int, tuple[str, ...]], ...] = (
             """,
         ),
     ),
+    (
+        2,
+        (
+            # T-47 (#66): durable identity.py resolve_offer() output.
+            # cross_retailer_links is additive-only and never rewrites
+            # canonical_products or offers -- it records what the matcher
+            # found so a later run doesn't recompute it, and so it stays
+            # reversible (drop/rewrite this table, nothing else changes).
+            # product_id_remaps is the audit trail for the one case that
+            # *does* touch an existing row: a high-confidence fuzzy match
+            # (>= HIGH_CONFIDENCE) redirects that single offer's product_id
+            # to the matched canonical product. Each redirect is logged with
+            # its prior value here, so it can be undone with a plain UPDATE.
+            """
+            CREATE TABLE cross_retailer_links (
+                offer_fingerprint TEXT PRIMARY KEY,
+                linked_product_id TEXT NOT NULL
+                    REFERENCES canonical_products(id),
+                confidence REAL NOT NULL,
+                method TEXT NOT NULL CHECK(method IN ('sku_exact', 'fuzzy_title')),
+                reasons TEXT NOT NULL,
+                created_at_utc TEXT NOT NULL
+            )
+            """,
+            """
+            CREATE TABLE product_id_remaps (
+                offer_id TEXT NOT NULL,
+                old_product_id TEXT NOT NULL,
+                new_product_id TEXT NOT NULL,
+                reason TEXT NOT NULL,
+                remapped_at_utc TEXT NOT NULL,
+                PRIMARY KEY (offer_id, remapped_at_utc)
+            )
+            """,
+        ),
+    ),
 )
 
 SCHEMA_VERSION = _MIGRATIONS[-1][0]
@@ -235,6 +279,122 @@ def _upsert_price_observation(
     )
 
 
+def _load_known_products(db: sqlite3.Connection) -> list[KnownProduct]:
+    """One KnownProduct per existing offer, fingerprint recomputed from its
+    stored (retailer, sku) rather than persisted redundantly -- offers is
+    already the source of truth for that pair."""
+    rows = db.execute(
+        """
+        SELECT o.retailer, o.sku, o.product_id, p.title
+        FROM offers o
+        JOIN canonical_products p ON p.id = o.product_id
+        """
+    ).fetchall()
+    known: list[KnownProduct] = []
+    for row in rows:
+        try:
+            fingerprint = offer_fingerprint(row["retailer"], row["sku"])
+        except IdentityError:
+            continue
+        known.append(
+            KnownProduct(
+                canonical_key=row["product_id"],
+                retailer=row["retailer"],
+                title=row["title"],
+                offer_fingerprints={fingerprint},
+            )
+        )
+    return known
+
+
+def _record_cross_retailer_link(db: sqlite3.Connection, resolution: Resolution) -> None:
+    db.execute(
+        """
+        INSERT INTO cross_retailer_links
+            (offer_fingerprint, linked_product_id, confidence, method,
+             reasons, created_at_utc)
+        VALUES (?, ?, ?, ?, ?, ?)
+        ON CONFLICT(offer_fingerprint) DO UPDATE SET
+            linked_product_id = excluded.linked_product_id,
+            confidence = excluded.confidence,
+            method = excluded.method,
+            reasons = excluded.reasons,
+            created_at_utc = excluded.created_at_utc
+        """,
+        (
+            resolution.offer_fingerprint,
+            resolution.canonical_key,
+            resolution.confidence,
+            resolution.method,
+            ",".join(resolution.reasons),
+            datetime.now(UTC).isoformat(),
+        ),
+    )
+
+
+def _record_product_id_remap(
+    db: sqlite3.Connection,
+    offer_id: str,
+    old_product_id: str,
+    new_product_id: str,
+    reason: str,
+) -> None:
+    db.execute(
+        """
+        INSERT INTO product_id_remaps
+            (offer_id, old_product_id, new_product_id, reason, remapped_at_utc)
+        VALUES (?, ?, ?, ?, ?)
+        """,
+        (
+            offer_id,
+            old_product_id,
+            new_product_id,
+            reason,
+            datetime.now(UTC).isoformat(),
+        ),
+    )
+
+
+def _resolve_product_id(
+    db: sqlite3.Connection,
+    retailer: str,
+    url: str,
+    title: str,
+    offer_id: str,
+    default_product_id: str,
+) -> str:
+    """Runs identity.py's resolve_offer() against already-stored offers and
+    persists what it finds. A sku_exact match (this exact retailer+sku seen
+    before) always reattaches to its own prior product id, keeping it stable
+    across title-text edits. A fuzzy_title match across retailers only
+    redirects product_id when its score clears HIGH_CONFIDENCE (0.85) --
+    below that, the link is recorded in cross_retailer_links for querying,
+    but canonical_products/offers stay untouched, per the reversibility and
+    "don't merge on a medium-confidence guess" acceptance criteria (#66)."""
+    try:
+        known = _load_known_products(db)
+        resolution = resolve_offer(retailer, url, title, known)
+    except IdentityError:
+        return default_product_id
+
+    if resolution.method not in ("sku_exact", "fuzzy_title"):
+        return default_product_id
+
+    _record_cross_retailer_link(db, resolution)
+
+    resolved_product_id = default_product_id
+    if resolution.method == "sku_exact":
+        resolved_product_id = resolution.canonical_key
+    elif resolution.confidence >= HIGH_CONFIDENCE:
+        resolved_product_id = resolution.canonical_key
+
+    if resolved_product_id != default_product_id:
+        _record_product_id_remap(
+            db, offer_id, default_product_id, resolved_product_id, resolution.method
+        )
+    return resolved_product_id
+
+
 def record_observation(
     db: sqlite3.Connection, obs: dict[str, Any] | Observation
 ) -> None:
@@ -264,8 +424,13 @@ def record_observation(
         scraped_at = scraped_at.isoformat()
 
     with db:
-        _upsert_product(db, product_id, title, obs.get("category"))
-        resolved_offer_id = _upsert_offer(db, offer_id, product_id, retailer, sku, url)
+        resolved_product_id = _resolve_product_id(
+            db, retailer, url, title, offer_id, product_id
+        )
+        _upsert_product(db, resolved_product_id, title, obs.get("category"))
+        resolved_offer_id = _upsert_offer(
+            db, offer_id, resolved_product_id, retailer, sku, url
+        )
         _upsert_price_observation(
             db,
             resolved_offer_id,

@@ -850,7 +850,10 @@ def test_feedback_labels_offset_and_salt_survive_save_and_restore(tmp_path):
 
     restored = sqlite_storage.init_db(sources.db)
     try:
-        assert restored.execute("PRAGMA user_version").fetchone()[0] == 1
+        assert (
+            restored.execute("PRAGMA user_version").fetchone()[0]
+            == sqlite_storage.SCHEMA_VERSION
+        )
         labels = restored.execute("SELECT label FROM alert_feedback_current")
         assert [tuple(row) for row in labels] == [("useful",)]
         assert (
