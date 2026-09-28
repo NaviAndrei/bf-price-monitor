@@ -677,3 +677,37 @@ fingerprint") is deliberately not what got built.
   confidence merges into one row, medium confidence links without merging,
   sku_exact survives a title edit) plus durability across a reopened
   connection.
+
+## 2026-09-28 — T-32 (#43): BF-week cadence is a variable-gated second cron, not a hardcoded date
+
+The 30-minute Black Friday cadence is a second `*/30 * * * *` cron in
+`monitor.yml`. A small `gate` job (`scripts/cadence_gate.py`) lets it scrape
+only while "now" falls inside the `BF_PEAK_START_UTC`/`BF_PEAK_END_UTC`
+repository variables. The 2-hour cron and manual dispatch always pass.
+
+- **No hardcoded BF date.** The three retailers set their own campaign
+  dates and haven't announced 2026's. A wrong baked-in date is worse than
+  an unset variable, so the gate fails closed: unset, unparsable, or naive
+  (no UTC offset) boundaries mean the 30-minute cron does nothing.
+- **Rollback is a variable edit, not a deploy.** Deleting
+  `BF_PEAK_START_UTC` drops back to the 2-hour cadence on the next trigger.
+  Full escalation ladder: `docs/runbooks/BF_WEEK_CADENCE.md` section 4.
+- **Rejected: editing the cron line for BF week.** It needs two commits at
+  the right moments and a commit to roll back. Also rejected: a
+  per-run "sleep and loop" inside one job, which would hold the
+  self-hosted runner for hours.
+- **Request safety** (`scripts/scrape.py`): watch jitter is now 4–9s; there is
+  a 5s per-store floor between requests (`_pace_domain`); the user agent
+  rotates across Chrome 131/130 on Windows; and 403/429 counts are recorded
+  per store in `scrape_health.jsonl` (`fetch_attempts`, `rate_limit_hits`).
+  A store above a 5% rate is skipped for 30 minutes from that run's start.
+  Like the T-09 quarantine, it's derived from history each run, not stored
+  as a flag. The pacing timestamps live on `_RunState`, so the existing
+  per-test `reset()` isolates them.
+- **Known gaps, deliberately not fixed here:** the cooldown counts from the
+  flagged run's start, so at the 30-minute cadence it mostly catches the
+  duplicate even-hour run and manual dispatches rather than skipping a
+  whole cycle. There's no per-watch priority, so all watches get 30 minutes
+  during the window. Trial evidence covers two local back-to-back runs
+  (zero 403/429, zero challenges on all three stores), not a sustained run
+  from the production runner.
