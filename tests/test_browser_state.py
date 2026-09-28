@@ -277,8 +277,9 @@ def test_fetch_with_browser_context_new_page_takes_no_arguments(monkeypatch):
     assert len(ctx.pages) == 1
     page = ctx.pages[0]
     assert page.context is ctx
-    # The context, not the page, carries the configured user agent.
-    assert ctx.user_agent == scrape.HEADERS["User-Agent"]
+    # The context, not the page, carries the configured user agent (T-32,
+    # #43: rotated across CHROME_USER_AGENTS, no longer a fixed HEADERS value).
+    assert ctx.user_agent in scrape.CHROME_USER_AGENTS
     assert page.closed is True
 
 

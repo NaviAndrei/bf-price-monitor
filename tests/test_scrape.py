@@ -859,6 +859,115 @@ def test_challenge_counter_propagates_from_fetch_to_health_record(
     assert record["challenge_detected"] is True
 
 
+# --- T-32 (#43): BF-week cadence safety (UA rotation, domain pacing, ------
+# --- rate-limit cooldown) ---------------------------------------------------
+
+
+def test_user_agent_rotates_across_the_chrome_pool():
+    seen = {scrape._pick_user_agent() for _ in range(50)}
+    assert seen <= set(scrape.CHROME_USER_AGENTS)
+    assert len(seen) > 1  # both pool entries turn up over enough draws
+
+
+def test_pace_domain_sleeps_out_the_remainder_of_the_floor(monkeypatch):
+    scrape._run_state.reset(run_id="test-run")
+    # Both time.monotonic() calls inside _pace_domain (the elapsed check and
+    # the final bookkeeping write) land at 101.5 -- 1.5s after the seeded
+    # last-request time of 100.0.
+    monkeypatch.setattr(scrape.time, "monotonic", lambda: 101.5)
+    sleeps = []
+    monkeypatch.setattr(scrape.time, "sleep", sleeps.append)
+
+    scrape._run_state.last_request_at["emag"] = 100.0
+    scrape._pace_domain("emag")
+
+    assert sleeps == [scrape.DOMAIN_PACING_FLOOR_SECONDS - 1.5]
+
+
+def test_pace_domain_does_not_sleep_once_the_floor_has_elapsed(monkeypatch):
+    scrape._run_state.reset(run_id="test-run")
+    monkeypatch.setattr(scrape.time, "monotonic", lambda: 200.0)
+    sleeps = []
+    monkeypatch.setattr(scrape.time, "sleep", sleeps.append)
+
+    scrape._run_state.last_request_at["emag"] = 100.0
+    scrape._pace_domain("emag")
+
+    assert sleeps == []
+
+
+def _rate_limit_record(store, run_started_utc, attempts, hits, run_id="run-1"):
+    return {
+        "store": store,
+        "run_id": run_id,
+        "run_started_utc": run_started_utc,
+        "watches_requested": 1,
+        "products_parsed": 1,
+        "matched_count": 0,
+        "parse_failures": 0,
+        "challenge_detected": False,
+        "latency_seconds": 1.0,
+        "last_known_good_utc": run_started_utc,
+        "fetch_attempts": attempts,
+        "rate_limit_hits": hits,
+    }
+
+
+def test_rate_limited_stores_flags_a_store_over_threshold_within_the_window():
+    now = datetime.now(UTC)
+    records = [
+        _rate_limit_record("pcgarage", now.isoformat(), attempts=20, hits=2)  # 10%
+    ]
+    assert scrape._rate_limited_stores(records, now) == {"pcgarage"}
+
+
+def test_rate_limited_stores_ignores_a_store_at_or_below_threshold():
+    now = datetime.now(UTC)
+    records = [
+        _rate_limit_record("pcgarage", now.isoformat(), attempts=20, hits=1)  # 5%
+    ]
+    assert scrape._rate_limited_stores(records, now) == set()
+
+
+def test_rate_limited_stores_clears_once_the_cooldown_window_elapses():
+    run_started = datetime.now(UTC) - timedelta(minutes=31)
+    records = [
+        _rate_limit_record("pcgarage", run_started.isoformat(), attempts=20, hits=5)
+    ]
+    assert scrape._rate_limited_stores(records, datetime.now(UTC)) == set()
+
+
+def test_main_skips_a_cooling_down_store_and_writes_no_new_health_record(
+    tmp_path, monkeypatch
+):
+    calls = {"pcgarage": 0}
+
+    def pcgarage_scraper(query):
+        calls["pcgarage"] += 1
+        return []
+
+    _configure_run(
+        tmp_path,
+        monkeypatch,
+        [{"site": "pcgarage", "query": "q"}],
+        {"pcgarage": pcgarage_scraper},
+    )
+
+    run_started = datetime.now(UTC).isoformat()
+    scrape.SCRAPE_HEALTH_FILE.parent.mkdir(parents=True, exist_ok=True)
+    with open(scrape.SCRAPE_HEALTH_FILE, "a", encoding="utf-8") as f:
+        f.write(
+            json.dumps(_rate_limit_record("pcgarage", run_started, attempts=10, hits=1))
+            + "\n"
+        )
+
+    scrape.main()
+
+    assert calls["pcgarage"] == 0
+    records = [r for r in _health_records() if r["store"] == "pcgarage"]
+    assert len(records) == 1  # only the seeded record, no new one appended
+
+
 # --- T-40 (#57): seller_policy "trusted" gate on is_marketplace ------------
 
 

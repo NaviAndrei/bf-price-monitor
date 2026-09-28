@@ -44,6 +44,43 @@ from bf_price_monitor.storage.sqlite import (
 HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
 REQUEST_TIMEOUT = 15
 
+# T-32 (#43): rotated per browser context / plain-HTTP request so every
+# fetch doesn't carry the exact same fingerprint. Two current Chrome-on-Windows
+# releases rather than one — enough to break a naive UA-based fingerprint
+# without drifting into stale/uncommon strings that stand out on their own.
+CHROME_USER_AGENTS = [
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
+]
+
+
+def _pick_user_agent() -> str:
+    return random.choice(CHROME_USER_AGENTS)
+
+
+# T-32 (#43): floor on how often any single fetch()/fetch_with_browser() call
+# may hit the same retailer domain, independent of the polite inter-watch
+# delay in _run() (which only fires between watchlist items, not between
+# retries within one item). The timestamps this reads/writes live on
+# _run_state (defined below) rather than a bare module global, so
+# _run_state.reset() -- already called at the top of every real run, and by
+# tests that need a clean slate -- clears pacing history the same way it
+# clears every other run-scoped counter.
+DOMAIN_PACING_FLOOR_SECONDS = 5.0
+
+
+def _pace_domain(site_name: str) -> None:
+    last = _run_state.last_request_at.get(site_name)
+    now = time.monotonic()
+    if last is not None:
+        elapsed = now - last
+        if elapsed < DOMAIN_PACING_FLOOR_SECONDS:
+            time.sleep(DOMAIN_PACING_FLOOR_SECONDS - elapsed)
+    _run_state.last_request_at[site_name] = time.monotonic()
+
+
 # Playwright's own navigation-timeout default is 30s; the listing pages this
 # scrapes are simple search results, so 25s is plenty and fails fast instead
 # of tying up the runner when a site truly stalls.
@@ -141,6 +178,11 @@ HISTORY_SCHEMA_VERSION = 1
 # other store succeeded in the same run is "Critical Selector Drift" (a
 # broken selector/site redesign) rather than a transient network blip.
 DEAD_MAN_THRESHOLD_HOURS = 24
+
+# T-32 (#43): a store whose most recent run's 403/429 rate exceeded 5% sits
+# out the next 30 minutes rather than getting hit again immediately.
+RATE_LIMIT_COOLDOWN_THRESHOLD = 0.05
+RATE_LIMIT_COOLDOWN_MINUTES = 30
 STORE_DISPLAY_NAMES = {
     "emag": "eMAG",
     "pcgarage": "PC Garage",
@@ -167,12 +209,26 @@ class _RunState:
         # which challenge_counts alone can't distinguish.
         self.challenge_wait_entered_counts: dict[str, int] = {}
         self.failure_counts: dict[str, int] = {}
+        # T-32 (#43): every fetch()/fetch_with_browser() attempt increments
+        # fetch_attempt_counts; rate_limit_hit_counts only increments when
+        # that attempt's status was 403/429 (RETRY_STATUS_CODES). Together
+        # these give a per-site 403/429 rate for this run, independent of
+        # challenge_counts above (a challenge page can be a 200 with
+        # "Just a moment" markup, not just a 403/429 status).
+        self.fetch_attempt_counts: dict[str, int] = {}
+        self.rate_limit_hit_counts: dict[str, int] = {}
+        # T-32 (#43): last time.monotonic() a request was sent to each site,
+        # read/written by _pace_domain() above.
+        self.last_request_at: dict[str, float] = {}
 
     def reset(self, run_id: str) -> None:
         self.run_id = run_id
         self.challenge_counts = {}
         self.challenge_wait_entered_counts = {}
         self.failure_counts = {}
+        self.fetch_attempt_counts = {}
+        self.rate_limit_hit_counts = {}
+        self.last_request_at = {}
 
 
 _run_state = _RunState()
@@ -205,7 +261,7 @@ class _BrowserState:
         self.start()
         context = self._contexts.get(site_name)
         if context is None:
-            context = self._browser.new_context(user_agent=HEADERS["User-Agent"])
+            context = self._browser.new_context(user_agent=_pick_user_agent())
             self._contexts[site_name] = context
         return context
 
@@ -238,6 +294,16 @@ class _BrowserState:
 
 
 _browser_state = _BrowserState()
+
+
+def _record_fetch_attempt(site_name: str, status: int | None) -> None:
+    _run_state.fetch_attempt_counts[site_name] = (
+        _run_state.fetch_attempt_counts.get(site_name, 0) + 1
+    )
+    if status in RETRY_STATUS_CODES:
+        _run_state.rate_limit_hit_counts[site_name] = (
+            _run_state.rate_limit_hit_counts.get(site_name, 0) + 1
+        )
 
 
 def _record_challenge(site_name: str) -> None:
@@ -658,6 +724,7 @@ def fetch_with_browser(url: str, site_name: str) -> str | None:
         # this same context so any challenge/session cookies it picked up
         # survive into the retry; a poisoned context is instead discarded by
         # with_retry()'s scraper-level retry path, not here.
+        _pace_domain(site_name)
         context = _browser_state.get_context(site_name)
         page = context.new_page()
         try:
@@ -669,6 +736,7 @@ def fetch_with_browser(url: str, site_name: str) -> str | None:
                 wait_until="domcontentloaded",
             )
             status = response.status if response else None
+            _record_fetch_attempt(site_name, status)
 
             # Bounded challenge wait — unrelated to the retry below. This
             # waits out a JS challenge within a single attempt; the retry
@@ -714,13 +782,16 @@ def fetch_with_browser(url: str, site_name: str) -> str | None:
 def fetch(url: str, site_name: str) -> str | None:
     r = None
     for attempt in range(1, MAX_FETCH_ATTEMPTS + 1):
+        _pace_domain(site_name)
+        headers = {**HEADERS, "User-Agent": _pick_user_agent()}
         try:
-            r = requests.get(url, headers=HEADERS, timeout=REQUEST_TIMEOUT)
+            r = requests.get(url, headers=headers, timeout=REQUEST_TIMEOUT)
         except requests.exceptions.RequestException as e:
             print(
                 f"[{site_name}] unreachable ({e.__class__.__name__}), skipping this run"
             )
             return None
+        _record_fetch_attempt(site_name, r.status_code)
 
         if r.status_code in RETRY_STATUS_CODES and attempt < MAX_FETCH_ATTEMPTS:
             delay = RETRY_BACKOFFS[attempt - 1]
@@ -1225,6 +1296,27 @@ def _quarantined_stores(records: list[dict]) -> set[str]:
     return quarantined
 
 
+def _rate_limited_stores(records: list[dict], now_utc: datetime) -> set[str]:
+    # T-32 (#43): IP reputation defense. A store's most recent run is in
+    # cooldown when its 403/429 rate exceeded RATE_LIMIT_COOLDOWN_THRESHOLD
+    # and RATE_LIMIT_COOLDOWN_MINUTES haven't elapsed since that run started.
+    # Derived from scrape_health.jsonl on every call, same as
+    # _quarantined_stores above -- no separate cooldown state machine.
+    cooling_down = set()
+    for store in {rec["store"] for rec in records}:
+        prev = _previous_record(records, store)
+        if prev is None:
+            continue
+        attempts = prev.get("fetch_attempts", 0)
+        hits = prev.get("rate_limit_hits", 0)
+        if attempts == 0 or hits / attempts <= RATE_LIMIT_COOLDOWN_THRESHOLD:
+            continue
+        run_started = datetime.fromisoformat(prev["run_started_utc"])
+        if now_utc - run_started < timedelta(minutes=RATE_LIMIT_COOLDOWN_MINUTES):
+            cooling_down.add(store)
+    return cooling_down
+
+
 def main():
     try:
         watchlist = load_watchlist(WATCHLIST_FILE)
@@ -1257,6 +1349,7 @@ def _run(watchlist: list[dict]) -> None:
 
     health_records_before = _read_health_records()
     quarantined_before = _quarantined_stores(health_records_before)
+    rate_limited_before = _rate_limited_stores(health_records_before, now_utc)
     per_store: dict[str, dict] = {}
 
     # site is the retailer being scraped for this pass, which differs from
@@ -1282,6 +1375,14 @@ def _run(watchlist: list[dict]) -> None:
             )
             continue
 
+        if site in rate_limited_before:
+            print(
+                f"[{site}] skipped: cooling down after a >"
+                f"{RATE_LIMIT_COOLDOWN_THRESHOLD:.0%} 403/429 rate on its last run "
+                f"(retrying after {RATE_LIMIT_COOLDOWN_MINUTES}m)"
+            )
+            continue
+
         scraper = SCRAPERS.get(site)
         if not scraper:
             print(f"Unknown site '{site}' in watchlist, skipping")
@@ -1297,7 +1398,7 @@ def _run(watchlist: list[dict]) -> None:
             results = []
         stats["latency_seconds"] += time.monotonic() - item_started
         stats["products_parsed"] += len(results)
-        time.sleep(random.uniform(3, 7))  # polite delay between requests
+        time.sleep(random.uniform(4, 9))  # polite delay between requests (T-32, #43)
 
         for r in results:
             # Canonicalized, not the raw scraped URL (T-06): the history dict
@@ -1446,7 +1547,11 @@ def _run(watchlist: list[dict]) -> None:
 
     new_health_records = []
     for site, stats in per_store.items():
-        if site in quarantined_before or site not in SCRAPERS:
+        if (
+            site in quarantined_before
+            or site in rate_limited_before
+            or site not in SCRAPERS
+        ):
             continue
         prev = _previous_record(health_records_before, site)
         last_known_good_utc = (
@@ -1477,6 +1582,11 @@ def _run(watchlist: list[dict]) -> None:
                 > 0,
                 "latency_seconds": round(stats["latency_seconds"], 3),
                 "last_known_good_utc": last_known_good_utc,
+                # T-32 (#43): rate-limit trial matrix input; see
+                # _rate_limited_stores() for how a >5% rate here cools this
+                # store down for the next RATE_LIMIT_COOLDOWN_MINUTES.
+                "fetch_attempts": _run_state.fetch_attempt_counts.get(site, 0),
+                "rate_limit_hits": _run_state.rate_limit_hit_counts.get(site, 0),
             }
         )
     _append_health_records(new_health_records)

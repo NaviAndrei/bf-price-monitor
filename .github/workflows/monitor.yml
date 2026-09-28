@@ -13,6 +13,13 @@ name: Price Monitor
 on:
   schedule:
     - cron: "0 */2 * * *"
+    # T-32 (#43): BF-week adaptive cadence. This tighter cron always fires,
+    # but the `gate` job below (scripts/cadence_gate.py) only lets the real
+    # scrape proceed when `now` falls inside the BF_PEAK_START_UTC /
+    # BF_PEAK_END_UTC repository variables -- unset by default, so this
+    # cron is a no-op outside a deliberately configured BF week. See
+    # docs/runbooks/BF_WEEK_CADENCE.md.
+    - cron: "*/30 * * * *"
   workflow_dispatch:
 
 # Deny-all by default; each job below grants back only what its own steps
@@ -26,7 +33,29 @@ concurrency:
   group: monitor
   cancel-in-progress: false
 jobs:
+  # T-32 (#43): fast (checkout + one script, no Playwright/uv setup), so
+  # deciding "not now" on the 30-minute cron outside the BF peak window
+  # costs seconds of self-hosted runner time, not a full scrape cycle.
+  gate:
+    runs-on: self-hosted
+    permissions: {}
+    outputs:
+      should_run: ${{ steps.decide.outputs.should_run }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Decide whether this trigger should scrape
+        id: decide
+        env:
+          BF_PEAK_START_UTC: ${{ vars.BF_PEAK_START_UTC }}
+          BF_PEAK_END_UTC: ${{ vars.BF_PEAK_END_UTC }}
+          CADENCE_EVENT_SCHEDULE: ${{ github.event.schedule }}
+        run: '& "C:\Program Files\Python312\python.exe" scripts/cadence_gate.py'
+
   scrape-analyze-notify:
+    needs: gate
+    if: needs.gate.outputs.should_run == 'true'
     runs-on: self-hosted
     permissions:
       contents: read
