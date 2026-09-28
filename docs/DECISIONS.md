@@ -645,3 +645,35 @@ from the files the monitor already keeps: `scrape_health.jsonl`,
   hold no URLs, titles, rater references or chat ids.
 - #47 stays open. docs/retros/2026-black-friday.md is a template until the
   event's real data fills it and the carry-over items are filed.
+
+## 2026-09-28 — T-47 (#66): cross-retailer links persist as an additive
+table, not a `canonical_products` re-key
+`resolve_offer()` (#49) now runs on every SQLite write
+(`_resolve_product_id` in `bf_price_monitor/storage/sqlite.py`), but the
+issue's own literal task ("re-key `canonical_products` from title to
+fingerprint") is deliberately not what got built.
+- The calibration run recorded in #49's decision only ever produced
+  `medium`-confidence fuzzy matches (0.75–0.85), never `high`. Automatically
+  rewriting `canonical_products`/`offers` rows on a medium-confidence guess
+  risks silently mixing two different products' price history — exactly
+  the "schema-valid is not production-safe" trap this file already warns
+  about elsewhere.
+- Split by confidence instead: `sku_exact` matches (the same retailer+sku
+  seen before) and `fuzzy_title` matches at or above `HIGH_CONFIDENCE`
+  (0.85) redirect that one offer's `product_id` to the matched product, and
+  the redirect is logged to a new `product_id_remaps` table (old id, new
+  id, offer, reason) so it can be reversed with a plain `UPDATE`. Anything
+  below `HIGH_CONFIDENCE` is recorded in a new `cross_retailer_links` table
+  (fingerprint → linked product, confidence, method, reasons) but never
+  touches `canonical_products` or `offers` — the link is durable and
+  queryable without ever being a destructive merge.
+- Both tables are additive (migration version 2); no existing row's `id`
+  changes shape, so offer ids from #49's compatibility guarantee still hold.
+- A useful side effect: `sku_exact` also fixes a pre-existing bug where the
+  same offer's `product_id` recomputed from `uuid5(title)` on every write,
+  so a retailer editing its listing's title text silently created a new
+  canonical product. It's now pinned to the offer's first-seen product id.
+- Tests: `tests/unit/test_sqlite_storage.py` covers all three paths (high
+  confidence merges into one row, medium confidence links without merging,
+  sku_exact survives a title edit) plus durability across a reopened
+  connection.

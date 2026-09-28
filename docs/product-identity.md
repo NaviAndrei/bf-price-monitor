@@ -94,8 +94,8 @@ includes URLs, titles or user data.
 
 - **Wired:** `scrape.py`'s SQLite write gets its SKU from the adapters,
   including the pattern-mismatch reason code.
-- **Not wired:** `canonical_products` rows in SQLite are still keyed by
-  title, the limitation inherited from T-19. Cross-retailer fuzzy links are
-  not written to storage. `resolve_offer` is ready for that step, but
-  changing product keys means migrating existing product ids, and that needs
-  its own issue and decision.
+- **Wired (T-47, #66):** every `record_observation()` dict-path call now
+  runs `resolve_offer()` against the offers already in SQLite
+  (`bf_price_monitor/storage/sqlite.py::_resolve_product_id`). See
+  `docs/DECISIONS.md`'s 2026-09-28 T-47 entry for what it persists and why
+  automatic merging is gated on `HIGH_CONFIDENCE`, not `MATCH_THRESHOLD`.
