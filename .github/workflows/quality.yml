@@ -63,6 +63,10 @@ jobs:
         run: uv sync --frozen --extra dev
       - name: Lint
         run: uv run ruff check .
+      # #54: `ruff check` is lint only -- formatting drift passed CI
+      # unnoticed until this step was added.
+      - name: Format check
+        run: uv run ruff format --check .
       - name: Type check
         run: uv run mypy bf_price_monitor/
       - name: Test + coverage
