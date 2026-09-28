@@ -602,3 +602,25 @@ this.
   `canonical_products` away from titles, or persisting fuzzy links. Both
   change stored product ids and need their own migration decision. See
   docs/product-identity.md.
+
+## 2026-09-28 — T-29 (#36): anomaly pilot is an offline, label-gated extra
+scikit-learn and ruptures are an optional `anomaly` extra locked in
+`uv.lock`, installed only by the dedicated `anomaly-pilot` CI job. The
+monitor (`uv sync --frozen`) and the Docker image never install them. This
+keeps the numeric stack off the self-hosted runner and out of the
+production dependency surface. Tests assert that production paths never
+reference the pilot.
+- The blueprint's numbers (contamination 0.03, score −0.65, PELT
+  `l2`/`min_size=3`) are recorded as configurable hypotheses, not
+  constants. Each report carries config, data and environment
+  fingerprints.
+- The split is chronological, with causal features. Preprocessing and the
+  model are fit on train only, the threshold is chosen on validation only,
+  and the test split stays sealed until `--unseal-test`.
+- The deterministic baseline is the recorded `delivery_attempts` decisions,
+  not a re-implementation of `rule_verdict`.
+- Labels only exist for sent alerts, so metrics are explicitly conditional
+  on that selection. A 30-label, two-class gate blocks precision/recall
+  rather than estimating them. No synthetic labels outside unit tests.
+- #36 stays open: its written precision/recall evaluation needs real #37
+  labels. See docs/anomaly-pilot.md.

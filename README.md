@@ -193,6 +193,19 @@ docker compose up -d --build
 Non-root, read-only, Chromium-only image built from `uv.lock`; see
 [docs/docker.md](docs/docker.md). Run only one mode per Telegram bot.
 
+### 6. Optional: offline anomaly pilot
+
+An Isolation Forest + change-point research pilot over stored history. It
+never affects alerts and is not installed by the monitor or Docker:
+
+```bash
+uv sync --frozen --extra dev --extra anomaly
+uv run --no-sync python scripts/anomaly_pilot.py
+```
+
+Precision/recall are reported only once real feedback labels exist; see
+[docs/anomaly-pilot.md](docs/anomaly-pilot.md).
+
 ## Watchlist QA audit
 
 ```bash
