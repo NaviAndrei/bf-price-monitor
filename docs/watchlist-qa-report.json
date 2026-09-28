@@ -1,0 +1,294 @@
+{
+  "schema_version": "1.0",
+  "generated_at_utc": "2026-09-28T14:48:33.849674+00:00",
+  "audit_mode": "live",
+  "bf_event_date": "2026-11-27",
+  "bf_date_source": "Computed: day after the fourth Thursday of November 2026 (fixed US-Thanksgiving-anchored Black Friday definition); no project-specific override found in docs/DECISIONS.md.",
+  "audit_timestamp_utc": "2026-09-28T14:48:33.849674+00:00",
+  "audit_date_europe_bucharest": "2026-09-28",
+  "window_start_date": "2026-11-20",
+  "within_seven_day_window": false,
+  "active_watch_count": 4,
+  "retailer_check_count": 4,
+  "pass_count": 4,
+  "unverified_or_failed_count": 0,
+  "corrections": [],
+  "removals": [],
+  "overall_acceptance_status": "BLOCKED",
+  "records": [
+    {
+      "watch_id": "babebbc9-2a56-5d0c-b57c-9ca8ad44d7b4",
+      "configured_site": "emag",
+      "retailer_checked": "emag",
+      "query": "laptop lenovo v15",
+      "enabled": true,
+      "audit_timestamp_utc": "2026-09-28T14:48:33.849674+00:00",
+      "status": "PASS",
+      "status_meaning": "Live listing succeeded and at least one result matches intent.",
+      "matching_count": 55,
+      "sample_titles": [
+        "Laptop Lenovo V15 G4 AMN cu procesor AMD Ryzen™ 5 7520U pana la 4.3GHz, 15.6\" Full HD, 16GB LPDDR5 RAM, 512GB SSD, AMD Radeon™ 610M Graphics, Windows® 11 Pro, Business Black",
+        "Laptop Lenovo V15 G5 IRL cu procesor Intel® Core™ i5-13420H pana la 4.6GHz, 15.6\" Full HD, 16GB DDR5 RAM, 512GB SSD, Intel® UHD Graphics, Windows® 11 Pro, Business Black, 3y",
+        "Laptop Lenovo V15 G5 IRL cu procesor Intel Core™ i3-1315U pana la 4.50 GHz, 15.6\" FHD IPS, 16GB RAM, 512GB SSD, Intel® UHD Graphics, No OS",
+        "Laptop Lenovo V15 G5 cu procesor Intel® Core™ i7-13620H pana la 4.90 GHz, 15.6\" Full HD, 16GB DDR5 RAM, 512GB SSD, Intel® UHD Graphics, Windows® 11 Pro, Business Black, 3y on-site Premium Care",
+        "Laptop Lenovo V15 G5 IRL cu procesor Intel Core™ i5-13420H pana la 4.60 GHz, 15.6\" FHD IPS, 16GB RAM, 1TB SSD, Intel® UHD Graphics, No OS"
+      ],
+      "result_urls": [
+        {
+          "canonical_url": "https://emag.ro/laptop-lenovo-v15-g4-amn-cu-procesor-amd-ryzentm-5-7520u-pana-la-4-3ghz-15-6-full-hd-16gb-lpddr5-ram-512gb-ssd-amd-radeontm-610m-graphics-windowsr-11-pro-business-black-82yu00ymrm/pd/DQN69M2BM",
+          "scheme_ok": true,
+          "host_ok": true,
+          "path_ok": true,
+          "valid": true
+        },
+        {
+          "canonical_url": "https://emag.ro/laptop-lenovo-v15-g5-irl-cu-procesor-intelr-coretm-i5-13420h-pana-la-4-6ghz-15-6-full-hd-16gb-ddr5-ram-512gb-ssd-intelr-uhd-graphics-windowsr-11-pro-business-black-3y-83gw00acri/pd/D91TPW3BM",
+          "scheme_ok": true,
+          "host_ok": true,
+          "path_ok": true,
+          "valid": true
+        },
+        {
+          "canonical_url": "https://emag.ro/laptop-lenovo-v15-g5-irl-cu-procesor-intel-coretm-i3-1315u-pana-la-4-50-ghz-15-6-fhd-ips-16gb-ram-512gb-ssd-intelr-uhd-graphics-no-os-83hf00gcri/pd/DKZG8P2BM",
+          "scheme_ok": true,
+          "host_ok": true,
+          "path_ok": true,
+          "valid": true
+        },
+        {
+          "canonical_url": "https://emag.ro/laptop-lenovo-v15-g5-cu-procesor-intelr-coretm-i7-13620h-pana-la-4-90-ghz-15-6-full-hd-16gb-ddr5-ram-512gb-ssd-intelr-uhd-graphics-windowsr-11-pro-business-black-3y-on-site-premium-care-83gw00abri/pd/DS1TPW3BM",
+          "scheme_ok": true,
+          "host_ok": true,
+          "path_ok": true,
+          "valid": true
+        },
+        {
+          "canonical_url": "https://emag.ro/laptop-lenovo-v15-g5-irl-cu-procesor-intel-coretm-i5-13420h-pana-la-4-60-ghz-15-6-fhd-ips-16gb-ram-1tb-ssd-intelr-uhd-graphics-no-os-83hf00gmri/pd/DNZG8P2BM",
+          "scheme_ok": true,
+          "host_ok": true,
+          "path_ok": true,
+          "valid": true
+        }
+      ],
+      "stock_statuses": [
+        "in_stock",
+        "in_stock",
+        "in_stock",
+        "in_stock",
+        "in_stock"
+      ],
+      "failure_category": null,
+      "reason": null,
+      "recommended_action": "none",
+      "requires_human_review": false,
+      "duplicate_of": [],
+      "target_price_feasibility": {
+        "status": "within_observed_range",
+        "target_price": 2500.0,
+        "observed_low": 1933.99
+      },
+      "url_verification": "structural_only"
+    },
+    {
+      "watch_id": "4d24a18d-89d8-59f0-8798-68babdceb715",
+      "configured_site": "pcgarage",
+      "retailer_checked": "pcgarage",
+      "query": "laptop asus vivobook",
+      "enabled": true,
+      "audit_timestamp_utc": "2026-09-28T14:48:33.849674+00:00",
+      "status": "PASS",
+      "status_meaning": "Live listing succeeded and at least one result matches intent.",
+      "matching_count": 20,
+      "sample_titles": [
+        "Laptop ASUS 15.6'' Vivobook 15 R1504VA, FHD, Procesor Intel® Core™ i3-1315U (10M Cache, up to 4.50 GHz, with IPU), 8GB DDR4, 512GB SSD, Intel UHD, No OS, Quiet Blue",
+        "Laptop ASUS 15.6'' Vivobook Go 15 E1504FA, FHD, Procesor AMD Ryzen™ 3 30 (4M Cache, up to 4.1 GHz), 8GB LPDDR5, 512GB SSD, AMD Radeon 610M, No OS, Mixed Black",
+        "Laptop ASUS 15.6'' Vivobook 15 X1504MA, FHD, Procesor Intel® Core™ 5 320 (6M Cache, up to 4.60 GHz), 8GB DDR5, 512GB SSD, Intel Graphics, No OS, Quiet Blue",
+        "Laptop ASUS 15.6'' Vivobook 15 R1504VA, FHD, Procesor Intel® Core™ i3-1315U (10M Cache, up to 4.50 GHz, with IPU), 8GB DDR4, 512GB SSD, Intel UHD, Win 11 Home, Quiet Blue",
+        "Laptop ASUS 15.6'' Vivobook Go 15 E1504TA, FHD, Procesor Intel® N150 (6M Cache, up to 3.60 GHz), 8GB LPDDR5, 256GB UFS, Intel Graphics, No OS, Cool Silver"
+      ],
+      "result_urls": [
+        {
+          "canonical_url": "https://pcgarage.ro/notebook-laptop/asus/156-vivobook-15-r1504va-fhd-procesor-intel-core-i3-1315u-10m-cache-up-to-450-ghz-with-ipu-8gb-ddr4-512gb-ssd-intel-uhd-no-os-quiet-blue",
+          "scheme_ok": true,
+          "host_ok": true,
+          "path_ok": true,
+          "valid": true
+        },
+        {
+          "canonical_url": "https://pcgarage.ro/notebook-laptop/asus/156-vivobook-go-15-e1504fa-fhd-procesor-amd-ryzen-3-30-4m-cache-up-to-41-ghz-8gb-lpddr5-512gb-ssd-amd-radeon-610m-no-os-mixed-black",
+          "scheme_ok": true,
+          "host_ok": true,
+          "path_ok": true,
+          "valid": true
+        },
+        {
+          "canonical_url": "https://pcgarage.ro/notebook-laptop/asus/156-vivobook-15-x1504ma-fhd-procesor-intel-core-5-320-6m-cache-up-to-460-ghz-8gb-ddr5-512gb-ssd-intel-graphics-no-os-quiet-blue",
+          "scheme_ok": true,
+          "host_ok": true,
+          "path_ok": true,
+          "valid": true
+        },
+        {
+          "canonical_url": "https://pcgarage.ro/notebook-laptop/asus/156-vivobook-15-r1504va-fhd-procesor-intel-core-i3-1315u-10m-cache-up-to-450-ghz-with-ipu-8gb-ddr4-512gb-ssd-intel-uhd-win-11-home-quiet-blue",
+          "scheme_ok": true,
+          "host_ok": true,
+          "path_ok": true,
+          "valid": true
+        },
+        {
+          "canonical_url": "https://pcgarage.ro/notebook-laptop/asus/156-vivobook-go-15-e1504ta-fhd-procesor-intel-n150-6m-cache-up-to-360-ghz-8gb-lpddr5-256gb-ufs-intel-graphics-no-os-cool-silver",
+          "scheme_ok": true,
+          "host_ok": true,
+          "path_ok": true,
+          "valid": true
+        }
+      ],
+      "stock_statuses": [
+        "in_stock",
+        "limited_stock",
+        "in_stock",
+        "in_stock",
+        "in_stock"
+      ],
+      "failure_category": null,
+      "reason": null,
+      "recommended_action": "none",
+      "requires_human_review": false,
+      "duplicate_of": [],
+      "target_price_feasibility": {
+        "status": "not_set",
+        "target_price": null,
+        "observed_low": null
+      },
+      "url_verification": "structural_only"
+    },
+    {
+      "watch_id": "ba36f3c8-f2ac-5cd9-9bed-a5828741ff66",
+      "configured_site": "flanco",
+      "retailer_checked": "flanco",
+      "query": "laptop asus vivobook",
+      "enabled": true,
+      "audit_timestamp_utc": "2026-09-28T14:48:33.849674+00:00",
+      "status": "PASS",
+      "status_meaning": "Live listing succeeded and at least one result matches intent.",
+      "matching_count": 11,
+      "sample_titles": [
+        "Laptop Asus Vivobook M1607KA-MB224, 16\", AMD Ryzen AI 5 330, 16GB, 512GB SSD, No OS, Quiet Blue",
+        "Laptop Asus Vivobook M1502NAQ-BQ104, AMD Ryzen R5-150, 15.6\", 8GB, 512GB, No OS, Quiet Blue",
+        "Laptop Asus Vivobook 15 X1504MA-BQ200, 15.6\" FHD, Intel Core 3 304, 8GB, 512GB SSD, Free Dos, Quiet Blue",
+        "Laptop Asus Vivobook 15 X1502VA 15.6\", Intel Core i5-13420H, 8GB DDR4, 512GB SSD, Intel UHD, No OS, Quiet Blue",
+        "Laptop ASUS Vivobook 16 A1605VA-MB1947, Intel Core i5-13420H, 16 inch, RAM 8GB, SSD 512GB, Intel UHD Graphics, No OS, Cool Silver"
+      ],
+      "result_urls": [
+        {
+          "canonical_url": "https://flanco.ro/laptop-asus-vivobook-m1607ka-mb224-16-amd-ryzen-ai-5-330-16gb-512gb-ssd-no-os-quiet-blue.html",
+          "scheme_ok": true,
+          "host_ok": true,
+          "path_ok": true,
+          "valid": true
+        },
+        {
+          "canonical_url": "https://flanco.ro/laptop-asus-vivobook-m1502naq-bq104-amd-ryzen-r5-150-15-6-8gb-512gb-no-os-quiet-blue.html",
+          "scheme_ok": true,
+          "host_ok": true,
+          "path_ok": true,
+          "valid": true
+        },
+        {
+          "canonical_url": "https://flanco.ro/laptop-asus-vivobook-15-x1504ma-bq200-15-6-fhd-intel-core-3-304-8gb-512gb-ssd-free-dos-quiet-blue.html",
+          "scheme_ok": true,
+          "host_ok": true,
+          "path_ok": true,
+          "valid": true
+        },
+        {
+          "canonical_url": "https://flanco.ro/laptop-asus-vivobook-15-x1502va-15-6-intel-core-i5-13420h-8gb-ddr4-512gb-ssd-intel-uhd-no-os-quiet-blue.html",
+          "scheme_ok": true,
+          "host_ok": true,
+          "path_ok": true,
+          "valid": true
+        },
+        {
+          "canonical_url": "https://flanco.ro/laptop-asus-vivobook-16-a1605va-mb1947-intel-core-i5-13420h-16-inch-ram-8gb-ssd-512gb-intel-uhd-graphics-no-os-cool-silver.html",
+          "scheme_ok": true,
+          "host_ok": true,
+          "path_ok": true,
+          "valid": true
+        }
+      ],
+      "stock_statuses": [
+        "limited_stock",
+        "in_stock",
+        "limited_stock",
+        "in_stock",
+        "limited_stock"
+      ],
+      "failure_category": null,
+      "reason": null,
+      "recommended_action": "none",
+      "requires_human_review": false,
+      "duplicate_of": [],
+      "target_price_feasibility": {
+        "status": "not_set",
+        "target_price": null,
+        "observed_low": null
+      },
+      "url_verification": "structural_only"
+    },
+    {
+      "watch_id": "2db088f5-a629-5b44-b01b-b75e3ee88e42",
+      "configured_site": "emag",
+      "retailer_checked": "emag",
+      "query": "iphone 15",
+      "enabled": true,
+      "audit_timestamp_utc": "2026-09-28T14:48:33.849674+00:00",
+      "status": "PASS",
+      "status_meaning": "Live listing succeeded and at least one result matches intent.",
+      "matching_count": 3,
+      "sample_titles": [
+        "Telefon mobil, Apple iPhone 15 Plus, independent de card, 6 GB RAM, 256 GB, 5G, Roz",
+        "Telefon mobil Apple iPhone 15 Plus, 512GB, 5G, Green",
+        "Telefon mobil Apple iPhone 15 Plus, 512GB, 5G, Yellow"
+      ],
+      "result_urls": [
+        {
+          "canonical_url": "https://emag.ro/telefon-mobil-apple-iphone-15-plus-independent-de-card-6-gb-ram-256-gb-5g-roz-mu193sx-a/pd/DWFZX3YBM",
+          "scheme_ok": true,
+          "host_ok": true,
+          "path_ok": true,
+          "valid": true
+        },
+        {
+          "canonical_url": "https://emag.ro/telefon-mobil-apple-iphone-15-plus-512gb-5g-green-mu1q3rx-a/pd/DCCH93YBM",
+          "scheme_ok": true,
+          "host_ok": true,
+          "path_ok": true,
+          "valid": true
+        },
+        {
+          "canonical_url": "https://emag.ro/telefon-mobil-apple-iphone-15-plus-512gb-5g-yellow-mu1m3rx-a/pd/DVCH93YBM",
+          "scheme_ok": true,
+          "host_ok": true,
+          "path_ok": true,
+          "valid": true
+        }
+      ],
+      "stock_statuses": [
+        "in_stock",
+        "limited_stock",
+        "in_stock"
+      ],
+      "failure_category": null,
+      "reason": null,
+      "recommended_action": "none",
+      "requires_human_review": false,
+      "duplicate_of": [],
+      "target_price_feasibility": {
+        "status": "not_set",
+        "target_price": null,
+        "observed_low": null
+      },
+      "url_verification": "structural_only"
+    }
+  ]
+}

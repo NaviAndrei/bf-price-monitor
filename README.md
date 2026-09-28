@@ -164,6 +164,20 @@ and pull the model referenced by `OLLAMA_MODEL` in `scripts/analyze.py`
 On Windows, run these directly in PowerShell or inside WSL — no path
 differences beyond the usual `python` vs `python3` naming.
 
+## Watchlist QA audit
+
+```bash
+uv run python scripts/qa_watchlist.py
+```
+
+Read-only: verifies every enabled `data/watchlist.json` entry against a live
+retailer search (reusing `scrape.py`'s own scraper functions), and writes
+`docs/watchlist-qa-report.json` and `docs/watchlist-qa.md`. Never runs
+`analyze.py`/`notify.py` and never writes price history, alerts, or health
+logs. Exits non-zero if any active watch isn't verified. Pass `--help` for
+all options, or `--no-delay` to skip the polite delay between retailer calls
+during local iteration.
+
 ## Health monitoring
 
 `.github/workflows/monitor.yml` ends with a "Ping healthcheck" step that
