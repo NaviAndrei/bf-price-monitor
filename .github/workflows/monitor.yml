@@ -30,6 +30,9 @@ jobs:
     runs-on: self-hosted
     permissions:
       contents: read
+    outputs:
+      restore_status: ${{ steps.restore_state.outputs.state_status }}
+      save_status: ${{ steps.save_state.outputs.state_status }}
     env:
       PYTHON: C:\Program Files\Python312\python.exe
       # Pinned explicitly, same reasoning as PYTHON above: the runner service
@@ -43,6 +46,17 @@ jobs:
       # being rebuilt from scratch every time. `uv sync`/`uv run` both read
       # this when invoked from the project root.
       UV_PROJECT_ENVIRONMENT: C:\actions-runner\cache\bf-monitor\venv
+      # B2 (#42): runner-local, ACL-protected directory holding the SQLite
+      # backup, scrape_health.jsonl and alert_outbox.jsonl snapshots that
+      # actions/checkout's workspace clean would otherwise erase every run.
+      # Never a GitHub artifact -- this repo is public and artifact downloads
+      # need only read access, which every signed-in GitHub user already has.
+      # The exact ACL (SYSTEM + Administrators Full Control, this one service
+      # SID Modify, no NETWORK SERVICE/Users/Authenticated Users/Everyone, no
+      # inherited entries) is validated by scripts/runtime_state.py itself
+      # before every restore/save; see docs/DECISIONS.md.
+      BF_STATE_ROOT: C:\bf-monitor-runtime-state
+      BF_STATE_MODIFY_PRINCIPAL: NT SERVICE\actions.runner.NaviAndrei-bf-price-monitor.PC-A1208
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -130,6 +144,23 @@ jobs:
             Write-Output "runner cache: $status (fingerprint $fpPrefix, setup time unavailable)"
           }
 
+      # B2 (#42): restores the last known-good SQLite/health/outbox snapshot
+      # from the runner-local state directory before scraping touches any of
+      # it, so cooldown, the dead-man check and scraper quarantine all see
+      # the previous run even though actions/checkout just wiped this
+      # workspace. continue-on-error so an insecure or corrupt state
+      # directory never blocks the scrape itself -- the final "Verify
+      # runtime state gate" step in the persist job is what makes that
+      # visible instead.
+      - name: Restore runtime state
+        id: restore_state
+        continue-on-error: true
+        run: |
+          uv run --no-sync scripts/runtime_state.py restore `
+            --state-root "$env:BF_STATE_ROOT" `
+            --run-id "${{ github.run_id }}" `
+            --modify-principal "$env:BF_STATE_MODIFY_PRINCIPAL"
+
       - name: Scrape prices
         run: uv run --no-sync scripts/scrape.py
 
@@ -153,6 +184,26 @@ jobs:
           EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
           EMAIL_TO: ${{ secrets.EMAIL_TO }}
         run: uv run --no-sync scripts/notify.py
+
+      # B2 (#42): if: always() so a crashed/failed scrape or notify step
+      # still gets its outbox and health state saved -- a PENDING alert or a
+      # SENT record from a run that failed partway through must survive to
+      # the next run's replay/cooldown check, not just a clean run's. The
+      # save only *promotes* its candidate snapshot to CURRENT after full
+      # validation (SQLite integrity_check, JSONL parses, manifest hashes
+      # match); on any failure the previous CURRENT is left untouched.
+      # continue-on-error for the same reason as the restore step above: the
+      # final "Verify runtime state gate" step is the one place this becomes
+      # a visible, red failure.
+      - name: Save runtime state
+        id: save_state
+        if: always()
+        continue-on-error: true
+        run: |
+          uv run --no-sync scripts/runtime_state.py save `
+            --state-root "$env:BF_STATE_ROOT" `
+            --run-id "${{ github.run_id }}" `
+            --modify-principal "$env:BF_STATE_MODIFY_PRINCIPAL"
 
       # This job has no write permission, so the updated data files can only
       # leave it via an artifact -- the persist job below downloads this
@@ -289,4 +340,24 @@ jobs:
           } catch {
             Write-Warning "[healthcheck] ping failed or returned a non-success status; monitor job remains successful"
           }
+
+      # B2 (#42): runs after price history is already committed, so a
+      # runtime-state failure never costs the price data itself -- it only
+      # turns this run visibly red instead of silently letting the next
+      # run's cooldown/dead-man/quarantine checks operate on no prior state.
+      # Deliberately no continue-on-error and no Write-Warning here: an
+      # insecure state directory or a failed save must fail the workflow,
+      # not just log a warning someone has to go looking for.
+      - name: Verify runtime state gate
+        if: always()
+        run: |
+          $restoreStatus = "${{ needs.scrape-analyze-notify.outputs.restore_status }}"
+          $saveStatus = "${{ needs.scrape-analyze-notify.outputs.save_status }}"
+          $okRestore = @('fresh_first_run', 'restored', 'restored_fallback', 'fresh_after_corruption') -contains $restoreStatus
+          $okSave = @('saved') -contains $saveStatus
+          if (-not $okRestore -or -not $okSave) {
+            Write-Output "::error::Runtime state gate failed. restore_status='$restoreStatus' save_status='$saveStatus'. Cross-run cooldown/dead-man/quarantine safeguards may be operating on stale or missing state -- see scripts/runtime_state.py and C:\bf-monitor-runtime-state."
+            exit 1
+          }
+          Write-Output "[state-gate] restore_status=$restoreStatus save_status=$saveStatus"
 
