@@ -624,3 +624,24 @@ reference the pilot.
   rather than estimating them. No synthetic labels outside unit tests.
 - #36 stays open: its written precision/recall evaluation needs real #37
   labels. See docs/anomaly-pilot.md.
+
+## 2026-09-28 — T-36 (#47): retro metrics are generated, never estimated
+`scripts/generate_retro_metrics.py` computes the post-Black-Friday numbers
+from the files the monitor already keeps: `scrape_health.jsonl`,
+`alert_outbox.jsonl`, the SQLite store (opened `mode=ro`) and an optional
+`gh run list` export. It adds no new telemetry and no production code path.
+- Missing or empty inputs are reported as `no_data` with a reason, never
+  as 0. Uptime needs health history from before the window end, because a
+  missing file and a total outage look the same.
+- Uptime is the share of elapsed 2-hour cron slots with a recorded run.
+  This needs no GitHub API. Workflow success rate comes from the optional
+  runs export and is reported separately.
+- The feedback acceptance rate uses the #36 relevance policy, so the two
+  can't disagree on what "relevant" means.
+- "Money saved" is an explicitly caveated estimate: self-reported
+  `purchased` labels, valued against the prior 30-day median observed
+  price. No receipt data exists.
+- Outputs go to git-ignored `data/exports/` and contain counts only. They
+  hold no URLs, titles, rater references or chat ids.
+- #47 stays open. docs/retros/2026-black-friday.md is a template until the
+  event's real data fills it and the carry-over items are filed.
