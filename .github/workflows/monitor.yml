@@ -331,7 +331,14 @@ jobs:
           }
 
           try {
-            $response = Invoke-WebRequest -Uri $env:HEALTHCHECK_URL -TimeoutSec 15
+            # -UseBasicParsing: this step's default shell resolved to Windows
+            # PowerShell 5.1 (confirmed via a live run's step log), not pwsh.
+            # Without it, Invoke-WebRequest tries to parse the response with
+            # the Internet Explorer engine, which throws NotSupportedException
+            # under the runner's headless service account (IE was never
+            # first-launch configured for it). Harmless no-op on pwsh, where
+            # basic parsing is already the only mode.
+            $response = Invoke-WebRequest -Uri $env:HEALTHCHECK_URL -TimeoutSec 15 -UseBasicParsing
             if ($response.StatusCode -ge 200 -and $response.StatusCode -lt 300) {
               Write-Output "[healthcheck] ping succeeded (HTTP $($response.StatusCode))"
             } else {
