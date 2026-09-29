@@ -8,6 +8,9 @@ context.new_page, page.goto/content/close), so the real fetch_with_browser
 code path runs unmodified against them.
 """
 
+import ast
+import inspect
+import textwrap
 from pathlib import Path
 
 import pytest
@@ -15,6 +18,13 @@ import scrape
 from bs4 import BeautifulSoup
 
 CLOUDFLARE_FIXTURES = Path(__file__).parent / "fixtures" / "cloudflare"
+
+
+@pytest.fixture(autouse=True)
+def _debug_dir(tmp_path, monkeypatch):
+    # T-22 (#31): timed-out listing waits save screenshots under DEBUG_DIR;
+    # keep them out of the repo's real data/debug/ during tests.
+    monkeypatch.setattr(scrape, "DEBUG_DIR", tmp_path / "debug")
 
 
 def load_cloudflare_fixture(name):
@@ -65,6 +75,26 @@ class FakeLocator:
         return None
 
 
+class FakeListingLocator:
+    # T-22 (#31): the listing-readiness locator, kept separate from the
+    # challenge FakeLocator above so one page can script both independently.
+    #   - "present": the listing cards attach immediately (default)
+    #   - "timeout": they never attach -- wait_for raises PlaywrightTimeoutError
+    def __init__(self, behavior="present"):
+        self.behavior = behavior
+        self.wait_for_calls = []
+
+    @property
+    def first(self):
+        return self
+
+    def wait_for(self, state, timeout):
+        self.wait_for_calls.append((state, timeout))
+        if self.behavior == "timeout":
+            raise scrape.PlaywrightTimeoutError("listing never attached")
+        return None
+
+
 class FakePage:
     def __init__(self, context):
         self.context = context
@@ -74,6 +104,15 @@ class FakePage:
         self._content_calls = 0
         self.locator_behavior = "absent"
         self.locator_calls = []
+        self.listing_behavior = "present"
+        self.listing_locators = []
+        self.screenshot_paths = []
+
+    def screenshot(self, path):
+        # Real Playwright writes a PNG at `path`; a tiny stand-in file is
+        # enough for tests to assert one was produced.
+        self.screenshot_paths.append(path)
+        Path(path).write_bytes(b"\x89PNG fake")
 
     def set_default_navigation_timeout(self, ms):
         pass
@@ -96,6 +135,10 @@ class FakePage:
 
     def locator(self, selector):
         self.locator_calls.append(selector)
+        if selector != scrape.CLOUDFLARE_CHALLENGE_SELECTOR:
+            listing = FakeListingLocator(self.listing_behavior)
+            self.listing_locators.append((selector, listing))
+            return listing
         self.last_locator = FakeLocator(self.locator_behavior)
         return self.last_locator
 
@@ -515,7 +558,7 @@ def test_wait_out_challenge_returns_immediately_when_no_challenge_element():
     # T-22 (#31): fast path -- no challenge markup ever appeared, so the
     # caller's observability signal must read "not entered".
     assert entered is False
-    assert page.locator_calls == [scrape.CLOUDFLARE_CHALLENGE_SELECTOR]
+    assert scrape.CLOUDFLARE_CHALLENGE_SELECTOR in page.locator_calls
     assert page.last_locator.wait_for_calls == [
         ("attached", scrape.CHALLENGE_STAGE1_WAIT_TIMEOUT_MS)
     ]
@@ -764,7 +807,7 @@ def test_fetch_with_browser_returns_turnstile_embed_page_without_waiting(
     # Detected and logged, but never treated as blocking: the page's real
     # content was there all along.
     assert html == embed_html
-    assert ctx.pages[0].locator_calls == []
+    assert scrape.CLOUDFLARE_CHALLENGE_SELECTOR not in ctx.pages[0].locator_calls
     assert scrape._run_state.challenge_counts.get("pcgarage", 0) == 0
     assert scrape._run_state.challenge_wait_entered_counts.get("pcgarage", 0) == 0
     assert "in-page Turnstile widget" in capsys.readouterr().out
@@ -795,5 +838,189 @@ def test_fetch_with_browser_waits_out_live_shaped_managed_challenge(monkeypatch)
     html = scrape.fetch_with_browser("https://example.test/x", "flanco")
 
     assert html == "<html>real listing</html>"
-    assert ctx.pages[0].locator_calls == [scrape.CLOUDFLARE_CHALLENGE_SELECTOR]
+    assert scrape.CLOUDFLARE_CHALLENGE_SELECTOR in ctx.pages[0].locator_calls
     assert scrape._run_state.challenge_wait_entered_counts.get("flanco", 0) == 1
+
+
+# --- T-22 (#31): bounded listing-readiness wait -----------------------------
+# After navigation (and any challenge wait), fetch_with_browser waits for the
+# site's listing cards to attach before its final page.content() read. A
+# timeout keeps a diagnostic screenshot, prints a WARNING line, retries with
+# backoff, and on the last attempt still returns whatever the page holds.
+
+
+def _fetch_with_listing_behavior(monkeypatch, site, behaviors, sleeps=None):
+    # `behaviors` is one listing_behavior per attempt, in order; the last one
+    # repeats for any further attempts.
+    install_fakes(monkeypatch)
+    bs = scrape._BrowserState()
+    bs.start()
+    monkeypatch.setattr(scrape, "_browser_state", bs)
+    monkeypatch.setattr(
+        scrape.time, "sleep", (sleeps.append if sleeps is not None else lambda *_: None)
+    )
+    # Per-domain pacing has its own tests; here only the retry backoff sleeps
+    # should reach `sleeps`.
+    monkeypatch.setattr(scrape, "_pace_domain", lambda *_: None)
+    scrape._run_state.reset(run_id="test-run")
+
+    ctx = bs.get_context(site)
+    original_new_page = ctx.new_page
+
+    def new_page_scripted(**kwargs):
+        page = original_new_page(**kwargs)
+        page.listing_behavior = behaviors[min(len(ctx.pages) - 1, len(behaviors) - 1)]
+        return page
+
+    monkeypatch.setattr(ctx, "new_page", new_page_scripted)
+    html = scrape.fetch_with_browser("https://example.test/x", site)
+    return html, ctx
+
+
+@pytest.mark.parametrize(
+    ("site", "selector"),
+    [
+        ("pcgarage", ".product_box"),
+        ("flanco", "li.product-item"),
+        ("some-new-site", "body"),
+    ],
+)
+def test_listing_wait_uses_site_selector_and_8000ms_timeout(
+    monkeypatch, site, selector
+):
+    html, ctx = _fetch_with_listing_behavior(monkeypatch, site, ["present"])
+
+    assert html == "<html>ok</html>"
+    assert scrape.LISTING_READY_TIMEOUT_MS == 8000
+    (page,) = ctx.pages
+    assert [(s, loc.wait_for_calls) for s, loc in page.listing_locators] == [
+        (selector, [("attached", 8000)])
+    ]
+
+
+def test_listing_timeout_saves_screenshot_warns_and_still_returns_content(
+    monkeypatch, capsys, tmp_path
+):
+    sleeps = []
+    html, ctx = _fetch_with_listing_behavior(
+        monkeypatch, "pcgarage", ["timeout"], sleeps=sleeps
+    )
+
+    # Every attempt timed out, but the last one's page.content() comes back.
+    assert html == "<html>ok</html>"
+    assert len(ctx.pages) == scrape.MAX_FETCH_ATTEMPTS
+    # Each attempt asked for one screenshot under DEBUG_DIR. Fake attempts run
+    # within the same millisecond and so share a file name; real ones are 8s+
+    # apart, so only assert on what was requested and that a file exists.
+    requested = [Path(p) for page in ctx.pages for p in page.screenshot_paths]
+    assert len(requested) == scrape.MAX_FETCH_ATTEMPTS
+    assert all(p.parent == tmp_path / "debug" for p in requested)
+    assert all(p.name.startswith("pcgarage-") and p.suffix == ".png" for p in requested)
+    assert all(p.read_bytes().startswith(b"\x89PNG") for p in requested)
+    out = capsys.readouterr().out
+    warnings = [line for line in out.splitlines() if line.startswith("WARNING")]
+    assert len(warnings) == scrape.MAX_FETCH_ATTEMPTS
+    assert "[pcgarage]" in warnings[0]
+    assert ".product_box" in warnings[0]
+    # Backed off between attempts, but not after the last one.
+    assert sleeps == list(scrape.RETRY_BACKOFFS[: scrape.MAX_FETCH_ATTEMPTS - 1])
+
+
+def test_listing_timeout_then_recovery_returns_second_attempt(monkeypatch):
+    html, ctx = _fetch_with_listing_behavior(
+        monkeypatch, "flanco", ["timeout", "present"]
+    )
+
+    assert html == "<html>ok</html>"
+    assert len(ctx.pages) == 2
+
+
+def test_page_is_closed_on_listing_readiness_timeout(monkeypatch):
+    _, ctx = _fetch_with_listing_behavior(monkeypatch, "flanco", ["timeout"])
+
+    assert ctx.pages
+    assert all(page.closed for page in ctx.pages)
+
+
+def test_screenshot_failure_does_not_mask_listing_timeout(monkeypatch, capsys):
+    install_fakes(monkeypatch)
+    bs = scrape._BrowserState()
+    bs.start()
+    monkeypatch.setattr(scrape, "_browser_state", bs)
+    monkeypatch.setattr(scrape.time, "sleep", lambda *_: None)
+    scrape._run_state.reset(run_id="test-run")
+
+    ctx = bs.get_context("pcgarage")
+    original_new_page = ctx.new_page
+
+    def new_page_with_broken_screenshot(**kwargs):
+        page = original_new_page(**kwargs)
+        page.listing_behavior = "timeout"
+
+        def broken_screenshot(path):
+            raise OSError("disk full")
+
+        page.screenshot = broken_screenshot
+        return page
+
+    monkeypatch.setattr(ctx, "new_page", new_page_with_broken_screenshot)
+
+    html = scrape.fetch_with_browser("https://example.test/x", "pcgarage")
+
+    assert html == "<html>ok</html>"
+    assert "screenshot failed (OSError)" in capsys.readouterr().out
+
+
+def test_listing_wait_skipped_while_page_is_still_a_challenge(monkeypatch):
+    install_fakes(monkeypatch)
+    bs = scrape._BrowserState()
+    bs.start()
+    monkeypatch.setattr(scrape, "_browser_state", bs)
+    monkeypatch.setattr(scrape.time, "sleep", lambda *_: None)
+    scrape._run_state.reset(run_id="test-run")
+
+    ctx = bs.get_context("flanco")
+    original_new_page = ctx.new_page
+
+    def new_page_stuck_on_challenge(**kwargs):
+        page = original_new_page(**kwargs)
+        page.content_results = [load_cloudflare_fixture("managed_challenge_initial")]
+        page.locator_behavior = "never_clears"
+        return page
+
+    monkeypatch.setattr(ctx, "new_page", new_page_stuck_on_challenge)
+
+    assert scrape.fetch_with_browser("https://example.test/x", "flanco") is None
+    # No cards can exist behind a challenge, so no 8s listing wait is burned.
+    assert all(not page.listing_locators for page in ctx.pages)
+
+
+# AST guard (T-22, #31): the browser fetch path must not gain a fixed sleep.
+# Retry backoff lives in _sleep_backoff and the per-domain floor in
+# _pace_domain -- both outside this function's body on purpose.
+_FIXED_WAIT_NAMES = {"sleep", "wait_for_timeout"}
+
+
+def _fixed_wait_calls(source):
+    tree = ast.parse(textwrap.dedent(source))
+    return [
+        node.func.attr
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Attribute)
+        and node.func.attr in _FIXED_WAIT_NAMES
+    ]
+
+
+def test_fetch_with_browser_body_has_no_fixed_waits():
+    assert _fixed_wait_calls(inspect.getsource(scrape.fetch_with_browser)) == []
+
+
+def test_fixed_wait_guard_detects_sleep_and_wait_for_timeout():
+    # Keeps the guard above from passing vacuously.
+    bad = """
+    def f(page):
+        time.sleep(1)
+        page.wait_for_timeout(500)
+    """
+    assert _fixed_wait_calls(bad) == ["sleep", "wait_for_timeout"]
