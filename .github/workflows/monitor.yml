@@ -21,6 +21,13 @@ on:
     # docs/runbooks/BF_WEEK_CADENCE.md.
     - cron: "*/30 * * * *"
   workflow_dispatch:
+    inputs:
+      send_test_alert:
+        description: >-
+          Send ONE synthetic [TEST] Telegram alert from this workflow run
+          instead of the normal alerts (feedback-runtime check, #68).
+        type: boolean
+        default: false
 
 # Deny-all by default; each job below grants back only what its own steps
 # need (T-14, #21). GitHub Actions permissions are set per job, not per
@@ -214,8 +221,13 @@ jobs:
 
       # T-26 (#35): the optional channels' secrets expand to "" when unset,
       # which notify.py treats as "channel not configured".
+      # #68: TELEGRAM_TEST_ALERT is "1" only for a manual dispatch with
+      # send_test_alert=true; scheduled runs and default manual runs get "",
+      # which notify.py treats as off. In test mode notify.py sends the one
+      # synthetic alert and exits, so that run sends no real alerts.
       - name: Send alerts
         env:
+          TELEGRAM_TEST_ALERT: ${{ github.event_name == 'workflow_dispatch' && inputs.send_test_alert && '1' || '' }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           TELEGRAM_FEEDBACK_ALLOWED_USER_IDS: ${{ secrets.TELEGRAM_FEEDBACK_ALLOWED_USER_IDS }}

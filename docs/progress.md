@@ -245,3 +245,6 @@ Next: decide one canonical alert sender/collector per bot token for the BF perio
 ### #68 canonical runtime rule for Telegram feedback — documented (docs/config comments only)
 One bot token maps to one canonical runtime; GitHub Actions is canonical for the production bot during Black Friday, Docker must use a separate bot token/chat or run with feedback off. Added a warning to docs/feedback-labels.md (new section), docs/docker.md, README.md, .env.example and the docker-compose.yml header; no code change, pytest and ruff pass. Refs #68 (stays open).
 Next: operator must make sure the Docker `.env` no longer holds the production token, then press buttons on a new workflow-sent alert and expect `stored>=1` with no `unknown_alert`.
+### #68 workflow-owned test alert — added to monitor.yml (unverified live)
+`monitor.yml` workflow_dispatch gains a boolean input `send_test_alert`; only for a manual dispatch with it true, the Send alerts step gets `TELEGRAM_TEST_ALERT=1` (scheduled and default runs get empty, unchanged). No Python change; procedure in docs/feedback-labels.md. ruff and pytest pass locally; no live run done yet.
+Next: `gh workflow run monitor.yml -f send_test_alert=true`, press one button, then check the next run's log for `[feedback] stored>=1` without `unknown_alert`; #68 stays open until then. Refs #68.

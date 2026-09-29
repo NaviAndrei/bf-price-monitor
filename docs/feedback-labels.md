@@ -99,6 +99,23 @@ will reject.
 Shared-database support is not implemented; see issue #68 for the options
 considered.
 
+#### Verifying the canonical runtime with a workflow-owned test alert
+
+`monitor.yml` can send one synthetic `[TEST]` alert from the workflow itself,
+so the press is collected against the same database that sent it. In that
+run `notify.py` sends only the test alert, so it sends no real alerts.
+
+1. Stop the Docker sender: `docker compose stop monitor`.
+2. Dispatch the run: `gh workflow run monitor.yml -f send_test_alert=true`.
+3. Press one feedback button on the new `[TEST]` message in Telegram.
+4. Let the next monitor run (scheduled, or `gh workflow run monitor.yml`)
+   collect it, then check its log:
+   `gh run view <run_id> --log | grep "\[feedback\]"`.
+
+Success is `[feedback] stored=1` (or more) with no `unknown_alert` in the
+rejected map. #68 stays open until a run shows that. Scheduled runs and
+manual runs without `send_test_alert=true` are unchanged.
+
 ### Always-on mode (Docker, #38)
 
 `scripts/feedback.py collect --loop` is a long-polling worker (20-second
