@@ -15,7 +15,7 @@ import json
 from pathlib import Path
 
 import pytest
-from analyze import evaluate_omnibus_rule, get_analysis
+from analyze import build_omnibus_prompt, evaluate_omnibus_rule, get_analysis
 
 FIXTURE_PATH = Path(__file__).parent / "fixtures" / "ai_eval_golden.json"
 GOLDEN = json.loads(FIXTURE_PATH.read_text(encoding="utf-8"))
@@ -36,6 +36,18 @@ def redirect_ai_audit_log(monkeypatch, tmp_path):
     monkeypatch.setattr("analyze.AI_AUDIT_FILE", tmp_path / "ai_audit.jsonl")
 
 
+def _build_prompt(case: dict, metrics: dict) -> str:
+    # Cases with a product_context go through the production prompt builder,
+    # so an injection payload in the title reaches (and is neutralised by)
+    # the same sanitiser analyze.main() uses. Cases without one keep the
+    # opaque fixture label.
+    context = case.get("product_context")
+    if context is None:
+        return f"fixture:{case['id']}"
+    alert = {**context, **case["rule_inputs"]}
+    return build_omnibus_prompt(alert, metrics)
+
+
 def _run_case(monkeypatch, case: dict) -> dict:
     metrics = evaluate_omnibus_rule(**case["rule_inputs"])
     monkeypatch.setattr(
@@ -44,7 +56,7 @@ def _run_case(monkeypatch, case: dict) -> dict:
     )
     return get_analysis(
         client=None,
-        prompt=f"fixture:{case['id']}",
+        prompt=_build_prompt(case, metrics),
         rule_verdict=metrics["rule_verdict"],
         thirty_day_low=case["rule_inputs"]["thirty_day_low"],
     )
@@ -70,7 +82,7 @@ def test_golden_case_malformed_or_wrong_type_hits_fallback(monkeypatch, case):
     )
     result = get_analysis(
         client=None,
-        prompt=f"fixture:{case['id']}",
+        prompt=_build_prompt(case, metrics),
         rule_verdict=metrics["rule_verdict"],
         thirty_day_low=case["rule_inputs"]["thirty_day_low"],
     )
@@ -81,6 +93,29 @@ def test_golden_case_malformed_or_wrong_type_hits_fallback(monkeypatch, case):
     # slipping through.
     expected_score = 8 if metrics["rule_verdict"] == "GENUINE_DEAL" else 4
     assert result["verdict_score"] == expected_score
+
+
+@pytest.mark.parametrize(
+    "case",
+    [c for c in CASES if c["category"] == "prompt_injection"],
+    ids=[c["id"] for c in CASES if c["category"] == "prompt_injection"],
+)
+def test_golden_injection_title_is_sanitised_in_prompt_sent_to_model(monkeypatch, case):
+    sent = []
+    metrics = evaluate_omnibus_rule(**case["rule_inputs"])
+    monkeypatch.setattr(
+        "analyze.ask_hf",
+        lambda client, prompt: sent.append(prompt) or (case["llm_raw_response"], None),
+    )
+    get_analysis(
+        client=None,
+        prompt=_build_prompt(case, metrics),
+        rule_verdict=metrics["rule_verdict"],
+        thirty_day_low=case["rule_inputs"]["thirty_day_low"],
+    )
+    product_line = next(ln for ln in sent[0].splitlines() if ln.startswith("Produs: "))
+    assert "<" not in product_line and ">" not in product_line
+    assert "javascript:" not in product_line.lower()
 
 
 def test_golden_dataset_meets_f1_threshold(monkeypatch):
