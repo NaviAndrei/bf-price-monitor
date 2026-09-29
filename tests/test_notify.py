@@ -183,7 +183,7 @@ def test_test_alert_records_synthetic_delivery_attempt(
     # #37 follow-up: feedback.py only accepts a label for a decision id it
     # can find as a 'delivered' delivery_attempts row, so the test alert must
     # write one -- otherwise every button press on it is rejected as
-    # unknown_alert (see D:\Projects\bf-price-monitor\bf_price_monitor\storage\feedback.py:41).
+    # unknown_alert (see bf_price_monitor/storage/feedback.py:41).
     monkeypatch.setenv("TELEGRAM_TEST_ALERT", "1")
     monkeypatch.setenv("TELEGRAM_FEEDBACK_ALLOWED_USER_IDS", "42")
     monkeypatch.setattr(notify.requests, "post", lambda *a, **kw: _FakeResponse(200))
