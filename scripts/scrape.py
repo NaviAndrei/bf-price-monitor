@@ -91,6 +91,29 @@ PLAYWRIGHT_NAV_TIMEOUT_MS = 25_000
 # most pages never show one.
 CHALLENGE_STAGE1_WAIT_TIMEOUT_MS = 1500
 
+# T-22 (#31): after navigation (and any challenge wait), the page is only
+# read once its listing cards are attached, so JS-rendered results are not
+# parsed half-built. Bounded well under PLAYWRIGHT_NAV_TIMEOUT_MS.
+LISTING_READY_TIMEOUT_MS = 8_000
+
+# The card element each retailer's parser iterates (scrape_*_listing below);
+# neither site's markup exposes a wrapper container the parsers rely on, so
+# the card selector itself is the readiness signal. "body" is the safe
+# fallback for any site_name without an entry.
+# TODO: add a wrapper-level selector per site if a stable one is verified.
+LISTING_CONTAINER_SELECTORS = {
+    "pcgarage": ".product_box",
+    "flanco": "li.product-item",
+}
+LISTING_FALLBACK_SELECTOR = "body"
+
+DEBUG_DIR = Path("data/debug")
+
+
+class ListingReadinessTimeout(Exception):
+    """The listing cards never attached within LISTING_READY_TIMEOUT_MS."""
+
+
 # Aborted outright to cut bandwidth/time: none of these resource types affect
 # the DOM data (title/price/stock) this scraper reads out of listing pages.
 TRACKING_DOMAINS = (
@@ -473,6 +496,33 @@ def _wait_out_challenge(page, timeout_ms: int) -> bool:
     return True
 
 
+def _await_listing_ready(page, site_name: str) -> None:
+    # T-22 (#31): bounded wait for the site's listing cards. On timeout, keep
+    # a diagnostic screenshot and raise a named error; the caller decides
+    # whether to retry. A failed screenshot never masks the timeout itself.
+    selector = LISTING_CONTAINER_SELECTORS.get(site_name, LISTING_FALLBACK_SELECTOR)
+    try:
+        page.locator(selector).first.wait_for(
+            state="attached", timeout=LISTING_READY_TIMEOUT_MS
+        )
+    except PlaywrightTimeoutError as e:
+        stamp = datetime.now(UTC)
+        shot = DEBUG_DIR / (
+            f"{site_name}-{stamp:%Y%m%dT%H%M%S}{stamp.microsecond // 1000:03d}.png"
+        )
+        try:
+            DEBUG_DIR.mkdir(parents=True, exist_ok=True)
+            page.screenshot(path=str(shot))
+            shot_note = f"screenshot saved to {shot.as_posix()}"
+        except Exception as shot_error:
+            shot_note = f"screenshot failed ({shot_error.__class__.__name__})"
+        print(
+            f"WARNING [{site_name}] listing selector {selector!r} not attached "
+            f"within {LISTING_READY_TIMEOUT_MS}ms; {shot_note}"
+        )
+        raise ListingReadinessTimeout(f"{site_name}: {selector}") from e
+
+
 def parse_price(raw: str) -> float | None:
     # Romanian retailers format prices as "1.234,56 Lei"/"RON": "." is a
     # thousands separator, "," is the decimal separator.
@@ -721,6 +771,14 @@ def title_matches_query(title: str, query: str) -> bool:
     return all(word in title_words for word in query.lower().split())
 
 
+def _sleep_backoff(delay: float) -> None:
+    # Retry backoff between whole fetch attempts, after the page is closed --
+    # not a wait on page state, so it is deliberately not a locator wait.
+    # Kept out of fetch_with_browser's body so the AST guard in
+    # tests/test_browser_state.py can ban direct sleeps there (T-22, #31).
+    time.sleep(delay)
+
+
 def fetch_with_browser(url: str, site_name: str) -> str | None:
     # For sites whose Cloudflare challenge blocks plain `requests` outright
     # (403 on every attempt, even from a residential IP). A stealth-patched
@@ -738,6 +796,7 @@ def fetch_with_browser(url: str, site_name: str) -> str | None:
         _pace_domain(site_name)
         context = _browser_state.get_context(site_name)
         page = context.new_page()
+        listing_timed_out = False
         try:
             page.set_default_navigation_timeout(PLAYWRIGHT_NAV_TIMEOUT_MS)
             page.route("**/*", _block_heavy_requests)
@@ -761,6 +820,17 @@ def fetch_with_browser(url: str, site_name: str) -> str | None:
                     )
                     _record_challenge_wait_entered(site_name)
                 html = page.content()
+
+            # T-22 (#31): wait for the listing cards before the final read.
+            # Skipped for a retryable status or a page that is still a
+            # challenge -- there are no cards to wait for, and the branches
+            # below already handle both.
+            if status not in RETRY_STATUS_CODES and not is_challenge_page(html):
+                try:
+                    _await_listing_ready(page, site_name)
+                except ListingReadinessTimeout:
+                    listing_timed_out = True
+                html = page.content()
         except Exception as e:
             print(
                 f"[{site_name}] playwright fetch failed ({e.__class__.__name__}), skipping this run"
@@ -769,13 +839,21 @@ def fetch_with_browser(url: str, site_name: str) -> str | None:
         finally:
             page.close()
 
+        if listing_timed_out and attempt < MAX_FETCH_ATTEMPTS:
+            delay = RETRY_BACKOFFS[attempt - 1]
+            print(
+                f"[{site_name}] listing not ready, retrying in {delay}s "
+                f"(attempt {attempt + 1}/{MAX_FETCH_ATTEMPTS})"
+            )
+            _sleep_backoff(delay)
+            continue
         if status in RETRY_STATUS_CODES and attempt < MAX_FETCH_ATTEMPTS:
             delay = RETRY_BACKOFFS[attempt - 1]
             print(
                 f"[{site_name}] got {status}, retrying in {delay}s "
                 f"(attempt {attempt + 1}/{MAX_FETCH_ATTEMPTS})"
             )
-            time.sleep(delay)
+            _sleep_backoff(delay)
             continue
         break
 

@@ -20,3 +20,6 @@ data/price_history.db-shm
 /target_items.json
 /report/
 data/exports/
+
+# T-22 (#31): diagnostic screenshots from timed-out listing waits
+data/debug/
