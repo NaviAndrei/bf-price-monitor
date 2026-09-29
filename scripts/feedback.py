@@ -3,6 +3,7 @@
     uv run python scripts/feedback.py collect            # one poll (monitor.yml)
     uv run python scripts/feedback.py collect --loop     # always-on worker (Docker)
     uv run python scripts/feedback.py summary
+    uv run python scripts/feedback.py audit --since 2026-09-28T00:00:00Z
     uv run python scripts/feedback.py export --out data/exports/feedback.jsonl
     uv run python scripts/feedback.py purge --before 2027-01-01
     uv run python scripts/feedback.py forget-user --telegram-user-id <id>
@@ -18,6 +19,7 @@ See docs/feedback-labels.md.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import signal
@@ -53,19 +55,47 @@ LOOP_POLL_TIMEOUT_SECONDS = 20
 LOOP_ERROR_BACKOFF_SECONDS = 30.0
 HTTP_TIMEOUT_SLACK_SECONDS = 10
 
+# The answer is sent right after validation, before the label is committed
+# (Telegram only accepts it for a short window), so the text can only say
+# the press was received -- never that it was saved.
 ACK_TEXT = {
-    "stored": "Mulțumesc! Feedback salvat.",
-    "duplicate": "Feedback deja înregistrat.",
+    "received": "Mulțumesc! Feedback primit.",
     "rejected": "",
 }
 
+# Stable, identifier-free names for why an API call failed; they end up in
+# logs and in feedback_callback_audit.ack_error_category.
+_QUERY_EXPIRED_MARKERS = ("query is too old", "query id is invalid")
+
 
 class TelegramError(RuntimeError):
-    """A getUpdates call failed; the message is a safe, token-free reason."""
+    """A Telegram call failed; the message is a safe, token-free reason and
+    ``category`` a stable label for it."""
+
+    def __init__(self, message: str, category: str = "unknown") -> None:
+        super().__init__(message)
+        self.category = category
 
 
 class TelegramConflict(TelegramError):
     """HTTP 409: a webhook is set or another getUpdates consumer is active."""
+
+
+def _error_category(status_code: int, response: Any) -> str:
+    if status_code == 429:
+        return "rate_limited"
+    if status_code >= 500:
+        return "http_5xx"
+    if status_code == 400:
+        # Telegram reports an unanswerable button as HTTP 400 with a text
+        # description; only the category is kept, never the description.
+        try:
+            description = str(response.json().get("description", "")).lower()
+        except (ValueError, AttributeError):
+            description = ""
+        if any(marker in description for marker in _QUERY_EXPIRED_MARKERS):
+            return "query_expired"
+    return "http_4xx"
 
 
 class TelegramFeedbackClient:
@@ -80,17 +110,29 @@ class TelegramFeedbackClient:
             )
         except requests.RequestException as exc:
             # Never str(exc): request exceptions embed the URL, i.e. the token.
-            raise TelegramError(f"{method}: {exc.__class__.__name__}") from None
+            category = (
+                "network_timeout"
+                if isinstance(exc, requests.Timeout)
+                else "network_error"
+            )
+            raise TelegramError(
+                f"{method}: {exc.__class__.__name__}", category
+            ) from None
         if response.status_code == 409:
-            raise TelegramConflict(f"{method}: HTTP 409")
+            raise TelegramConflict(f"{method}: HTTP 409", "conflict")
         if response.status_code >= 400:
-            raise TelegramError(f"{method}: HTTP {response.status_code}")
+            raise TelegramError(
+                f"{method}: HTTP {response.status_code}",
+                _error_category(response.status_code, response),
+            )
         try:
             body = response.json()
         except ValueError:
-            raise TelegramError(f"{method}: non-JSON response") from None
+            raise TelegramError(
+                f"{method}: non-JSON response", "bad_response"
+            ) from None
         if not isinstance(body, Mapping) or body.get("ok") is not True:
-            raise TelegramError(f"{method}: ok=false")
+            raise TelegramError(f"{method}: ok=false", "api_error")
         return body.get("result")
 
     def get_updates(
@@ -109,15 +151,19 @@ class TelegramFeedbackClient:
             raise TelegramError("getUpdates: result is not a list")
         return result
 
-    def answer_callback(self, callback_query_id: str, text: str) -> bool:
+    def answer_callback(
+        self, callback_query_id: str, text: str
+    ) -> tuple[bool, str | None]:
+        """Returns (answered, error category). Never raises: failing to stop
+        a button's spinner must not fail the collection."""
         payload: dict[str, Any] = {"callback_query_id": callback_query_id}
         if text:
             payload["text"] = text
         try:
             self._post("answerCallbackQuery", payload, HTTP_TIMEOUT_SLACK_SECONDS)
-        except TelegramError:
-            return False
-        return True
+        except TelegramError as exc:
+            return False, exc.category
+        return True, None
 
 
 def _log(message: str) -> None:
@@ -125,10 +171,28 @@ def _log(message: str) -> None:
 
 
 def _format_result(result: feedback_store.IngestResult) -> str:
-    rejected = ",".join(f"{k}={v}" for k, v in sorted(result.rejected.items()))
+    reasons = ",".join(f"{k}={v}" for k, v in sorted(result.rejected.items()))
+    ack_errors = ",".join(f"{k}={v}" for k, v in sorted(result.ack_errors.items()))
     return (
-        f"stored={result.stored} duplicate={result.duplicate} rejected={{{rejected}}}"
+        f"callbacks_received={result.received} "
+        f"callbacks_stored={result.stored} "
+        f"callbacks_duplicate={result.duplicate} "
+        f"callbacks_rejected={result.callbacks_rejected} "
+        f"callbacks_answered={result.answered} "
+        f"callbacks_answer_failed={result.answer_failed} "
+        f"rejected={{{reasons}}} ack_errors={{{ack_errors}}}"
     )
+
+
+def resolve_source_run_id(env: Mapping[str, str], *, loop: bool = False) -> str:
+    """Deterministic identifier of what collected a batch: the GitHub Actions
+    run (and attempt) when there is one, else the Docker worker or a manual
+    local run. Only digits are accepted from the environment."""
+    run_id = env.get("GITHUB_RUN_ID", "")
+    if run_id.isdigit():
+        attempt = env.get("GITHUB_RUN_ATTEMPT", "")
+        return f"gha:{run_id}:{attempt if attempt.isdigit() else '1'}"
+    return "worker" if loop else "local"
 
 
 def collect_once(
@@ -141,12 +205,14 @@ def collect_once(
     poll_timeout: int = 0,
     lease_ttl: timedelta = timedelta(minutes=5),
     now_fn: Callable[[], datetime] = lambda: datetime.now(UTC),
+    source_run_id: str = "local",
 ) -> feedback_store.IngestResult | None:
     """One poll cycle. Returns None when another consumer holds the lease.
-    Order matters: fetch -> commit labels + offset (one transaction) ->
-    confirm offset to Telegram -> answer callbacks. A crash after the commit
-    but before the confirm just means Telegram redelivers the batch, which
-    ingest_batch treats as duplicates."""
+    Order matters: fetch -> validate -> answer each callback (before any
+    other work) -> commit labels, audit rows and offset (one transaction) ->
+    confirm offset to Telegram. A crash after the commit but before the
+    confirm just means Telegram redelivers the batch, which ingest_batch
+    treats as duplicates."""
     if not feedback_store.acquire_lease(
         db, CONSUMER, holder, now=now_fn(), ttl=lease_ttl
     ):
@@ -176,7 +242,24 @@ def collect_once(
         else Rejection(update_id=-1, reason="malformed_update")
         for update in updates
     ]
-    result = feedback_store.ingest_batch(db, CONSUMER, items, now=received_at)
+    # Answer straight after validation, before any DB work: Telegram only
+    # accepts answerCallbackQuery for a short window after the press.
+    acks: dict[str, tuple[bool, str | None]] = {}
+    for item in items:
+        query_id = item.callback_query_id
+        if query_id is None or query_id in acks:
+            continue
+        text = ACK_TEXT["received" if isinstance(item, FeedbackEvent) else "rejected"]
+        acks[query_id] = client.answer_callback(query_id, text)
+
+    result = feedback_store.ingest_batch(
+        db,
+        CONSUMER,
+        items,
+        now=received_at,
+        source_run_id=source_run_id,
+        acks=acks,
+    )
 
     if result.last_update_id is not None:
         try:
@@ -184,12 +267,7 @@ def collect_once(
         except TelegramError as exc:
             _log(f"offset confirm deferred to next poll ({exc})")
 
-    unanswered = sum(
-        not client.answer_callback(query_id, ACK_TEXT[outcome])
-        for query_id, outcome in result.callback_outcomes
-    )
-    suffix = f" unanswered_callbacks={unanswered}" if unanswered else ""
-    _log(_format_result(result) + suffix)
+    _log(_format_result(result))
     return result
 
 
@@ -223,6 +301,7 @@ def _cmd_collect(args: argparse.Namespace, env: Mapping[str, str]) -> int:
                     chat_id=chat_id,
                     allowed_user_ids=allowed,
                     holder=holder,
+                    source_run_id=resolve_source_run_id(env),
                 )
             except TelegramConflict:
                 _log("skipped: HTTP 409 (webhook set or another poller active)")
@@ -267,6 +346,7 @@ def _run_worker(
                     holder=holder,
                     poll_timeout=LOOP_POLL_TIMEOUT_SECONDS,
                     lease_ttl=timedelta(seconds=LOOP_POLL_TIMEOUT_SECONDS * 3),
+                    source_run_id="worker",
                 )
             except TelegramError as exc:
                 _log(
@@ -327,6 +407,59 @@ def _cmd_summary(args: argparse.Namespace) -> int:
     return 0
 
 
+def _parse_since(raw: str) -> datetime:
+    since = datetime.fromisoformat(raw)
+    return since if since.tzinfo is not None else since.replace(tzinfo=UTC)
+
+
+def _short_ref(value: str) -> str:
+    """Twelve hex chars of sha256: enough to tell callbacks apart in an
+    audit listing, useless for replaying or looking one up in Telegram."""
+    return hashlib.sha256(value.encode()).hexdigest()[:12]
+
+
+def _explain_audit_row(row: Mapping[str, Any]) -> str:
+    if row["outcome"] == "stored":
+        why = "newly stored"
+    elif row["outcome"] == "duplicate":
+        why = "duplicate: this callback was already stored, nothing changed"
+    else:
+        why = f"rejected: {row['reject_reason']}"
+    if row["ack_status"] == "answered":
+        ack = "answered"
+    elif row["ack_status"] == "failed":
+        ack = f"answer failed ({row['ack_error_category']})"
+    else:
+        ack = "no answer attempted"
+    alert = row["alert_decision_id"]
+    return (
+        f"#{row['seq']} update={row['update_id']} cb={_short_ref(row['callback_query_id'])} "
+        f"msg={row['message_id'] if row['message_id'] is not None else '-'} "
+        f"alert={alert[:8] if alert else '-'} label={row['label'] or '-'} "
+        f"{why}; {ack}\n"
+        f"    telegram_message_date={row['telegram_message_date_utc'] or '-'} "
+        f"received={row['received_at_utc']} collected={row['collected_at_utc']} "
+        f"run={row['source_run_id']}"
+    )
+
+
+def _cmd_audit(args: argparse.Namespace) -> int:
+    since = _parse_since(args.since)
+    db = sqlite_storage.init_db(args.db)
+    try:
+        rows = feedback_store.list_audit(db, since=since)
+    finally:
+        db.close()
+    metrics = feedback_store.audit_metrics(rows)
+    _log(
+        f"audit since {since.isoformat()}: "
+        + " ".join(f"{k}={v}" for k, v in metrics.items())
+    )
+    for row in rows:
+        _log(_explain_audit_row(row))
+    return 0
+
+
 def _cmd_purge(args: argparse.Namespace) -> int:
     cutoff = datetime.fromisoformat(args.before)
     if cutoff.tzinfo is None:
@@ -363,6 +496,10 @@ def _build_parser() -> argparse.ArgumentParser:
     export.add_argument("--history", action="store_true", help="include relabels")
     export.add_argument("--since", help="ISO date/time (UTC if no offset)")
     sub.add_parser("summary", help="current label counts")
+    audit = sub.add_parser("audit", help="explain every callback since a time")
+    audit.add_argument(
+        "--since", required=True, help="ISO date/time (UTC if no offset)"
+    )
     purge = sub.add_parser("purge", help="delete labels received before a date")
     purge.add_argument("--before", required=True, help="ISO date/time")
     forget = sub.add_parser("forget-user", help="delete one rater's labels")
@@ -378,6 +515,8 @@ def main(argv: list[str] | None = None, env: Mapping[str, str] | None = None) ->
         return _cmd_export(args)
     if args.command == "summary":
         return _cmd_summary(args)
+    if args.command == "audit":
+        return _cmd_audit(args)
     if args.command == "purge":
         return _cmd_purge(args)
     return _cmd_forget_user(args)

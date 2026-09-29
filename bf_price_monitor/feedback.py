@@ -136,6 +136,10 @@ class FeedbackEvent(BaseModel):
     chat_ref: str = Field(pattern=r"^[0-9a-f]{64}$")
     callback_version: str = CALLBACK_VERSION
     received_at_utc: datetime
+    # Audit context (#69). Telegram gives no timestamp for the press itself;
+    # message_date_utc is when Telegram says the alert message was sent.
+    message_id: int | None = None
+    message_date_utc: datetime | None = None
 
     @field_validator("received_at_utc")
     @classmethod
@@ -148,13 +152,19 @@ class FeedbackEvent(BaseModel):
 class Rejection(BaseModel):
     """An update that is consumed (offset advances past it) but not stored.
     ``callback_query_id`` is set when the update was a callback, so the
-    caller can still stop the button's loading spinner."""
+    caller can still stop the button's loading spinner. The remaining
+    optional fields carry whatever audit context was validated before the
+    rejection (an unauthorized press never gets its payload decoded)."""
 
     model_config = ConfigDict(frozen=True)
 
     update_id: int
     reason: str
     callback_query_id: str | None = None
+    message_id: int | None = None
+    message_date_utc: datetime | None = None
+    alert_decision_id: UUID | None = None
+    label: FeedbackLabel | None = None
 
 
 def classify_update(
@@ -179,8 +189,15 @@ def classify_update(
     if not isinstance(query_id, str) or not 0 < len(query_id) <= 128:
         return Rejection(update_id=update_id, reason="malformed_callback")
 
+    context: dict[str, Any] = {}
+
     def reject(reason: str) -> Rejection:
-        return Rejection(update_id=update_id, reason=reason, callback_query_id=query_id)
+        return Rejection(
+            update_id=update_id,
+            reason=reason,
+            callback_query_id=query_id,
+            **context,
+        )
 
     sender = query.get("from")
     sender_id = sender.get("id") if isinstance(sender, Mapping) else None
@@ -189,6 +206,19 @@ def classify_update(
     message = query.get("message")
     chat = message.get("chat") if isinstance(message, Mapping) else None
     chat_id = chat.get("id") if isinstance(chat, Mapping) else None
+    sent_at: datetime | None = None
+    if isinstance(message, Mapping):
+        message_id = message.get("message_id")
+        if isinstance(message_id, int) and not isinstance(message_id, bool):
+            context["message_id"] = message_id
+        message_date = message.get("date")
+        if isinstance(message_date, int) and message_date > 0:
+            try:
+                sent_at = datetime.fromtimestamp(message_date, UTC)
+            except (OverflowError, OSError, ValueError):
+                sent_at = None
+            else:
+                context["message_date_utc"] = sent_at
     if not isinstance(chat_id, int) or isinstance(chat_id, bool):
         # No message: an inline-mode button or a message Telegram no longer
         # exposes. Either way it can't be tied to our alert chat.
@@ -206,11 +236,10 @@ def classify_update(
     except FeedbackPayloadError:
         return reject("malformed_payload")
 
-    message_date = message.get("date") if isinstance(message, Mapping) else None
-    if isinstance(message_date, int) and message_date > 0:
-        sent_at = datetime.fromtimestamp(message_date, UTC)
-        if now - sent_at > MAX_ALERT_AGE:
-            return reject("expired_alert")
+    context["alert_decision_id"] = decision_id
+    context["label"] = label
+    if sent_at is not None and now - sent_at > MAX_ALERT_AGE:
+        return reject("expired_alert")
 
     return FeedbackEvent(
         callback_query_id=query_id,
@@ -220,6 +249,8 @@ def classify_update(
         user_ref=pseudonymize(salt, "telegram-user", sender_id),
         chat_ref=pseudonymize(salt, "telegram-chat", chat_id),
         received_at_utc=now,
+        message_id=context.get("message_id"),
+        message_date_utc=sent_at,
     )
 
 

@@ -711,3 +711,25 @@ repository variables. The 2-hour cron and manual dispatch always pass.
   during the window. Trial evidence covers two local back-to-back runs
   (zero 403/429, zero challenges on all three stores), not a sustained run
   from the production runner.
+
+## 2026-09-29 — #69: GitHub Actions is the sole production feedback collector; callbacks are audited append-only
+
+- **Decision.** Only the GitHub Actions workflow runs `feedback.py collect`
+  against the production bot token. The Docker `--loop` worker stays behind
+  the opt-in `feedback` compose profile and needs its own bot token.
+  `source_run_id` (`gha:<run_id>:<attempt>`, `worker`, `local`) on every audit
+  row attributes each callback to the run that collected it.
+- **Why.** Two pollers on one token race on `getUpdates` offsets and return
+  409, so presses are lost or double-counted (see #68).
+- **Audit is a separate append-only table** (`feedback_callback_audit`,
+  migration 3), not columns on `alert_feedback`: duplicates and rejections
+  never reach `alert_feedback`, and an additive table keeps migration risk
+  low. Idempotency stays keyed on the `callback_query_id` UNIQUE constraint,
+  not `update_id`, because Telegram may restart update ids after a week.
+- **Acknowledge before commit.** Telegram only accepts `answerCallbackQuery`
+  for a short window, so it is sent right after validation. The text can only
+  say "received"; a press later rejected as `unknown_alert` was already
+  answered. Accepted trade-off.
+- **Timestamps.** Telegram has no press timestamp. `received_at_utc` is the
+  getUpdates receipt time and `telegram_message_date_utc` the alert's send
+  time; neither is the press time.

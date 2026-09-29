@@ -52,20 +52,46 @@ The monitor runs as scheduled jobs with no server listening, so presses are
    `getUpdates` call using `offset = last + 1`). A crash between the commit
    and the confirmation just means Telegram redelivers the batch, which step
    4 absorbs.
-6. It answers every callback best-effort, to stop the button's spinner.
-   Stored presses get "Mulțumesc! Feedback salvat."; rejected presses get
-   no text, which reveals nothing to someone outside the allowlist.
+6. Every callback is answered best-effort to stop the button's spinner. Since
+   #69 the answer is sent right after validation, *before* the database work
+   in step 4, because Telegram only accepts it for a short window. Valid
+   presses get "Mulțumesc! Feedback primit." (received, not "saved": the
+   commit has not happened yet); rejected presses get no text, which reveals
+   nothing to someone outside the allowlist. A failed answer never blocks
+   storing the label.
 
 Output is counts only, for example
-`[feedback] stored=1 duplicate=0 rejected={unauthorized_user=1}`. It never
+`[feedback] callbacks_received=2 callbacks_stored=1 callbacks_duplicate=0
+callbacks_rejected=1 callbacks_answered=1 callbacks_answer_failed=1
+rejected={unauthorized_user=1} ack_errors={query_expired=1}`. It never
 contains payloads, user ids, usernames, chat ids or the bot token.
+`received = stored + duplicate + rejected`, and `answered + answer_failed`
+counts one attempt per distinct callback.
+
+### Callback audit (#69)
+
+Every callback the collector sees, whatever its outcome, gets an append-only
+row in `feedback_callback_audit`: `update_id`, `callback_query_id`,
+`message_id`, `alert_decision_id` (the alert event id), `label`, `outcome`
+(`stored` / `duplicate` / `rejected` + reason), `telegram_message_date_utc`
+(when Telegram says the alert message was sent; Telegram gives no timestamp
+for the press itself), `received_at_utc` (when `getUpdates` returned it),
+`collected_at_utc` (when the batch was committed), `source_run_id`
+(`gha:<run_id>:<attempt>`, `worker` or `local`), and the answer result
+(`ack_status`, `ack_error_category`: `query_expired`, `rate_limited`,
+`http_4xx`, `http_5xx`, `network_timeout`, `network_error`, `conflict`,
+`bad_response`, `api_error`). Error categories never contain identifiers or
+tokens. `audit --since <ISO-8601>` prints the six metrics and one explained
+entry per callback, showing only a short hash of the callback id.
 
 ### Limits of scheduled polling
 
 - **Delayed acknowledgement.** Telegram shows a spinner on a pressed button
   until the next scheduled run answers it. Answers to presses older than
   roughly 15 minutes fail with "query is too old". The label is still stored,
-  and the run logs `unanswered_callbacks=N`.
+  and the run logs `callbacks_answer_failed=N` with
+  `ack_errors={query_expired=N}`. The 15-minute figure is unverified
+  against Telegram's documentation.
 - **24-hour retention.** Telegram keeps unconsumed updates for at most 24
   hours. Scheduled runs fire irregularly (about 4 to 5 of the 12 daily cron
   slots), so a gap longer than 24 hours between runs loses the presses made
@@ -155,6 +181,7 @@ for audit only, because Telegram may restart it at a random value.
 
 ```bash
 uv run python scripts/feedback.py summary                       # current label counts
+uv run python scripts/feedback.py audit --since 2026-09-28T00:00:00Z   # explain every callback
 uv run python scripts/feedback.py export                        # -> data/exports/feedback-<UTC>.jsonl
 uv run python scripts/feedback.py export --history --since 2026-11-01 --out data/exports/nov.jsonl
 uv run python scripts/feedback.py purge --before 2027-06-01     # retention

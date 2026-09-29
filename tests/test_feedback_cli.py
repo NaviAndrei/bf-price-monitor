@@ -35,9 +35,12 @@ class FakeTelegram:
         self.answered = []
         self.fail_on_calls = set(fail_on_calls)
         self.answer_ok = True
+        self.answer_error = "query_expired"
+        self.events = []  # call order, to prove answers precede confirms
 
     def get_updates(self, offset, *, timeout, limit=100):
         self.calls.append(offset)
+        self.events.append("get_updates")
         if len(self.calls) in self.fail_on_calls:
             raise feedback.TelegramError("getUpdates: ConnectionError")
         if offset is not None:
@@ -46,7 +49,8 @@ class FakeTelegram:
 
     def answer_callback(self, callback_query_id, text):
         self.answered.append((callback_query_id, text))
-        return self.answer_ok
+        self.events.append("answer")
+        return (True, None) if self.answer_ok else (False, self.answer_error)
 
 
 def _press(
@@ -95,7 +99,15 @@ def db(tmp_path):
     conn.close()
 
 
-def _collect(db, tg, *, now=NOW, holder="h", allowed=frozenset({str(USER_ID)})):
+def _collect(
+    db,
+    tg,
+    *,
+    now=NOW,
+    holder="h",
+    allowed=frozenset({str(USER_ID)}),
+    source_run_id="local",
+):
     return feedback.collect_once(
         db,
         tg,
@@ -103,6 +115,7 @@ def _collect(db, tg, *, now=NOW, holder="h", allowed=frozenset({str(USER_ID)})):
         allowed_user_ids=allowed,
         holder=holder,
         now_fn=lambda: now,
+        source_run_id=source_run_id,
     )
 
 
@@ -122,8 +135,25 @@ def test_collect_stores_confirms_offset_after_commit_and_answers(db):
     # First call: no stored offset. Second: confirm offset 11 after commit.
     assert tg.calls == [None, 11]
     assert tg.confirmed == 10
-    assert tg.answered == [("q10", feedback.ACK_TEXT["stored"])]
+    assert tg.answered == [("q10", feedback.ACK_TEXT["received"])]
     assert store.get_consumer_state(db, feedback.CONSUMER) == (10, NOW)
+
+
+def test_callback_is_answered_before_offset_confirm_and_persistence(db):
+    tg = FakeTelegram([_press(10, _decision())])
+    seen_at_answer = {}
+    original = tg.answer_callback
+
+    def answer(query_id, text):
+        seen_at_answer["rows"] = db.execute(
+            "SELECT COUNT(*) FROM alert_feedback"
+        ).fetchone()[0]
+        return original(query_id, text)
+
+    tg.answer_callback = answer
+    _collect(db, tg)
+    assert seen_at_answer["rows"] == 0  # nothing committed yet
+    assert tg.events == ["get_updates", "answer", "get_updates"]
 
 
 def test_duplicate_press_delivery_is_idempotent(db):
@@ -188,8 +218,16 @@ def test_unauthorized_malformed_and_unknown_alert_presses_are_consumed_not_store
         "unknown_alert": 1,
     }
     assert tg.confirmed == 13
-    # Every spinner is stopped, with no text for rejected presses.
-    assert sorted(tg.answered) == [(f"q{i}", "") for i in (10, 11, 12, 13)]
+    # Every spinner is stopped, with no text for presses rejected during
+    # validation. The unknown-alert press only fails at persistence, after
+    # the (earlier) answer, so it was answered as received.
+    assert sorted(tg.answered) == [
+        ("q10", ""),
+        ("q11", ""),
+        ("q12", ""),
+        ("q13", feedback.ACK_TEXT["received"]),
+    ]
+    assert result.callbacks_rejected == 4
 
 
 def test_non_mapping_update_is_rejected_without_crashing(db):
@@ -201,12 +239,145 @@ def test_non_mapping_update_is_rejected_without_crashing(db):
     assert result.rejected == {"malformed_update": 1}
 
 
-def test_expired_callback_answer_failure_still_stores_label(db, capsys):
+def test_callback_older_than_ack_window_is_stored_and_counted_as_answer_failed(
+    db, capsys
+):
+    # Collected long after the press (e.g. a scheduled poll): Telegram refuses
+    # the answer ("query is too old", HTTP 400) but the label is still valid.
     tg = FakeTelegram([_press(10, _decision())])
-    tg.answer_ok = False  # Telegram: "query is too old" (HTTP 400)
-    result = _collect(db, tg)
-    assert result.stored == 1
-    assert "unanswered_callbacks=1" in capsys.readouterr().out
+    tg.answer_ok = False
+    result = _collect(db, tg, now=NOW + timedelta(hours=2))
+    assert (result.received, result.stored) == (1, 1)
+    assert (result.answered, result.answer_failed) == (0, 1)
+    assert result.ack_errors == {"query_expired": 1}
+    out = capsys.readouterr().out
+    assert "callbacks_answer_failed=1" in out and "callbacks_answered=0" in out
+    assert "ack_errors={query_expired=1}" in out
+    (row,) = db.execute("SELECT * FROM feedback_callback_audit").fetchall()
+    assert (row["outcome"], row["ack_status"], row["ack_error_category"]) == (
+        "stored",
+        "failed",
+        "query_expired",
+    )
+
+
+def test_client_maps_expired_query_400_to_category_without_leaking():
+    body = {
+        "ok": False,
+        "description": "Bad Request: query is too old and response timeout "
+        "expired or query ID is invalid",
+    }
+    http = _Http(_Resp(400, body))
+    client = feedback.TelegramFeedbackClient(TOKEN, http)
+    assert client.answer_callback("q10", "") == (False, "query_expired")
+    for status, category in (
+        (429, "rate_limited"),
+        (500, "http_5xx"),
+        (403, "http_4xx"),
+    ):
+        c = feedback.TelegramFeedbackClient(TOKEN, _Http(_Resp(status)))
+        assert c.answer_callback("q10", "") == (False, category)
+    timeout = feedback.TelegramFeedbackClient(TOKEN, _Http(exc=requests.Timeout("x")))
+    assert timeout.answer_callback("q10", "") == (False, "network_timeout")
+    conn = feedback.TelegramFeedbackClient(
+        TOKEN, _Http(exc=requests.ConnectionError(f"bot{TOKEN}"))
+    )
+    assert conn.answer_callback("q10", "") == (False, "network_error")
+
+
+def test_redelivered_update_id_is_idempotent_and_audited_as_duplicate(db):
+    press = _press(10, _decision())
+    first = _collect(db, FakeTelegram([press]))
+    # Telegram redelivers the very same update (offset confirm was lost).
+    later = _collect(db, FakeTelegram([press]), now=NOW + timedelta(days=7))
+    assert (first.stored, later.stored, later.duplicate) == (1, 0, 1)
+    assert db.execute("SELECT COUNT(*) FROM alert_feedback").fetchone()[0] == 1
+    outcomes = [
+        r[0]
+        for r in db.execute("SELECT outcome FROM feedback_callback_audit ORDER BY seq")
+    ]
+    assert outcomes == ["stored", "duplicate"]
+
+
+def test_audit_row_persists_full_provenance(db):
+    _collect(db, FakeTelegram([_press(10, _decision())]), source_run_id="gha:99:2")
+    (row,) = db.execute("SELECT * FROM feedback_callback_audit").fetchall()
+    assert row["update_id"] == 10
+    assert row["callback_query_id"] == "q10"
+    assert row["message_id"] == 1
+    assert row["alert_decision_id"] == DECISION
+    assert row["label"] == "useful"
+    assert row["source_run_id"] == "gha:99:2"
+    assert row["received_at_utc"] == NOW.isoformat()
+    assert row["collected_at_utc"] == NOW.isoformat()
+    assert row["telegram_message_date_utc"] == (NOW - timedelta(minutes=5)).isoformat()
+    assert row["ack_status"] == "answered"
+
+
+def test_source_run_id_is_deterministic_and_ignores_non_numeric_env():
+    env = {"GITHUB_RUN_ID": "36555784061", "GITHUB_RUN_ATTEMPT": "2"}
+    assert feedback.resolve_source_run_id(env) == "gha:36555784061:2"
+    assert feedback.resolve_source_run_id({"GITHUB_RUN_ID": "36555784061"}) == (
+        "gha:36555784061:1"
+    )
+    assert feedback.resolve_source_run_id({"GITHUB_RUN_ID": "../x"}) == "local"
+    assert feedback.resolve_source_run_id({}, loop=True) == "worker"
+
+
+def test_audit_cli_explains_each_outcome_without_identifiers(tmp_path, capsys):
+    path = tmp_path / "x.db"
+    conn = sqlite_storage.init_db(path)
+    try:
+        sqlite_storage.record_delivery_attempt_new_cycle(
+            conn,
+            {
+                "alert_decision_id": DECISION,
+                "channel": "telegram",
+                "destination": "d" * 64,
+                "response_class": "2xx",
+                "final_state": "delivered",
+            },
+        )
+        press = _press(10, _decision())
+        tg = FakeTelegram(
+            [press, {**press, "update_id": 11}, _press(12, _decision(), user_id=111)]
+        )
+        tg.answer_ok = False
+        _collect(conn, tg)
+    finally:
+        conn.close()
+    capsys.readouterr()
+    since = (NOW - timedelta(hours=1)).isoformat()
+    assert feedback.main(["--db", str(path), "audit", "--since", since]) == 0
+    out = capsys.readouterr().out
+    assert "callbacks_received=3 callbacks_stored=1 callbacks_duplicate=1" in out
+    assert "callbacks_rejected=1 callbacks_answered=0 callbacks_answer_failed=2" in out
+    assert "newly stored" in out
+    assert "duplicate: this callback was already stored" in out
+    assert "rejected: unauthorized_user" in out
+    assert "answer failed (query_expired)" in out
+    for secret in (str(USER_ID), "111", DECISION, "q10", "fb1:"):
+        assert secret not in out
+    feedback.main(["--db", str(path), "audit", "--since", "2099-01-01"])
+    assert "callbacks_received=0" in capsys.readouterr().out
+
+
+def test_github_actions_is_the_only_production_get_updates_consumer():
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parent.parent
+    consumers = [
+        p.name
+        for p in (root / ".github/workflows").glob("*.y*ml")
+        if "feedback.py collect" in p.read_text(encoding="utf-8")
+    ]
+    assert consumers == ["monitor.yml"]
+    # The Docker long-poll worker exists but is opt-in (never started by a
+    # plain `docker compose up`); it must stay behind its profile.
+    for compose in root.glob("docker-compose*.y*ml"):
+        text = compose.read_text(encoding="utf-8")
+        if "--loop" in text:
+            assert 'profiles: ["feedback"]' in text
 
 
 def test_second_consumer_is_blocked_by_lease(db):
@@ -291,9 +462,9 @@ def test_answer_callback_is_best_effort():
     ok = feedback.TelegramFeedbackClient(
         TOKEN, _Http(_Resp(body={"ok": True, "result": True}))
     )
-    assert ok.answer_callback("q", "thanks") is True
+    assert ok.answer_callback("q", "thanks") == (True, None)
     too_old = feedback.TelegramFeedbackClient(TOKEN, _Http(_Resp(400)))
-    assert too_old.answer_callback("q", "") is False
+    assert too_old.answer_callback("q", "") == (False, "http_4xx")
 
 
 # -- CLI ------------------------------------------------------------------------

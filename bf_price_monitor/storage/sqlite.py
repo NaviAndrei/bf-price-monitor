@@ -177,6 +177,40 @@ _MIGRATIONS: tuple[tuple[int, tuple[str, ...]], ...] = (
             """,
         ),
     ),
+    (
+        3,
+        (
+            # #69: append-only audit of every callback the collector saw,
+            # whatever its outcome, so "why is/isn't this label stored" and
+            # the acknowledgement metrics are answerable from the database.
+            # No user_ref/chat_ref: rejected presses are never attributed.
+            # ack_status is NULL when no answer was attempted for this row
+            # (a second delivery of the same callback in one batch).
+            """
+            CREATE TABLE feedback_callback_audit (
+                seq INTEGER PRIMARY KEY AUTOINCREMENT,
+                update_id INTEGER NOT NULL,
+                callback_query_id TEXT NOT NULL,
+                message_id INTEGER,
+                alert_decision_id TEXT,
+                label TEXT,
+                outcome TEXT NOT NULL
+                    CHECK(outcome IN ('stored', 'duplicate', 'rejected')),
+                reject_reason TEXT,
+                telegram_message_date_utc TEXT,
+                received_at_utc TEXT NOT NULL,
+                collected_at_utc TEXT NOT NULL,
+                source_run_id TEXT NOT NULL,
+                ack_status TEXT CHECK(ack_status IN ('answered', 'failed')),
+                ack_error_category TEXT
+            )
+            """,
+            """
+            CREATE INDEX idx_feedback_callback_audit_collected
+                ON feedback_callback_audit(collected_at_utc)
+            """,
+        ),
+    ),
 )
 
 SCHEMA_VERSION = _MIGRATIONS[-1][0]

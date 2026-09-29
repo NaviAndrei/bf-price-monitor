@@ -137,9 +137,16 @@ def test_authorized_press_becomes_a_pseudonymous_event():
 
 def test_unauthorized_user_is_rejected_but_keeps_query_id_for_ack():
     result = _classify(_update(user_id=111))
-    assert result == Rejection(
-        update_id=100, reason="unauthorized_user", callback_query_id="q-1"
+    assert isinstance(result, Rejection)
+    assert (result.update_id, result.reason, result.callback_query_id) == (
+        100,
+        "unauthorized_user",
+        "q-1",
     )
+    # Message context is audit-safe; the payload is never decoded for an
+    # unauthorized press, so no alert id or label leaks into the rejection.
+    assert result.message_id is not None
+    assert result.alert_decision_id is None and result.label is None
 
 
 def test_wrong_chat_is_rejected_even_for_an_allowlisted_user():
