@@ -251,3 +251,6 @@ Next: `gh workflow run monitor.yml -f send_test_alert=true`, press one button, t
 ### #68 workflow-only feedback verification — complete, closed
 Docker sender stopped; workflow-owned [TEST] alert sent in run 36554062520; collector run 36555784061 logged `[feedback] stored=2 duplicate=0 rejected={} unanswered_callbacks=2` (stored>=1, no unknown_alert). GitHub Actions is the verified canonical runtime for the production bot.
 Next: keep Docker off the production token through Black Friday; #31 untouched (challenge_wait_entered=0 in this run).
+### #36 offline anomaly pilot — preliminary descriptive run recorded, stays open
+Reran `scripts/anomaly_pilot.py` (extra installed) on current data: 4,272 observations, 304 offers, 3,968 feature rows; validation had Isolation Forest 11 flags, PELT 53, both 4 (one eMAG offer), 0 sent alerts, 0 labels, status `blocked_insufficient_labels`. Added a "Preliminary descriptive run" section to docs/anomaly-pilot.md; no code or production-path change. Tests: full suite and ruff check/format pass. Refs #36.
+Blocked: the precision/recall criterion still needs >=30 real #37 labels; not closed.

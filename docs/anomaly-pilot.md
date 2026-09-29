@@ -3,8 +3,9 @@
 **Status: blocked on real labels.** The tooling is built and tested, but the
 precision/recall comparison against the deterministic policy that #36 asks
 for **cannot be written yet**. It needs real Telegram feedback labels (#37),
-and none exist yet. This document is the evaluation plan and a data
-profile. It is not an evaluation result.
+and none exist yet. This document is the evaluation plan, a data profile,
+and a preliminary descriptive run (see "Preliminary descriptive run"). It
+is not a precision/recall result.
 
 ## Offline only
 
@@ -132,6 +133,41 @@ A run on 2026-09-28 against the development machine's copy of
 
 These counts describe detector volume only. They say nothing about
 precision, and they are not a comparison with the deterministic policy.
+
+## Preliminary descriptive run (2026-09-29)
+
+Command: `uv run --no-sync python scripts/anomaly_pilot.py` (default
+config, fingerprint `sha256:0bfa1dc2...`, scikit-learn 1.9.1, ruptures
+1.1.10, seed 29, test split sealed). Source: `data/price_history.db`,
+opened read-only, on the development machine. Data span 2026-09-06 to
+2026-09-28.
+
+| | |
+|---|---|
+| Observations / offers | 4,272 / 304 (eMAG 2,815, PC Garage 1,081, Flanco 376 observations) |
+| Feature rows | 3,968 (train 2,361 · validation 813 · test 794, sealed) |
+| Deterministic alert ids in `delivery_attempts` | 1 |
+| Feedback labels (raw, after policy, matched) | 0 / 0 / 0 |
+| Validation: Isolation Forest flagged (score < -0.65) | 11 |
+| Validation: PELT flagged (recent negative change point) | 53 |
+| Validation: both (`unsupervised_anomaly_confirmed`) | 4, all on one eMAG offer |
+| Validation: detectors disagree (exactly one fires) | 56 |
+| Validation: confirmed rows that the policy also alerted | 0 (model only 4, policy only 0) |
+
+**What this supports.** The pipeline runs end to end offline, is
+deterministic (fixed seed, recorded fingerprints), and flags a very small
+share of rows (0.5% of validation rows confirmed by both detectors, near
+the 3% contamination hypothesis for the forest alone). The detectors
+disagree far more often than they agree, so PELT with `min_size=3` and
+the current penalty is much more permissive than the forest at -0.65.
+
+**What this does not support.** No precision, recall or false-positive
+rate is reported: there are 0 labels (the 30-label gate needs both
+classes), so none of the 4 confirmed rows can be called true or false. The
+policy sent 0 alerts in the validation window, so agreement with the
+deterministic policy is trivially 0 and carries no information. The 4
+confirmed rows sit on one offer and so are not independent. Treat every
+number above as a volume description on a small, dev-machine sample.
 
 ## To finish #36
 
