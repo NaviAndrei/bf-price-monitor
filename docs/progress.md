@@ -248,3 +248,6 @@ Next: operator must make sure the Docker `.env` no longer holds the production t
 ### #68 workflow-owned test alert — added to monitor.yml (unverified live)
 `monitor.yml` workflow_dispatch gains a boolean input `send_test_alert`; only for a manual dispatch with it true, the Send alerts step gets `TELEGRAM_TEST_ALERT=1` (scheduled and default runs get empty, unchanged). No Python change; procedure in docs/feedback-labels.md. ruff and pytest pass locally; no live run done yet.
 Next: `gh workflow run monitor.yml -f send_test_alert=true`, press one button, then check the next run's log for `[feedback] stored>=1` without `unknown_alert`; #68 stays open until then. Refs #68.
+### #68 workflow-only feedback verification — complete, closed
+Docker sender stopped; workflow-owned [TEST] alert sent in run 36554062520; collector run 36555784061 logged `[feedback] stored=2 duplicate=0 rejected={} unanswered_callbacks=2` (stored>=1, no unknown_alert). GitHub Actions is the verified canonical runtime for the production bot.
+Next: keep Docker off the production token through Black Friday; #31 untouched (challenge_wait_entered=0 in this run).
