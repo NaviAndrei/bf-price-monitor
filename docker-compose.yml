@@ -1,6 +1,8 @@
 # T-38 (#38): always-on Docker mode. Quick start (docs/docker.md):
 #   cp .env.example .env   # fill in secrets; .env is git- and docker-ignored
 #   docker compose up -d --build
+# WARNING (#68): one bot token = one canonical runtime. GitHub Actions is
+# canonical for the production bot; use a SEPARATE bot token/chat in .env.
 # Optional near-instant feedback acknowledgement (#37) -- run only if the
 # GitHub Actions monitor is NOT using the same bot token:
 #   docker compose --profile feedback up -d

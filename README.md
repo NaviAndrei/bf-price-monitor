@@ -191,7 +191,10 @@ docker compose up -d --build
 ```
 
 Non-root, read-only, Chromium-only image built from `uv.lock`; see
-[docs/docker.md](docs/docker.md). Run only one mode per Telegram bot.
+[docs/docker.md](docs/docker.md). **One bot token, one canonical runtime:**
+GitHub Actions is canonical for the production bot during Black Friday, so
+give Docker a separate bot token and chat (see
+[docs/feedback-labels.md](docs/feedback-labels.md#canonical-runtime-rule-68)).
 
 ### 6. Optional: offline anomaly pilot
 

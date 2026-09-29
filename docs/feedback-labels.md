@@ -76,6 +76,29 @@ contains payloads, user ids, usernames, chat ids or the bot token.
   webhook for this bot, and never run the scheduled collector and the Docker
   worker against the same bot token at the same time.
 
+### Canonical runtime rule (#68)
+
+**One bot token maps to exactly one canonical runtime, and that runtime
+both sends the alerts and collects the button presses.** Each runtime has
+its own database. A press is accepted only if the collecting database holds
+a `delivered` Telegram row in `delivery_attempts` for that alert. If another
+runtime (for example Docker) sent the alert, the collector rejects the press
+as `unknown_alert` and Telegram will not redeliver it, so the label is lost.
+Observed in workflow run 36542858539:
+`[feedback] stored=5 duplicate=0 rejected={unknown_alert=5} unanswered_callbacks=10`.
+
+**Black Friday period: GitHub Actions is the canonical runtime for the
+production bot.** It sends the alerts and runs *Collect alert feedback*.
+Docker must not use the production `TELEGRAM_BOT_TOKEN`. Either give Docker
+a separate bot token and chat, or run it without feedback (leave
+`TELEGRAM_FEEDBACK_ALLOWED_USER_IDS` unset there and do not start the
+`feedback` profile). Even with feedback off, a Docker monitor that shares
+the production token still sends duplicate alerts whose buttons the workflow
+will reject.
+
+Shared-database support is not implemented; see issue #68 for the options
+considered.
+
 ### Always-on mode (Docker, #38)
 
 `scripts/feedback.py collect --loop` is a long-polling worker (20-second

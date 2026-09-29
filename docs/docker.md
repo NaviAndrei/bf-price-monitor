@@ -36,9 +36,20 @@ docker compose run --rm monitor selfcheck
 | State | runtime-state snapshots (#42) | named volume `monitor-data` |
 | Feedback buttons (#37) | collected on the next scheduled run | `--profile feedback` worker, within seconds |
 
-Run **one** mode per Telegram bot token. If both run, they alert twice, and
-their feedback collectors conflict (Telegram answers `getUpdates` with HTTP
-409). To collect feedback presses immediately in Docker mode:
+> **Warning: one bot token, one canonical runtime (#68).** For the Black
+> Friday period, GitHub Actions is the canonical runtime for the production
+> bot. Do **not** start Docker with the production `TELEGRAM_BOT_TOKEN` and
+> `TELEGRAM_CHAT_ID`. Each runtime has its own database, so button presses on
+> alerts sent by the other runtime are rejected as `unknown_alert` and lost.
+> Use a **separate bot token and chat** in `.env` for Docker, or, if you must
+> share the production token, leave `TELEGRAM_FEEDBACK_ALLOWED_USER_IDS`
+> unset and do not use the `feedback` profile (you will still get duplicate
+> alerts).
+
+If both modes share a token, they also alert twice, and their feedback
+collectors conflict (Telegram answers `getUpdates` with HTTP 409). Only when
+Docker is the canonical runtime for its own separate bot token, collect
+feedback presses immediately with:
 
 ```bash
 docker compose --profile feedback up -d
