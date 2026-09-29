@@ -680,6 +680,114 @@ def _health_alerts():
     return json.loads(scrape.SCRAPE_HEALTH_ALERTS_FILE.read_text(encoding="utf-8"))
 
 
+def _health_summary_lines(captured_out):
+    return [
+        line for line in captured_out.splitlines() if line.startswith("[scrape:health]")
+    ]
+
+
+def _parse_health_summary(line):
+    return json.loads(line.removeprefix("[scrape:health] "))
+
+
+def test_health_summary_line_emitted_once_per_run_with_expected_fields(
+    tmp_path, monkeypatch, capsys
+):
+    # T-44 (#67): the CI job log is the only place these signals outlive the
+    # runner's git clean, so they must be printed exactly once per run.
+    _configure_run(
+        tmp_path,
+        monkeypatch,
+        [
+            {"site": "emag", "query": "q"},
+            {"site": "emag", "query": "q2"},
+            {"site": "pcgarage", "query": "q"},
+        ],
+        {
+            "emag": lambda query: [_watchlist_entry()],
+            "pcgarage": lambda query: [],
+        },
+    )
+    scrape._run_state.challenge_wait_entered_counts.clear()
+
+    def scrape_with_wait_entered(query):
+        scrape._run_state.challenge_wait_entered_counts["pcgarage"] = 1
+        return []
+
+    monkeypatch.setitem(scrape.SCRAPERS, "pcgarage", scrape_with_wait_entered)
+
+    scrape.main()
+
+    lines = _health_summary_lines(capsys.readouterr().out)
+    assert len(lines) == 1
+    summary = _parse_health_summary(lines[0])
+    assert summary["completed"] is True
+    assert summary["run_id"]
+    assert summary["run_started_utc"]
+    assert summary["products_parsed"] == 2
+    assert summary["challenge_wait_entered"] == 1
+    assert summary["challenge_final_failure"] == 0
+    assert summary["stores"]["emag"]["watches_requested"] == 2
+    assert summary["stores"]["pcgarage"]["challenge_wait_entered"] == 1
+
+
+def test_health_summary_counts_skipped_watches(tmp_path, monkeypatch, capsys):
+    _configure_run(
+        tmp_path,
+        monkeypatch,
+        [{"site": "emag", "query": "q"}],
+        {"emag": lambda query: [_watchlist_entry()]},
+    )
+    monkeypatch.setattr(scrape, "_rate_limited_stores", lambda *a, **k: {"emag"})
+
+    scrape.main()
+
+    summary = _parse_health_summary(_health_summary_lines(capsys.readouterr().out)[0])
+    assert summary["watches_skipped"] == 1
+    assert summary["products_parsed"] == 0
+
+
+def test_health_summary_line_still_emitted_when_run_raises(
+    tmp_path, monkeypatch, capsys
+):
+    _configure_run(
+        tmp_path,
+        monkeypatch,
+        [{"site": "emag", "query": "q"}],
+        {"emag": lambda query: [_watchlist_entry()]},
+    )
+
+    def boom(*args, **kwargs):
+        raise RuntimeError("save failed")
+
+    monkeypatch.setattr(scrape, "save_history", boom)
+
+    with pytest.raises(RuntimeError, match="save failed"):
+        scrape.main()
+
+    lines = _health_summary_lines(capsys.readouterr().out)
+    assert len(lines) == 1
+    summary = _parse_health_summary(lines[0])
+    assert summary["completed"] is False
+    assert summary["products_parsed"] == 1
+
+
+def test_health_summary_line_absent_when_watchlist_invalid(
+    tmp_path, monkeypatch, capsys
+):
+    # main() exits before _run() ever resets run state, so there is no run
+    # to summarize (and no stale state from a prior run may leak in).
+    scrape._run_state.reset(run_id="")
+    bad_watchlist = tmp_path / "bad.json"
+    bad_watchlist.write_text(json.dumps([{"site": "nope"}]), encoding="utf-8")
+    monkeypatch.setattr(scrape, "WATCHLIST_FILE", bad_watchlist)
+
+    with pytest.raises(SystemExit):
+        scrape.main()
+
+    assert _health_summary_lines(capsys.readouterr().out) == []
+
+
 def test_health_record_written_per_store_per_run_with_correct_fields(
     tmp_path, monkeypatch
 ):

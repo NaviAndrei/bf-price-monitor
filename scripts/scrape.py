@@ -220,9 +220,15 @@ class _RunState:
         # T-32 (#43): last time.monotonic() a request was sent to each site,
         # read/written by _pace_domain() above.
         self.last_request_at: dict[str, float] = {}
+        # T-44 (#67): read by _emit_health_summary() from main()'s finally,
+        # so the CI log summary survives _run() raising partway through.
+        self.run_started_utc = ""
+        self.per_store: dict[str, dict] = {}
 
     def reset(self, run_id: str) -> None:
         self.run_id = run_id
+        self.run_started_utc = ""
+        self.per_store = {}
         self.challenge_counts = {}
         self.challenge_wait_entered_counts = {}
         self.failure_counts = {}
@@ -1329,10 +1335,59 @@ def main():
     # get_context() starts the browser lazily on first real use, so a run
     # with no pcgarage/flanco items never launches one at all; close() is a
     # no-op if nothing was ever started.
+    completed = False
     try:
         _run(watchlist)
+        completed = True
     finally:
+        _emit_health_summary(completed)
         _browser_state.close()
+
+
+def _emit_health_summary(completed: bool) -> None:
+    """Print one greppable `[scrape:health]` JSON line for this run (T-44, #67).
+
+    scrape_health.jsonl never reaches the job log, and `gh run view --log`
+    is the only record that outlives the runner's git clean, so the key
+    per-store signals are echoed here from in-memory run state. Best-effort:
+    it must never mask the exception main() is already propagating.
+    """
+    if not _run_state.run_id:
+        return  # _run() never got as far as reset(); nothing to report
+    try:
+        stores = {}
+        for site, stats in sorted(_run_state.per_store.items()):
+            stores[site] = {
+                "products_parsed": stats["products_parsed"],
+                "parse_failures": _run_state.failure_counts.get(site, 0),
+                "watches_requested": stats["watches_requested"],
+                "watches_skipped": stats["watches_skipped"],
+                "challenge_wait_entered": _run_state.challenge_wait_entered_counts.get(
+                    site, 0
+                ),
+                "challenge_final_failure": _run_state.challenge_counts.get(site, 0),
+            }
+        summary = {
+            "run_id": _run_state.run_id,
+            "run_started_utc": _run_state.run_started_utc,
+            "completed": completed,
+            "products_parsed": sum(s["products_parsed"] for s in stores.values()),
+            "parse_failures": sum(s["parse_failures"] for s in stores.values()),
+            "watches_skipped": sum(s["watches_skipped"] for s in stores.values()),
+            "challenge_wait_entered": sum(
+                s["challenge_wait_entered"] for s in stores.values()
+            ),
+            "challenge_final_failure": sum(
+                s["challenge_final_failure"] for s in stores.values()
+            ),
+            "stores": stores,
+        }
+        print(f"[scrape:health] {json.dumps(summary, sort_keys=True)}")
+    except Exception as e:
+        print(
+            f"[scrape:health] summary unavailable ({e.__class__.__name__})",
+            file=sys.stderr,
+        )
 
 
 def _run(watchlist: list[dict]) -> None:
@@ -1346,11 +1401,12 @@ def _run(watchlist: list[dict]) -> None:
     run_id = str(uuid.uuid4())
     run_started_utc = now_utc.isoformat()
     _run_state.reset(run_id)
+    _run_state.run_started_utc = run_started_utc
 
     health_records_before = _read_health_records()
     quarantined_before = _quarantined_stores(health_records_before)
     rate_limited_before = _rate_limited_stores(health_records_before, now_utc)
-    per_store: dict[str, dict] = {}
+    per_store = _run_state.per_store
 
     # site is the retailer being scraped for this pass, which differs from
     # item["site"] for a fan-out watch; per-store stats, quarantine, and
@@ -1364,11 +1420,13 @@ def _run(watchlist: list[dict]) -> None:
                 "matched_count": 0,
                 "policy_blocked_count": 0,
                 "latency_seconds": 0.0,
+                "watches_skipped": 0,
             },
         )
         stats["watches_requested"] += 1
 
         if site in quarantined_before:
+            stats["watches_skipped"] += 1
             print(
                 f"[{site}] skipped: quarantined after Critical Selector Drift "
                 "(zero matches for 2 consecutive runs while other stores succeeded)"
@@ -1376,6 +1434,7 @@ def _run(watchlist: list[dict]) -> None:
             continue
 
         if site in rate_limited_before:
+            stats["watches_skipped"] += 1
             print(
                 f"[{site}] skipped: cooling down after a >"
                 f"{RATE_LIMIT_COOLDOWN_THRESHOLD:.0%} 403/429 rate on its last run "
@@ -1385,6 +1444,7 @@ def _run(watchlist: list[dict]) -> None:
 
         scraper = SCRAPERS.get(site)
         if not scraper:
+            stats["watches_skipped"] += 1
             print(f"Unknown site '{site}' in watchlist, skipping")
             continue
 
