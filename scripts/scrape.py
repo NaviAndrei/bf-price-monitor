@@ -828,6 +828,10 @@ def fetch_with_browser(url: str, site_name: str) -> str | None:
             if status not in RETRY_STATUS_CODES and not is_challenge_page(html):
                 try:
                     _await_listing_ready(page, site_name)
+                # TODO(#31): Tier 4 HTTP fallback not implemented. Plain HTTP to
+                # PC Garage / Flanco is Cloudflare-blocked without a browser;
+                # escalating to requests.get() would always fail. Revisit if a
+                # headless-optional extraction path becomes available.
                 except ListingReadinessTimeout:
                     listing_timed_out = True
                 html = page.content()
