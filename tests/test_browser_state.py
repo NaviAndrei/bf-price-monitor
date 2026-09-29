@@ -516,7 +516,9 @@ def test_wait_out_challenge_returns_immediately_when_no_challenge_element():
     # caller's observability signal must read "not entered".
     assert entered is False
     assert page.locator_calls == [scrape.CLOUDFLARE_CHALLENGE_SELECTOR]
-    assert page.last_locator.wait_for_calls == [("attached", 1500)]
+    assert page.last_locator.wait_for_calls == [
+        ("attached", scrape.CHALLENGE_STAGE1_WAIT_TIMEOUT_MS)
+    ]
 
 
 def test_wait_out_challenge_waits_for_hidden_once_challenge_appears():
@@ -529,7 +531,7 @@ def test_wait_out_challenge_waits_for_hidden_once_challenge_appears():
     # was entered regardless of it going on to clear successfully here.
     assert entered is True
     assert page.last_locator.wait_for_calls == [
-        ("attached", 1500),
+        ("attached", scrape.CHALLENGE_STAGE1_WAIT_TIMEOUT_MS),
         ("detached", 5000),
     ]
 
@@ -547,7 +549,7 @@ def test_wait_out_challenge_swallows_timeout_when_challenge_never_clears():
     # fast no-challenge path.
     assert entered is True
     assert page.last_locator.wait_for_calls == [
-        ("attached", 1500),
+        ("attached", scrape.CHALLENGE_STAGE1_WAIT_TIMEOUT_MS),
         ("detached", 5000),
     ]
 

@@ -86,6 +86,11 @@ def _pace_domain(site_name: str) -> None:
 # of tying up the runner when a site truly stalls.
 PLAYWRIGHT_NAV_TIMEOUT_MS = 25_000
 
+# Stage-one wait in _wait_out_challenge: how long to look for Cloudflare
+# challenge markup before concluding the page has none. Kept short because
+# most pages never show one.
+CHALLENGE_STAGE1_WAIT_TIMEOUT_MS = 1500
+
 # Aborted outright to cut bandwidth/time: none of these resource types affect
 # the DOM data (title/price/stock) this scraper reads out of listing pages.
 TRACKING_DOMAINS = (
@@ -454,7 +459,7 @@ def _wait_out_challenge(page, timeout_ms: int) -> bool:
     # a <script>, which Playwright never considers visible.
     locator = page.locator(CLOUDFLARE_CHALLENGE_SELECTOR).first
     try:
-        locator.wait_for(state="attached", timeout=1500)
+        locator.wait_for(state="attached", timeout=CHALLENGE_STAGE1_WAIT_TIMEOUT_MS)
     except PlaywrightTimeoutError:
         return False
     try:
