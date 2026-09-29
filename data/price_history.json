@@ -122,6 +122,12 @@
           "observed_at": "2026-09-29T08:28:39.585061+00:00",
           "price": 3630.0,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
+          "price": 3630.0,
+          "stock_status": "in_stock"
         }
       ],
       "seller": null,
@@ -423,6 +429,12 @@
         {
           "date": "2026-09-29",
           "observed_at": "2026-09-29T08:28:39.585061+00:00",
+          "price": 4961.0,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
           "price": 4961.0,
           "stock_status": "in_stock"
         }
@@ -806,6 +818,12 @@
           "observed_at": "2026-09-29T08:28:39.585061+00:00",
           "price": 5580.0,
           "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
+          "price": 5580.0,
+          "stock_status": "limited_stock"
         }
       ],
       "seller": null,
@@ -1185,6 +1203,12 @@
         {
           "date": "2026-09-29",
           "observed_at": "2026-09-29T08:28:39.585061+00:00",
+          "price": 3499.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
           "price": 3499.99,
           "stock_status": "in_stock"
         }
@@ -1568,6 +1592,12 @@
           "observed_at": "2026-09-29T08:28:39.585061+00:00",
           "price": 2459.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
+          "price": 2459.99,
+          "stock_status": "in_stock"
         }
       ],
       "seller": null,
@@ -1947,6 +1977,12 @@
         {
           "date": "2026-09-29",
           "observed_at": "2026-09-29T08:28:39.585061+00:00",
+          "price": 3199.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
           "price": 3199.99,
           "stock_status": "in_stock"
         }
@@ -2330,11 +2366,17 @@
           "observed_at": "2026-09-29T08:28:39.585061+00:00",
           "price": 10043.0,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
+          "price": 2899.99,
+          "stock_status": "limited_stock"
         }
       ],
       "seller": null,
       "is_marketplace": null,
-      "all_time_low": 3605.8,
+      "all_time_low": 2899.99,
       "all_time_high": 10769.0,
       "first_seen": "2026-09-06"
     },
@@ -3014,6 +3056,12 @@
           "observed_at": "2026-09-29T08:28:39.585061+00:00",
           "price": 4139.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
+          "price": 4139.99,
+          "stock_status": "in_stock"
         }
       ],
       "seller": null,
@@ -3393,6 +3441,12 @@
         {
           "date": "2026-09-29",
           "observed_at": "2026-09-29T08:28:39.585061+00:00",
+          "price": 2199.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
           "price": 2199.99,
           "stock_status": "in_stock"
         }
@@ -3776,6 +3830,12 @@
           "observed_at": "2026-09-29T08:28:39.585061+00:00",
           "price": 2839.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
+          "price": 2839.99,
+          "stock_status": "in_stock"
         }
       ],
       "seller": null,
@@ -4157,6 +4217,12 @@
           "observed_at": "2026-09-29T08:28:39.585061+00:00",
           "price": 3299.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
+          "price": 3299.99,
+          "stock_status": "in_stock"
         }
       ],
       "seller": null,
@@ -4483,6 +4549,12 @@
         {
           "date": "2026-09-29",
           "observed_at": "2026-09-29T08:28:39.585061+00:00",
+          "price": 3990.0,
+          "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
           "price": 3990.0,
           "stock_status": "limited_stock"
         }
@@ -4866,6 +4938,12 @@
           "observed_at": "2026-09-29T08:28:39.585061+00:00",
           "price": 2174.37,
           "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
+          "price": 2174.37,
+          "stock_status": "limited_stock"
         }
       ],
       "seller": null,
@@ -5247,6 +5325,12 @@
           "observed_at": "2026-09-29T08:28:39.585061+00:00",
           "price": 4199.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
+          "price": 4199.99,
+          "stock_status": "in_stock"
         }
       ],
       "seller": null,
@@ -5626,6 +5710,12 @@
         {
           "date": "2026-09-29",
           "observed_at": "2026-09-29T08:28:39.585061+00:00",
+          "price": 3099.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
           "price": 3099.99,
           "stock_status": "in_stock"
         }
@@ -6181,6 +6271,12 @@
           "observed_at": "2026-09-29T08:28:39.585061+00:00",
           "price": 2399.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
+          "price": 2399.99,
+          "stock_status": "in_stock"
         }
       ],
       "seller": null,
@@ -6689,6 +6785,12 @@
           "observed_at": "2026-09-29T08:28:39.585061+00:00",
           "price": 2224.48,
           "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
+          "price": 2224.48,
+          "stock_status": "limited_stock"
         }
       ],
       "seller": null,
@@ -7070,6 +7172,12 @@
           "observed_at": "2026-09-29T08:28:39.585061+00:00",
           "price": 2899.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
+          "price": 2899.99,
+          "stock_status": "in_stock"
         }
       ],
       "seller": null,
@@ -7444,6 +7552,12 @@
         {
           "date": "2026-09-29",
           "observed_at": "2026-09-29T08:28:39.585061+00:00",
+          "price": 2480.5,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
           "price": 2480.5,
           "stock_status": "in_stock"
         }
@@ -7827,6 +7941,12 @@
           "observed_at": "2026-09-29T08:28:39.585061+00:00",
           "price": 2099.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
+          "price": 2099.99,
+          "stock_status": "in_stock"
         }
       ],
       "seller": null,
@@ -8062,6 +8182,12 @@
         {
           "date": "2026-09-29",
           "observed_at": "2026-09-29T08:28:39.585061+00:00",
+          "price": 2204.0,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
           "price": 2204.0,
           "stock_status": "in_stock"
         }
@@ -8443,6 +8569,12 @@
         {
           "date": "2026-09-29",
           "observed_at": "2026-09-29T08:28:39.585061+00:00",
+          "price": 3458.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
           "price": 3458.99,
           "stock_status": "in_stock"
         }
@@ -9027,6 +9159,12 @@
         {
           "date": "2026-09-29",
           "observed_at": "2026-09-29T08:28:39.585061+00:00",
+          "price": 2844.66,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
           "price": 2844.66,
           "stock_status": "in_stock"
         }
@@ -9759,6 +9897,12 @@
         {
           "date": "2026-09-29",
           "observed_at": "2026-09-29T08:28:39.585061+00:00",
+          "price": 2712.37,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
           "price": 2712.37,
           "stock_status": "in_stock"
         }
@@ -10676,6 +10820,12 @@
           "observed_at": "2026-09-29T08:28:39.585061+00:00",
           "price": 3185.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
+          "price": 3185.99,
+          "stock_status": "in_stock"
         }
       ],
       "seller": null,
@@ -10962,6 +11112,12 @@
         {
           "date": "2026-09-29",
           "observed_at": "2026-09-29T08:28:39.585061+00:00",
+          "price": 1933.99,
+          "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
           "price": 1933.99,
           "stock_status": "limited_stock"
         }
@@ -12232,6 +12388,12 @@
           "observed_at": "2026-09-29T08:28:39.585061+00:00",
           "price": 3850.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
+          "price": 3850.99,
+          "stock_status": "in_stock"
         }
       ],
       "seller": null,
@@ -12638,6 +12800,12 @@
         {
           "date": "2026-09-29",
           "observed_at": "2026-09-29T08:28:39.585061+00:00",
+          "price": 3168.0,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
           "price": 3168.0,
           "stock_status": "in_stock"
         }
@@ -13640,6 +13808,12 @@
           "observed_at": "2026-09-29T00:00:51.001234+00:00",
           "price": 5808.0,
           "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
+          "price": 5808.0,
+          "stock_status": "limited_stock"
         }
       ],
       "seller": null,
@@ -13888,6 +14062,12 @@
           "date": "2026-09-29",
           "observed_at": "2026-09-29T00:00:51.001234+00:00",
           "price": 5929.0,
+          "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
+          "price": 6171.0,
           "stock_status": "limited_stock"
         }
       ],
@@ -14947,6 +15127,12 @@
         {
           "date": "2026-09-29",
           "observed_at": "2026-09-29T08:28:39.585061+00:00",
+          "price": 7120.85,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
           "price": 7120.85,
           "stock_status": "in_stock"
         }
@@ -16575,6 +16761,12 @@
           "observed_at": "2026-09-29T00:00:51.001234+00:00",
           "price": 3993.0,
           "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
+          "price": 3993.0,
+          "stock_status": "limited_stock"
         }
       ],
       "seller": null,
@@ -17082,6 +17274,12 @@
           "observed_at": "2026-09-29T08:28:39.585061+00:00",
           "price": 2549.99,
           "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
+          "price": 2549.99,
+          "stock_status": "limited_stock"
         }
       ],
       "seller": null,
@@ -17474,6 +17672,12 @@
           "observed_at": "2026-09-29T08:28:39.585061+00:00",
           "price": 7986.0,
           "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
+          "price": 7986.0,
+          "stock_status": "limited_stock"
         }
       ],
       "seller": null,
@@ -17789,6 +17993,12 @@
         {
           "date": "2026-09-29",
           "observed_at": "2026-09-29T08:28:39.585061+00:00",
+          "price": 7502.0,
+          "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
           "price": 7502.0,
           "stock_status": "limited_stock"
         }
@@ -18251,6 +18461,12 @@
           "observed_at": "2026-09-29T00:00:51.001234+00:00",
           "price": 3449.99,
           "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
+          "price": 3449.99,
+          "stock_status": "limited_stock"
         }
       ],
       "seller": null,
@@ -18580,6 +18796,12 @@
         {
           "date": "2026-09-29",
           "observed_at": "2026-09-29T08:28:39.585061+00:00",
+          "price": 5380.0,
+          "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
           "price": 5380.0,
           "stock_status": "limited_stock"
         }
@@ -19623,6 +19845,12 @@
           "observed_at": "2026-09-29T00:00:51.001234+00:00",
           "price": 8712.0,
           "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
+          "price": 8712.0,
+          "stock_status": "limited_stock"
         }
       ],
       "seller": null,
@@ -20155,6 +20383,12 @@
           "observed_at": "2026-09-29T08:28:39.585061+00:00",
           "price": 1898.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
+          "price": 2066.1,
+          "stock_status": "in_stock"
         }
       ],
       "seller": "PC Garage",
@@ -20531,6 +20765,12 @@
           "date": "2026-09-29",
           "observed_at": "2026-09-29T08:28:39.585061+00:00",
           "price": 1848.99,
+          "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
+          "price": 2011.7,
           "stock_status": "limited_stock"
         }
       ],
@@ -20909,6 +21149,12 @@
           "observed_at": "2026-09-29T08:28:39.585061+00:00",
           "price": 2098.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
+          "price": 2283.7,
+          "stock_status": "in_stock"
         }
       ],
       "seller": "PC Garage",
@@ -21285,6 +21531,12 @@
           "date": "2026-09-29",
           "observed_at": "2026-09-29T08:28:39.585061+00:00",
           "price": 1598.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
+          "price": 1739.7,
           "stock_status": "in_stock"
         }
       ],
@@ -21864,6 +22116,12 @@
           "date": "2026-09-29",
           "observed_at": "2026-09-29T08:28:39.585061+00:00",
           "price": 8998.99,
+          "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
+          "price": 9790.9,
           "stock_status": "limited_stock"
         }
       ],
@@ -22445,6 +22703,12 @@
           "observed_at": "2026-09-29T08:28:39.585061+00:00",
           "price": 3498.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
+          "price": 3806.9,
+          "stock_status": "in_stock"
         }
       ],
       "seller": "PC Garage",
@@ -22821,6 +23085,12 @@
           "date": "2026-09-29",
           "observed_at": "2026-09-29T08:28:39.585061+00:00",
           "price": 1948.99,
+          "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
+          "price": 2120.5,
           "stock_status": "limited_stock"
         }
       ],
@@ -23563,6 +23833,12 @@
           "observed_at": "2026-09-29T08:28:39.585061+00:00",
           "price": 3698.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
+          "price": 4407.38,
+          "stock_status": "in_stock"
         }
       ],
       "seller": "PC Garage",
@@ -23939,6 +24215,12 @@
           "date": "2026-09-29",
           "observed_at": "2026-09-29T08:28:39.585061+00:00",
           "price": 1948.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
+          "price": 2120.5,
           "stock_status": "in_stock"
         }
       ],
@@ -24317,6 +24599,12 @@
           "observed_at": "2026-09-29T08:28:39.585061+00:00",
           "price": 1948.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
+          "price": 2120.5,
+          "stock_status": "in_stock"
         }
       ],
       "seller": "PC Garage",
@@ -24693,6 +24981,12 @@
           "date": "2026-09-29",
           "observed_at": "2026-09-29T08:28:39.585061+00:00",
           "price": 2048.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
+          "price": 2229.3,
           "stock_status": "in_stock"
         }
       ],
@@ -25071,6 +25365,12 @@
           "observed_at": "2026-09-29T08:28:39.585061+00:00",
           "price": 2048.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
+          "price": 2229.3,
+          "stock_status": "in_stock"
         }
       ],
       "seller": "PC Garage",
@@ -25446,6 +25746,12 @@
         {
           "date": "2026-09-29",
           "observed_at": "2026-09-29T08:28:39.585061+00:00",
+          "price": 2759.99,
+          "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
           "price": 2759.99,
           "stock_status": "limited_stock"
         }
@@ -25826,6 +26132,12 @@
           "observed_at": "2026-09-29T08:28:39.585061+00:00",
           "price": 2499.0,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
+          "price": 2499.0,
+          "stock_status": "in_stock"
         }
       ],
       "reference_price": 3499.99,
@@ -26202,6 +26514,12 @@
         {
           "date": "2026-09-29",
           "observed_at": "2026-09-29T08:28:39.585061+00:00",
+          "price": 2401.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
           "price": 2401.99,
           "stock_status": "in_stock"
         }
@@ -26582,6 +26900,12 @@
           "observed_at": "2026-09-29T08:28:39.585061+00:00",
           "price": 2949.99,
           "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
+          "price": 2949.99,
+          "stock_status": "limited_stock"
         }
       ],
       "reference_price": 3339.99,
@@ -26958,6 +27282,12 @@
         {
           "date": "2026-09-29",
           "observed_at": "2026-09-29T08:28:39.585061+00:00",
+          "price": 2999.99,
+          "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
           "price": 2999.99,
           "stock_status": "limited_stock"
         }
@@ -27482,6 +27812,12 @@
           "observed_at": "2026-09-29T08:28:39.585061+00:00",
           "price": 2899.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
+          "price": 2899.99,
+          "stock_status": "in_stock"
         }
       ],
       "reference_price": 200.0,
@@ -27916,6 +28252,12 @@
           "observed_at": "2026-09-29T08:28:39.585061+00:00",
           "price": 2559.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
+          "price": 2559.99,
+          "stock_status": "in_stock"
         }
       ],
       "reference_price": 2899.99,
@@ -28292,6 +28634,12 @@
         {
           "date": "2026-09-29",
           "observed_at": "2026-09-29T08:28:39.585061+00:00",
+          "price": 3562.99,
+          "stock_status": "supplier_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
           "price": 3562.99,
           "stock_status": "supplier_stock"
         }
@@ -28994,6 +29342,12 @@
         {
           "date": "2026-09-29",
           "observed_at": "2026-09-29T08:28:39.585061+00:00",
+          "price": 4547.99,
+          "stock_status": "supplier_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
           "price": 4547.99,
           "stock_status": "supplier_stock"
         }
@@ -30025,12 +30379,18 @@
           "observed_at": "2026-09-29T00:00:51.001234+00:00",
           "price": 4270.21,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
+          "price": 4275.62,
+          "stock_status": "in_stock"
         }
       ],
       "seller": null,
       "is_marketplace": null,
       "all_time_low": 3719.62,
-      "all_time_high": 4270.21,
+      "all_time_high": 4275.62,
       "first_seen": "2026-09-08"
     },
     "https://emag.ro/telefon-mobil-nokia-5310-2020-dual-sim-black-red-16pisx01a05/pd/DCV7HMMBM": {
@@ -30426,6 +30786,12 @@
           "observed_at": "2026-09-29T08:28:39.585061+00:00",
           "price": 5203.0,
           "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
+          "price": 5203.0,
+          "stock_status": "limited_stock"
         }
       ],
       "seller": null,
@@ -30609,6 +30975,12 @@
         {
           "date": "2026-09-29",
           "observed_at": "2026-09-29T00:00:51.001234+00:00",
+          "price": 5929.0,
+          "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
           "price": 5929.0,
           "stock_status": "limited_stock"
         }
@@ -31032,6 +31404,12 @@
           "observed_at": "2026-09-29T08:28:39.585061+00:00",
           "price": 5131.99,
           "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
+          "price": 5131.99,
+          "stock_status": "limited_stock"
         }
       ],
       "seller": null,
@@ -31415,6 +31793,12 @@
           "date": "2026-09-29",
           "observed_at": "2026-09-29T08:28:39.585061+00:00",
           "price": 2098.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
+          "price": 2283.7,
           "stock_status": "in_stock"
         }
       ],
@@ -32438,6 +32822,12 @@
           "observed_at": "2026-09-29T08:28:39.585061+00:00",
           "price": 3046.39,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
+          "price": 3046.39,
+          "stock_status": "in_stock"
         }
       ],
       "seller": null,
@@ -32969,6 +33359,12 @@
           "observed_at": "2026-09-29T08:28:39.585061+00:00",
           "price": 4798.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
+          "price": 5221.3,
+          "stock_status": "in_stock"
         }
       ],
       "seller": "PC Garage",
@@ -33391,6 +33787,12 @@
           "observed_at": "2026-09-29T08:28:39.585061+00:00",
           "price": 4124.49,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
+          "price": 4124.49,
+          "stock_status": "in_stock"
         }
       ],
       "seller": null,
@@ -33750,6 +34152,12 @@
           "observed_at": "2026-09-29T08:28:39.585061+00:00",
           "price": 2753.21,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
+          "price": 2753.21,
+          "stock_status": "in_stock"
         }
       ],
       "seller": null,
@@ -33804,6 +34212,12 @@
         {
           "date": "2026-09-29",
           "observed_at": "2026-09-29T08:28:39.585061+00:00",
+          "price": 4349.95,
+          "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
           "price": 4349.95,
           "stock_status": "limited_stock"
         }
@@ -34144,6 +34558,12 @@
           "observed_at": "2026-09-29T08:28:39.585061+00:00",
           "price": 2598.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
+          "price": 2827.7,
+          "stock_status": "in_stock"
         }
       ],
       "seller": "PC Garage",
@@ -34481,6 +34901,12 @@
           "date": "2026-09-29",
           "observed_at": "2026-09-29T08:28:39.585061+00:00",
           "price": 3046.39,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
+          "price": 3047.46,
           "stock_status": "in_stock"
         }
       ],
@@ -35109,6 +35535,12 @@
           "observed_at": "2026-09-29T08:28:39.585061+00:00",
           "price": 3299.0,
           "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
+          "price": 3299.0,
+          "stock_status": "limited_stock"
         }
       ],
       "seller": null,
@@ -35622,6 +36054,12 @@
           "date": "2026-09-29",
           "observed_at": "2026-09-29T08:28:39.585061+00:00",
           "price": 3498.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
+          "price": 4161.06,
           "stock_status": "in_stock"
         }
       ],
@@ -36469,6 +36907,12 @@
           "observed_at": "2026-09-29T08:28:39.585061+00:00",
           "price": 3698.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
+          "price": 4397.81,
+          "stock_status": "in_stock"
         }
       ],
       "seller": "PC Garage",
@@ -36767,6 +37211,12 @@
           "observed_at": "2026-09-29T08:28:39.585061+00:00",
           "price": 3004.26,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
+          "price": 3004.26,
+          "stock_status": "in_stock"
         }
       ],
       "seller": null,
@@ -36986,6 +37436,12 @@
         {
           "date": "2026-09-29",
           "observed_at": "2026-09-29T08:28:39.585061+00:00",
+          "price": 2999.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
           "price": 2999.99,
           "stock_status": "in_stock"
         }
@@ -37209,6 +37665,12 @@
           "observed_at": "2026-09-29T08:28:39.585061+00:00",
           "price": 2248.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
+          "price": 2446.9,
+          "stock_status": "in_stock"
         }
       ],
       "seller": "PC Garage",
@@ -37295,6 +37757,12 @@
         {
           "date": "2026-09-29",
           "observed_at": "2026-09-29T00:00:51.001234+00:00",
+          "price": 3199.0,
+          "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
           "price": 3199.0,
           "stock_status": "limited_stock"
         }
@@ -37492,6 +37960,12 @@
         {
           "date": "2026-09-29",
           "observed_at": "2026-09-29T08:28:39.585061+00:00",
+          "price": 2470.99,
+          "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
           "price": 2470.99,
           "stock_status": "limited_stock"
         }
@@ -37773,6 +38247,12 @@
           "observed_at": "2026-09-29T08:28:39.585061+00:00",
           "price": 2998.99,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
+          "price": 3569.19,
+          "stock_status": "in_stock"
         }
       ],
       "seller": "PC Garage",
@@ -37896,6 +38376,12 @@
           "observed_at": "2026-09-29T08:28:39.585061+00:00",
           "price": 6050.0,
           "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
+          "price": 6050.0,
+          "stock_status": "limited_stock"
         }
       ],
       "seller": null,
@@ -37935,6 +38421,12 @@
         {
           "date": "2026-09-29",
           "observed_at": "2026-09-29T08:21:54.330453+00:00",
+          "price": 8591.0,
+          "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
           "price": 8591.0,
           "stock_status": "limited_stock"
         }
@@ -38000,6 +38492,12 @@
           "date": "2026-09-29",
           "observed_at": "2026-09-29T08:28:39.585061+00:00",
           "price": 3498.99,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-09-29",
+          "observed_at": "2026-09-29T10:05:23.634881+00:00",
+          "price": 4161.06,
           "stock_status": "in_stock"
         }
       ],
