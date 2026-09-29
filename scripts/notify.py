@@ -243,6 +243,80 @@ def _telegram_deal_payload(alert: dict) -> dict:
     }
 
 
+def _log(message: str) -> None:
+    print(f"[notify] {message}", flush=True)
+
+
+# example.invalid is reserved by RFC 2606 and never a real scraped offer, so
+# this alert's dedup_key/decision id can never collide with production data.
+TEST_ALERT_URL = "https://example.invalid/bf-price-monitor-test-alert"
+
+
+def _build_test_alert() -> dict:
+    """TELEGRAM_TEST_ALERT=1: a synthetic, clearly labeled alert for manually
+    verifying the feedback loop end-to-end without waiting for a real price
+    drop. Sent directly (see main()), never written to
+    formatted_alerts.json/price_history.json/watchlist.json."""
+    return {
+        "title": "[TEST] bf-price-monitor feedback button check",
+        "site": "test",
+        "url": TEST_ALERT_URL,
+        "seller": "N/A",
+        "stock_status": "in_stock",
+        "old_price": 100.0,
+        "new_price": 80.0,
+        "thirty_day_low": 90.0,
+        "all_time_low": 75.0,
+        "discount_vs_old_pct": 20.0,
+        "verdict": "GENUINE_DEAL",
+        "verdict_score": 10,
+        "summary": "Synthetic alert sent by TELEGRAM_TEST_ALERT=1 to verify delivery.",
+        "is_recommended": False,
+        "deal_stats": {},
+    }
+
+
+def _send_test_alert(chat_id: str, send_message_url: str) -> bool:
+    alert = _build_test_alert()
+    payload = _telegram_deal_payload(alert)
+    decision_id = uuid.UUID(_deal_event_id(_deal_dedup_key(alert)))
+    if _feedback_buttons_enabled():
+        _log(f"feedback_buttons=attached alert_event_id={decision_id}")
+    else:
+        _log(
+            "feedback_buttons=skipped reason=TELEGRAM_FEEDBACK_ALLOWED_USER_IDS_not_set"
+        )
+    sent = _send_with_retry(
+        send_message_url,
+        {"chat_id": chat_id, **payload},
+        alert=alert,
+        store="test",
+        alert_url=alert["url"],
+    )
+    _log(f"test_alert={'sent' if sent else 'failed'} alert_event_id={decision_id}")
+    if sent:
+        # #37 follow-up: scripts/feedback.py only accepts a label for a
+        # decision id it can find as a 'delivered' delivery_attempts row
+        # (alert_was_delivered). The test alert otherwise bypasses that audit
+        # trail entirely, so without this a button press on it would always
+        # be rejected as unknown_alert -- this is the one write it makes, and
+        # only on success, so a failed send leaves no dangling audit row.
+        db = init_db(DB_FILE)
+        try:
+            _record_delivery_attempt(
+                db,
+                event_id=str(decision_id),
+                dedup_key=None,
+                destination=chat_id,
+                sent=True,
+                channel="telegram",
+            )
+        finally:
+            db.close()
+        _log(f"delivery_attempt=recorded alert_event_id={decision_id}")
+    return sent
+
+
 # T-26 (#35): per-channel send_payload builders for deal alerts. Whatever a
 # builder returns is stored verbatim in the outbox and resent as-is on replay.
 DEAL_PAYLOAD_BUILDERS = {
@@ -1024,6 +1098,16 @@ def main():
     chat_id = os.environ["TELEGRAM_CHAT_ID"]
     send_message_url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
     send_photo_url = f"https://api.telegram.org/bot{bot_token}/sendPhoto"
+
+    if os.environ.get("TELEGRAM_TEST_ALERT") == "1":
+        # Opt-in, disabled by default: sends exactly one synthetic alert and
+        # exits, never touching formatted_alerts/price_history/watchlist or
+        # the outbox/cooldown pipeline below. It does write one synthetic
+        # delivery_attempts row (see _send_test_alert) so a button press on
+        # it can pass feedback.py's alert_was_delivered check.
+        _send_test_alert(chat_id, send_message_url)
+        return
+
     providers = _load_providers(chat_id, send_message_url)
 
     # T-37b (#55): notify.py runs as its own step/process (see DB_FILE), so

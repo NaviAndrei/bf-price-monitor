@@ -105,6 +105,110 @@ def test_feedback_buttons_do_not_leak_into_ntfy_or_email(monkeypatch):
     assert "fb1:" not in json.dumps(ntfy) and "fb1:" not in email["body"]
 
 
+# --- TELEGRAM_TEST_ALERT: opt-in manual verification send -------------------
+
+
+def test_test_alert_disabled_by_default_runs_normal_pipeline(
+    monkeypatch, tmp_path, _full_pipeline_env, capsys
+):
+    monkeypatch.delenv("TELEGRAM_TEST_ALERT", raising=False)
+    (tmp_path / "formatted_alerts.json").write_text(json.dumps([]), encoding="utf-8")
+
+    def _post(url, json=None, timeout=None):
+        raise AssertionError("no Telegram call expected for an empty alert batch")
+
+    monkeypatch.setattr(notify.requests, "post", _post)
+
+    notify.main()
+
+    assert "No alerts to send" in capsys.readouterr().out
+
+
+def test_test_alert_sends_one_message_with_buttons_and_skips_real_pipeline(
+    monkeypatch, tmp_path, _full_pipeline_env, capsys
+):
+    monkeypatch.setenv("TELEGRAM_TEST_ALERT", "1")
+    monkeypatch.setenv("TELEGRAM_FEEDBACK_ALLOWED_USER_IDS", "42")
+    # No formatted_alerts.json/price_history.json content is needed: the
+    # test-alert path must never read them.
+    calls = []
+
+    def _post(url, json=None, timeout=None):
+        calls.append((url, json))
+        return _FakeResponse(200)
+
+    monkeypatch.setattr(notify.requests, "post", _post)
+
+    notify.main()
+
+    assert len(calls) == 1
+    url, payload = calls[0]
+    assert url == "https://api.telegram.org/bottesttoken/sendMessage"
+    assert "[TEST]" in payload["text"]
+    rows = payload["reply_markup"]["inline_keyboard"]
+    assert len(rows) > 1  # offer-link row plus feedback rows
+    assert not (tmp_path / "alert_outbox.jsonl").exists()
+
+    out = capsys.readouterr().out
+    assert "[notify] feedback_buttons=attached alert_event_id=" in out
+    assert "[notify] test_alert=sent alert_event_id=" in out
+
+
+def test_test_alert_respects_disabled_feedback_button_policy(
+    monkeypatch, tmp_path, _full_pipeline_env, capsys
+):
+    monkeypatch.setenv("TELEGRAM_TEST_ALERT", "1")
+    monkeypatch.delenv("TELEGRAM_FEEDBACK_ALLOWED_USER_IDS", raising=False)
+    calls = []
+
+    def _post(url, json=None, timeout=None):
+        calls.append(json)
+        return _FakeResponse(200)
+
+    monkeypatch.setattr(notify.requests, "post", _post)
+
+    notify.main()
+
+    rows = calls[0]["reply_markup"]["inline_keyboard"]
+    assert len(rows) == 1  # only the offer-link row, matching the T-28 policy
+    assert (
+        "[notify] feedback_buttons=skipped "
+        "reason=TELEGRAM_FEEDBACK_ALLOWED_USER_IDS_not_set"
+    ) in capsys.readouterr().out
+
+
+def test_test_alert_records_synthetic_delivery_attempt(
+    monkeypatch, tmp_path, _full_pipeline_env, capsys
+):
+    # #37 follow-up: feedback.py only accepts a label for a decision id it
+    # can find as a 'delivered' delivery_attempts row, so the test alert must
+    # write one -- otherwise every button press on it is rejected as
+    # unknown_alert (see D:\Projects\bf-price-monitor\bf_price_monitor\storage\feedback.py:41).
+    monkeypatch.setenv("TELEGRAM_TEST_ALERT", "1")
+    monkeypatch.setenv("TELEGRAM_FEEDBACK_ALLOWED_USER_IDS", "42")
+    monkeypatch.setattr(notify.requests, "post", lambda *a, **kw: _FakeResponse(200))
+    calls = []
+    monkeypatch.setattr(
+        notify, "_record_delivery_attempt", lambda *a, **kw: calls.append(kw)
+    )
+
+    notify.main()
+
+    assert len(calls) == 1
+    kwargs = calls[0]
+    assert kwargs["sent"] is True
+    assert kwargs["channel"] == "telegram"
+    assert kwargs["dedup_key"] is None
+    assert not (tmp_path / "alert_outbox.jsonl").exists()
+    assert not (tmp_path / "formatted_alerts.json").exists()
+    # _full_pipeline_env pre-seeds price_history.json; the test-alert path
+    # must not have modified it.
+    assert json.loads((tmp_path / "price_history.json").read_text()) == {"products": {}}
+    assert (
+        "[notify] delivery_attempt=recorded alert_event_id=" in capsys.readouterr().out
+    )
+
+
 def test_generate_quickchart_url_returns_none_below_three_points():
     history = [
         {"date": "2026-09-01", "price": 100.0},
