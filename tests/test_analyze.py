@@ -8,6 +8,7 @@ from analyze import (
     WINDOW_UNKNOWN,
     AIDealEvaluation,
     RawAlertCandidate,
+    _sanitise_prompt_input,
     build_deal_stats,
     build_omnibus_prompt,
     default_analysis,
@@ -804,3 +805,44 @@ def test_main_passes_window_provenance_without_changing_rule_verdict(
     assert out["deal_stats"]["history_30d_recorded"] == (
         expected_provenance != WINDOW_UNKNOWN
     )
+
+
+def _product_line(prompt: str) -> str:
+    return next(ln for ln in prompt.splitlines() if ln.startswith("Produs: "))
+
+
+def test_prompt_title_script_tags_are_stripped_before_reaching_prompt():
+    alert = {**HIKE_THEN_DROP_ALERT, "title": "Telefon <script>alert(1)</script> XYZ"}
+    line = _product_line(build_omnibus_prompt(alert, {"rule_verdict": "NORMAL_DROP"}))
+    assert "<" not in line and ">" not in line
+    assert line.startswith("Produs: Telefon scriptalert(1)/script XYZ (emag")
+
+
+def test_prompt_title_javascript_uri_is_stripped_before_reaching_prompt():
+    alert = {**HIKE_THEN_DROP_ALERT, "title": "Boxa JAVASCRIPT:alert(1) JBL"}
+    line = _product_line(build_omnibus_prompt(alert, {"rule_verdict": "NORMAL_DROP"}))
+    assert "javascript:" not in line.lower()
+    assert line.startswith("Produs: Boxa alert(1) JBL (emag")
+
+
+def test_prompt_title_data_uri_is_stripped_and_split_token_cannot_reassemble():
+    assert (
+        _sanitise_prompt_input("a DATA:text/html b", max_chars=200) == "a text/html b"
+    )
+    assert "javascript:" not in _sanitise_prompt_input(
+        "javajavascript:script:alert(1)", max_chars=200
+    )
+
+
+def test_prompt_title_longer_than_200_chars_is_truncated_to_exactly_200():
+    alert = {**HIKE_THEN_DROP_ALERT, "title": "A" * 500}
+    line = _product_line(build_omnibus_prompt(alert, {"rule_verdict": "NORMAL_DROP"}))
+    assert line.startswith("Produs: " + "A" * 200 + " (emag")
+
+
+def test_prompt_clean_title_with_diacritics_passes_through_unchanged():
+    title = "Frigider Samsung RB38 Șl Țară 385L"
+    alert = {**HIKE_THEN_DROP_ALERT, "title": title}
+    line = _product_line(build_omnibus_prompt(alert, {"rule_verdict": "NORMAL_DROP"}))
+    assert line.startswith(f"Produs: {title} (emag")
+    assert _sanitise_prompt_input(f"  {title}  ", max_chars=200) == title
