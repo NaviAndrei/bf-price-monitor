@@ -200,13 +200,32 @@ _THIRTY_DAY_LOW_PROMPT_LABELS = {
 }
 
 
+_PROMPT_UNSAFE = re.compile(r"[<>]|javascript:|data:", re.IGNORECASE)
+PROMPT_TITLE_MAX_CHARS = 200
+
+
+def _sanitise_prompt_input(text: str, *, max_chars: int) -> str:
+    """Neutralise attacker-controlled scraped text (a product title) before it
+    is interpolated into the LLM prompt (T-23). Removal loops until stable so
+    a split token like "javajavascript:script:" can't reassemble into a live
+    one after a single pass."""
+    cleaned = text.strip()
+    while True:
+        stripped = _PROMPT_UNSAFE.sub("", cleaned)
+        if stripped == cleaned:
+            break
+        cleaned = stripped
+    return cleaned.strip()[:max_chars]
+
+
 def build_omnibus_prompt(alert: dict, metrics: dict) -> str:
     thirty_day_low_label = _THIRTY_DAY_LOW_PROMPT_LABELS[
         thirty_day_window_provenance(alert)
     ]
+    title = _sanitise_prompt_input(alert["title"], max_chars=PROMPT_TITLE_MAX_CHARS)
     return (
         "Ești un auditor de protecție a consumatorului (Directiva Omnibus / OUG 58/2022).\n"
-        f"Produs: {alert['title']} ({alert['site']}, Vânzător: {alert.get('seller') or 'Neverificat'})\n"
+        f"Produs: {title} ({alert['site']}, Vânzător: {alert.get('seller') or 'Neverificat'})\n"
         f"Preț Nou: {alert['new_price']} RON | Preț Anterior: {alert['old_price']} RON\n"
         f"{thirty_day_low_label}: {alert.get('thirty_day_low')} RON\n"
         f"Preț de Referință (tăiat): {alert.get('reference_price') or 'N/A'} RON\n"
