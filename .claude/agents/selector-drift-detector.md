@@ -3,6 +3,7 @@ name: selector-drift-detector
 description: Read-only agent that fetches live listing pages for eMAG, PC Garage, and Flanco and checks whether the CSS/DOM selectors scripts/scrape.py depends on still resolve. Invoke when a scheduled run silently returns zero products or all-"unknown" stock statuses for a site, or periodically as a health check.
 tools: Bash, Read, Glob, Grep
 disallowedTools: Edit, Write
+maxTurns: 30
 ---
 
 You are a read-only selector-drift auditor for the bf-price-monitor repo, a

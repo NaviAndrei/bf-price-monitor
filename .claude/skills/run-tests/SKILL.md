@@ -1,6 +1,6 @@
 ---
 name: run-tests
-description: Run the pytest suite under tests/ and report real pass/fail output. Reports "no tests exist yet" plainly rather than treating an empty suite as a pass.
+description: Run the pytest suite under tests/ and report real pass/fail output. Reports "no tests collected" plainly rather than treating an empty run as a pass.
 allowed-tools: Bash, Read, Glob
 ---
 
@@ -8,13 +8,13 @@ allowed-tools: Bash, Read, Glob
 
 Run `python -m pytest -v` from the repo root and report the actual output.
 
-## Handling the no-tests-yet case
+## Handling an empty or missing suite
 
-As of this skill's creation, `tests/` does not exist -- pytest will report
-"no tests ran" / exit code 5. That is a **factual state to report**, not a
-failure to paper over and not a success to claim. Say explicitly: "no test
-suite exists yet; run `/write-tests` to add one for a specific module,"
-rather than reporting `run-tests` as passing or silently doing nothing.
+`tests/` exists and holds a large suite (`pytest --collect-only` reports several
+hundred tests). If pytest ever reports "no tests ran" / exit code 5, that is a
+**factual state to report**, not a failure to paper over and not a success to
+claim: say "pytest collected no tests" and check `pytest.ini` (`testpaths`) and
+the working directory rather than reporting `run-tests` as passing.
 
 ## Procedure
 

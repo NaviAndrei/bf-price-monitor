@@ -23,9 +23,7 @@
 ## Architecture & Code Boundaries
 - **Pipeline stages:** `scrape.py` (adapters) ➔ `analyze.py` (discount evaluation) ➔ `notify.py` (Telegram delivery).
 - **Domain model progression:** Always maintain the strict separation: `Watch` ➔ `CanonicalProduct` ➔ `Offer` ➔ `Observation`. `Watch` currently has no retailer/site identity field, so this chain isn't fully wired yet — tracked as #56.
-- **Extraction hierarchy:** Always try in order: (1) JSON-LD `schema.org/Product`, (2) semantic HTML attributes, (3) CSS locators, (4) non-authoritative AI extraction fallback.
 - **Deterministic primacy:** The rule engine (`rule_verdict`) is strictly authoritative. The LLM (Hugging Face / Ollama) is an explanation generator only; it must NEVER override, invert, or bypass a deterministic discount verdict.
-- **Intraday observations:** Every scrape run records an `Observation` with an explicit UTC timestamp (`ISO 8601`). Never skip an observation because one already exists for the same calendar date.
 
 ## Git & Commit Standards
 - **Branch policy:** Work directly on `master`. Do NOT create feature branches unless explicitly told to do so.
@@ -40,16 +38,15 @@
 3. **Pre-commit verification:** Run `ruff check .` and `pytest -v`. Never commit code that breaks existing tests or drops test coverage.
 4. **Handoff logging:** After completing and committing work on an issue, append a concise 2-line summary to `docs/progress.md` (task completed, tests passing, commit SHA).
 
-## Hard Security & Operational Traps
-- **Least privilege:** Workflow scraping jobs must use read-only permissions (`permissions: {}`). Only persistence jobs may hold `contents: write`.
-- **Action pinning:** All GitHub Actions references must be pinned to 40-character commit SHAs, never floating version tags (e.g., `actions/checkout@b4ffde... # v4.1.7`).
-- **Secrets hygiene:** Never log full URLs containing tokens or webhook secrets. Mask tokens and UUIDs in log output. Never commit `.env` or temporary databases.
-- **Resilient waits:** Never use fixed `time.sleep()` for network or selector waits in Playwright. Use auto-waiting bounded locators (`page.locator().wait_for()`).
-
 ## Hard Migration/Schema Traps
-- **Ruff auto-fix can hide broken edits:** The ruff auto-fix hook silently strips import-only edits added before their usage lands in the same session. Verify with a real test run, not just a clean diff.
 - **Schema-valid is not production-safe:** Validate migration output programmatically against the actual validator (e.g. `validate_watchlist()`) before approving promotion — never by eyeballing printed JSON.
 - **Schema validation misses undeclared downstream dependencies:** A field a downstream consumer reads at runtime may never be declared in the schema. Grep actual runtime usage before claiming any migration is "1:1, no behavior loss."
+
+## Path-scoped rules (`.claude/rules/`)
+- `security.md` — always loaded: least privilege, action pinning, secrets hygiene.
+- `scraping.md` — loads when `scripts/scrape.py` or `scripts/adapters/**` is read: extraction hierarchy, resilient waits, intraday observations.
+- `testing.md` — loads when `tests/**` is read: pre-commit gate, ruff auto-fix trap, no live network in tests.
+- `feedback.md` — loads when `scripts/feedback.py` or `scripts/anomaly_pilot.py` is read: counts-only output, 30-label gate.
 
 ## Roadmap source
 Roadmap lives in GitHub milestones/issues, not a standalone file. See docs/ROADMAP.md

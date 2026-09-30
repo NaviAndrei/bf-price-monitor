@@ -1,8 +1,9 @@
 ---
+disable-model-invocation: true
 description: Run test suites, commit changes as NaviAndrei, push to master, and mark task Done
 ---
 
-The user wants to finalize and ship Issue #{{arg}}.
+The user wants to finalize and ship Issue #$ARGUMENTS.
 
 Follow this strict procedure:
 1. **Verification Gate:**
@@ -19,7 +20,7 @@ Follow this strict procedure:
    ```powershell
    git status
    git add -u
-   git commit --author="NaviAndrei <andrei.ivan1208@gmail.com>" -m "feat/fix: <concise summary> (Closes #{{arg}})"
+   git commit --author="NaviAndrei <andrei.ivan1208@gmail.com>" -m "feat/fix: <concise summary> (Closes #$ARGUMENTS)"
    ```
    *Strict Rule:* Do NOT add `Co-Authored-By` or any AI attribution lines in the commit message.
 
@@ -31,9 +32,9 @@ Follow this strict procedure:
 
 4. **Update Project Status & Close Issue:**
    ```powershell
-   powershell -ExecutionPolicy Bypass -File scripts/set_project_status.ps1 -IssueNumber {{arg}} -Status "Done"
-   gh issue close {{arg}} --repo NaviAndrei/bf-price-monitor --comment "Completed via commit on master. All acceptance criteria verified."
+   powershell -ExecutionPolicy Bypass -File scripts/set_project_status.ps1 -IssueNumber $ARGUMENTS -Status "Done"
+   gh issue close $ARGUMENTS --repo NaviAndrei/bf-price-monitor --comment "Completed via commit on master. All acceptance criteria verified."
    ```
 
 5. **Log Progress:**
-   Append a clean 2-line summary to `docs/progress.md` indicating that Issue #{{arg}} was completed, tests passed, and changes were pushed.
+   Append a clean 2-line summary to `docs/progress.md` indicating that Issue #$ARGUMENTS was completed, tests passed, and changes were pushed.

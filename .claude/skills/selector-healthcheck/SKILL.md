@@ -2,7 +2,9 @@
 name: selector-healthcheck
 description: Fetch one live listing page per retailer in watchlist.json and verify the CSS selectors scrape.py depends on still resolve, catching silent DOM drift before a scheduled run does.
 disable-model-invocation: true
-allowed-tools: Bash, Read, Glob
+context: fork
+agent: Explore
+allowed-tools: Read, Bash, WebFetch
 ---
 
 # Selector Health Check
@@ -19,8 +21,11 @@ for it via `/selector-healthcheck`.
 
 ## Read-only guarantee
 
-`allowed-tools: Bash, Read, Glob` — this skill never edits `scripts/scrape.py`
-or `data/*.json`. If a selector has drifted, it reports the mismatch; fixing
+This skill runs in a forked `Explore` subagent (`context: fork`, `agent: Explore`):
+the live-page HTML stays out of the main conversation, and Explore has no
+Write/Edit tools, so it cannot modify `scripts/scrape.py` or `data/*.json`.
+(`allowed-tools` only pre-approves Read/Bash/WebFetch for the turn; the
+read-only guarantee comes from the agent type.) If a selector has drifted, it reports the mismatch; fixing
 it is a separate, deliberate task (see the `add-retailer` skill for the
 pattern, or edit the relevant `*_stock_status()` / `scrape_*_listing()`
 function directly).

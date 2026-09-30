@@ -6,10 +6,10 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep
 
 # Write Tests
 
-This repo has no test suite yet (`pytest` is now in `requirements.txt`,
-`pytest.ini` sets `testpaths = tests`, but the `tests/` directory doesn't
-exist until the first test file is added). Use this skill when asked to add
-tests for `scripts/scrape.py`, `scripts/analyze.py`, or `scripts/notify.py`.
+`tests/` already holds a large suite (`tests/conftest.py` puts the repo root on
+`sys.path`; `pytest.ini` sets `testpaths = tests`). Use this skill when asked to
+add tests for a `scripts/*.py` module. Read the existing `tests/test_<module>.py`
+first and extend it rather than starting a second file for the same module.
 
 ## Ground rules specific to this codebase
 
@@ -31,10 +31,9 @@ tests for `scripts/scrape.py`, `scripts/analyze.py`, or `scripts/notify.py`.
   `scrape.RETRY_BACKOFFS` to near-zero values in the test so it runs fast,
   and assert on the number of `requests.get` calls made and the final
   return value for a 429-then-200 sequence and a 429-exhausted sequence.
-- Since `scripts/` has no `__init__.py`, tests need `from scripts import
-  scrape` to work -- add a `tests/conftest.py` that inserts the repo root
-  onto `sys.path` if one doesn't already exist, rather than restructuring
-  `scripts/` into a package.
+- `scripts/` has no `__init__.py`; `tests/conftest.py` already inserts the
+  repo root onto `sys.path`, so `from scripts import scrape` works -- don't
+  restructure `scripts/` into a package.
 
 ## Procedure
 
