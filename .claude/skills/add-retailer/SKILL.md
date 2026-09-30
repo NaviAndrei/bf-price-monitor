@@ -62,7 +62,7 @@ first.**
      `data/watchlist.json`.
 
 7. **Dry-run before trusting it.** Run `scripts/scrape.py` once and inspect
-   the console output and `data/price_history.json` for the new site's
+   the console output and `data/price_history.db` for the new site's
    entries -- confirm `stock_status` values are real captured states, not
    `"unknown"` for every product (that would mean the marker selector is
    wrong, not that the site has no stock info). Never fabricate or assume a

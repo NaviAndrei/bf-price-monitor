@@ -15,7 +15,7 @@ break.
 
 ## Invariants to check on every review
 
-1. **`data/price_history.json` idempotency**: `main()` in `scrape.py` must
+1. **`data/price_history.db` idempotency**: `main()` in `scrape.py` must
    never append two history entries for the same product on the same date
    (`if entry["history"] and entry["history"][-1]["date"] == today: continue`)
    and must never let `entry["history"]` exceed `HISTORY_LIMIT` (30 entries).

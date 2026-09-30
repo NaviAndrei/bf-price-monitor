@@ -12,6 +12,7 @@ files have uncommitted changes. Otherwise (Q&A, read-only turns) it exits 0.
 Exit 1 would be a non-blocking error in Claude Code, so failures use exit 2.
 `stop_hook_active` guards against an endless block loop.
 """
+
 import json
 import subprocess
 import sys
@@ -46,7 +47,11 @@ if commit_time is None or not commit_time.isdigit():
     sys.exit(0)  # not a git repo / no commits: nothing to verify
 
 recent_commit = (time.time() - int(commit_time)) < RECENT_COMMIT_MINUTES * 60
-dirty_python = [f for f in (git("diff", "--name-only", "HEAD") or "").splitlines() if f.endswith(".py")]
+dirty_python = [
+    f
+    for f in (git("diff", "--name-only", "HEAD") or "").splitlines()
+    if f.endswith(".py")
+]
 if not recent_commit and not dirty_python:
     sys.exit(0)
 
@@ -64,8 +69,11 @@ if recent_commit:
 if recent_commit or dirty_python:
     try:
         tests = subprocess.run(
-            [sys.executable, "-m", "pytest", "-q", "-x"],
-            cwd=cwd, capture_output=True, text=True, timeout=PYTEST_TIMEOUT_SECONDS,
+            [sys.executable, "-m", "pytest", "-x", "--tb=no", "-q"],
+            cwd=cwd,
+            capture_output=True,
+            text=True,
+            timeout=PYTEST_TIMEOUT_SECONDS,
         )
         if tests.returncode != 0:
             tail = "\n".join(tests.stdout.strip().splitlines()[-15:])
@@ -76,9 +84,15 @@ if recent_commit or dirty_python:
             file=sys.stderr,
         )
     except OSError as exc:
-        print(f"[verify_completion] could not run pytest ({exc}); not blocking.", file=sys.stderr)
+        print(
+            f"[verify_completion] could not run pytest ({exc}); not blocking.",
+            file=sys.stderr,
+        )
 
 if problems:
-    print("[verify_completion] unverified work:\n- " + "\n- ".join(problems), file=sys.stderr)
+    print(
+        "[verify_completion] unverified work:\n- " + "\n- ".join(problems),
+        file=sys.stderr,
+    )
     sys.exit(2)
 sys.exit(0)

@@ -262,3 +262,13 @@ Next: after the next workflow-run collection, check it with `uv run python scrip
 `scripts/scrape.py`: after navigation and `_wait_out_challenge`, `fetch_with_browser` waits up to 8 s (`LISTING_READY_TIMEOUT_MS`) for the listing cards to attach via `page.locator(sel).first.wait_for(state="attached")` (`_await_listing_ready`). Selectors: `.product_box` (PC Garage), `li.product-item` (Flanco), `body` fallback for other sites. On timeout: WARNING line, screenshot to `data/debug/<site>-<UTC-ms>.png` (git-ignored; a failed screenshot never masks the timeout), `ListingReadinessTimeout` raised, retried with the existing `RETRY_BACKOFFS`; the last attempt still returns `page.content()` so the parser decides. Backoff sleeps moved into `_sleep_backoff` so the AST guard test (`test_fetch_with_browser_body_has_no_fixed_waits`, plus a non-vacuity check) can ban direct `time.sleep`/`wait_for_timeout` inside `fetch_with_browser`.
 Deviations: the wait is skipped on 403/429 and mid-challenge pages (nothing to wait for; avoids 8 s of dead time); card-level selectors because the parsers use no wrapper container (TODO in code); no Tier 4 HTTP fallback; three `locator_calls` assertions in `tests/test_browser_state.py` loosened to membership checks. Tests: 694 passed (was 684, 10 new); `ruff check` and `ruff format --check` clean. Commits af388ab, 3b47e22. Refs #31.
 Known risk / Next: a legitimately zero-result page costs up to 3 x 8 s of timeouts plus backoffs and screenshots per attempt; selector accuracy is unconfirmed live. On the next scheduled run check the log for no listing-readiness WARNING lines, PC Garage 20 / Flanco 10 products (T-21 baseline), and no `data/debug/` screenshots. #31 stays open until then (and for `challenge_wait_entered > 0`, see #62).
+
+## 2026-09-30 — Harness improvements (commit 63d2bdd)
+- .claude/rules/ split: security.md (always), scraping.md,
+  testing.md, feedback.md (path-scoped)
+- CLAUDE.md trimmed to 52 lines
+- New hooks: session_start.py, ruff_format.py, verify_completion.py
+- New command: check-bf-readiness
+- selector-healthcheck upgraded to context:fork + agent:Explore
+- selector-drift-detector: maxTurns set to 30
+- 680 tests pass, 1 skipped
