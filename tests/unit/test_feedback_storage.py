@@ -78,6 +78,10 @@ def test_fresh_database_is_migrated_to_current_version(db):
     assert len(store.get_pseudonym_salt(db)) == 32
 
 
+def test_fresh_database_has_callback_audit_table(db):
+    assert "feedback_callback_audit" in _tables(db)
+
+
 def test_legacy_v0_database_upgrades_in_place_keeping_its_data(tmp_path):
     path = tmp_path / "legacy.db"
     legacy = sqlite3.connect(str(path))
