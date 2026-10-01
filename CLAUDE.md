@@ -13,7 +13,7 @@
 - Windows self-hosted runner environment / PowerShell terminal.
 - Python 3.11+ / Playwright with Chromium.
 - **Run all tests:** `python -m pytest -v` (bare `pytest` may resolve to the wrong interpreter on Windows; always use `python -m pytest` to guarantee the active venv)
-- **Run targeted test:** `pytest tests/test_scrape.py -v`
+- **Run targeted test:** `python -m pytest tests/test_scrape.py -x --tb=short -q`
 - **Lint & format checks:** `ruff check .` and `ruff format --check .`
 - **Fix lint issues:** `ruff check --fix .` and `ruff format .`
 - **Run single scrape manually:** `python scripts/scrape.py`
@@ -34,7 +34,7 @@
 ## Task Execution & Lifecycle
 1. **Plan first:** Before writing code for an issue, inspect relevant files and state the plan: modified files, test strategy, and rollback points.
 2. **Implement small slices:** Change only files relevant to the active issue. Do not perform speculative refactoring.
-3. **Pre-commit verification:** Run `ruff check .` and `pytest -v`. Never commit code that breaks existing tests or drops test coverage.
+3. **Pre-commit verification:** Run `ruff check .` and `python -m pytest -x --tb=short -q`. Never commit code that breaks existing tests or drops test coverage.
 4. **Handoff logging:** After completing and committing work on an issue, append a concise 2-line summary to `docs/progress.md` (task completed, tests passing, commit SHA).
 - **Issue closing:** Always use `(Closes #N)` in the commit message trailer. Never run `gh issue close` manually — GitHub closes the issue automatically on push. Use `Refs #N` only when a commit relates to but does not complete an issue.
 
