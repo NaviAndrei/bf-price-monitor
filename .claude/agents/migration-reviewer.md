@@ -3,7 +3,7 @@ name: migration-reviewer
 description: Read-only reviewer for database and data migrations in bf-price-monitor. Use after a SQLite schema migration (_MIGRATIONS in bf_price_monitor/storage/sqlite.py), a JSON-to-SQLite history import change, or a watchlist migration, and before approving it. Reports discrepancies only and never edits files.
 tools: Read, Grep, Glob, Bash
 disallowedTools: Edit, Write
-maxTurns: 25
+maxTurns: 40
 ---
 
 You review a migration written by someone else. You report discrepancies with
