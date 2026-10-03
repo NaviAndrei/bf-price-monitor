@@ -54,7 +54,8 @@ The monitor runs as scheduled jobs with no server listening, so presses are
    4 absorbs.
 6. Every callback is answered best-effort to stop the button's spinner. Since
    #69 the answer is sent right after validation, *before* the database work
-   in step 4, because Telegram only accepts it for a short window. Valid
+   in step 4, because Telegram rejects late answers ("query is too old";
+   the exact window is undocumented, see below). Valid
    presses get "Mulțumesc! Feedback primit." (received, not "saved": the
    commit has not happened yet); rejected presses get no text, which reveals
    nothing to someone outside the allowlist. A failed answer never blocks
@@ -86,12 +87,18 @@ entry per callback, showing only a short hash of the callback id.
 
 ### Limits of scheduled polling
 
-- **Delayed acknowledgement.** Telegram shows a spinner on a pressed button
-  until the next scheduled run answers it. Answers to presses older than
-  roughly 15 minutes fail with "query is too old". The label is still stored,
-  and the run logs `callbacks_answer_failed=N` with
-  `ack_errors={query_expired=N}`. The 15-minute figure is unverified
-  against Telegram's documentation.
+- **Delayed acknowledgement.** The Bot API states that "Telegram clients
+  will display a progress bar until you call answerCallbackQuery"
+  ([CallbackQuery](https://core.telegram.org/bots/api#callbackquery)).
+  Scheduled runs answer minutes to hours after the press, and late answers
+  fail with "query is too old". The label is still stored, and the run logs
+  `callbacks_answer_failed=N` with `ack_errors={query_expired=N}`. In
+  practice, expect every press collected by a scheduled run to show the
+  clock and then fail to be answered: through 2026-10-03, 12 of 12 observed
+  callbacks went unanswered. The answer window itself is **unverified**.
+  Telegram's Bot API, bots FAQ and MTProto docs give no number; figures of
+  about 10 seconds or about 15 minutes come from secondary sources only.
+  Only the always-on worker (below) answers in time.
 - **24-hour retention.** Telegram keeps unconsumed updates for at most 24
   hours. Scheduled runs fire irregularly (about 4 to 5 of the 12 daily cron
   slots), so a gap longer than 24 hours between runs loses the presses made
