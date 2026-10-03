@@ -272,3 +272,7 @@ Known risk / Next: a legitimately zero-result page costs up to 3 x 8 s of timeou
 - selector-healthcheck upgraded to context:fork + agent:Explore
 - selector-drift-detector: maxTurns set to 30
 - 680 tests pass, 1 skipped
+
+## 2026-10-03: #37 button-clock doc fix (becaa1a)
+- feedback-labels.md cites the Bot API progress-bar note; answer window marked unverified (12/12 callbacks unanswered). #37 still open: run 37141305841 polled no updates for the 13:05Z press.
+- ruff clean, 695 tests pass.
