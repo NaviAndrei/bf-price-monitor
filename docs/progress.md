@@ -273,6 +273,10 @@ Known risk / Next: a legitimately zero-result page costs up to 3 x 8 s of timeou
 - selector-drift-detector: maxTurns set to 30
 - 680 tests pass, 1 skipped
 
+## 2026-10-03: #37 button-clock doc fix (becaa1a)
+- feedback-labels.md cites the Bot API progress-bar note; answer window marked unverified (12/12 callbacks unanswered). #37 still open: run 37141305841 polled no updates for the 13:05Z press.
+- ruff clean, 695 tests pass.
+
 ## 2026-10-13 - Delta roadmap snapshot (Sprints 8-11)
 - Added docs/roadmap/bf-price-monitor-roadmap.md (derived snapshot; main path 50 h = 16+8+11+15); ruff check clean, pytest exit 0 (1 skipped); commit 7887529. branch_guard.py now allows master-fkamih.
 
