@@ -242,8 +242,8 @@ def collect_once(
         else Rejection(update_id=-1, reason="malformed_update")
         for update in updates
     ]
-    # Answer straight after validation, before any DB work: Telegram only
-    # accepts answerCallbackQuery for a short window after the press.
+    # Answer straight after validation, before any DB work: Telegram rejects
+    # late answers ("query is too old"); the window is undocumented.
     acks: dict[str, tuple[bool, str | None]] = {}
     for item in items:
         query_id = item.callback_query_id
