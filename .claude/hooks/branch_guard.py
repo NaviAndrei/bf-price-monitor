@@ -8,7 +8,7 @@ Exit code 2 = BLOCK, Exit code 0 = ALLOW
 """
 import sys, json, re, subprocess
 
-MAIN_BRANCH = "master"
+ALLOWED_BRANCHES = {"master", "master-fkamih"}
 
 try:
     input_data = json.load(sys.stdin)
@@ -37,7 +37,7 @@ for pattern in BRANCH_CREATE_PATTERNS:
     if re.search(pattern, command, re.IGNORECASE):
         block(
             f"BLOCKED: creating a new branch is disabled on this repo — all "
-            f"work goes directly on `{MAIN_BRANCH}`. Command: {command[:150]}"
+            f"work goes directly on an allowed branch ({', '.join(sorted(ALLOWED_BRANCHES))}). Command: {command[:150]}"
         )
 
 if re.search(r"\bgit\s+commit\b", command, re.IGNORECASE) or re.search(r"\bgit\s+push\b", command, re.IGNORECASE):
@@ -48,11 +48,11 @@ if re.search(r"\bgit\s+commit\b", command, re.IGNORECASE) or re.search(r"\bgit\s
         ).stdout.strip()
     except Exception:
         current = ""
-    if current and current != MAIN_BRANCH:
+    if current and current not in ALLOWED_BRANCHES:
+        allowed = ", ".join(f"'{b}'" for b in sorted(ALLOWED_BRANCHES))
         block(
-            f"BLOCKED: currently on branch '{current}', not '{MAIN_BRANCH}'. "
-            f"This repo's policy is direct-on-{MAIN_BRANCH} — switch to "
-            f"{MAIN_BRANCH} before committing or pushing."
+            f"BLOCKED: currently on branch '{current}'. Commits and pushes are "
+            f"only allowed on: {allowed}. Switch to one of these first."
         )
 
 sys.exit(0)
