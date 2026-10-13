@@ -69,7 +69,7 @@ if recent_commit:
 if recent_commit or dirty_python:
     try:
         tests = subprocess.run(
-            [sys.executable, "-m", "pytest", "-x", "--tb=no", "-q"],
+            [sys.executable, "-m", "pytest", "-x", "--tb=no"],
             cwd=cwd,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,  # keep crashes (e.g. PermissionError) visible

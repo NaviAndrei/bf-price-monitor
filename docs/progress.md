@@ -286,3 +286,6 @@ Next: after the next workflow-run collection, check it with `uv run python scrip
 - verify_completion.py now shows pytest stderr in its block message (b6476b1).
 - ruff clean; 731 passed, 1 skipped. Backup branch and master-fkamih untouched.
 - Next: decide the push; update the pytest -q usage note if the -qq fix is applied.
+
+## 2026-10-13 - Stop hook pytest summary line
+- verify_completion.py no longer passes -q twice (addopts already has it), so its block message now shows the pytest summary line; hook tested with a scratch failing test (exit 2, "1 failed"), 731 passed, 1 skipped.
