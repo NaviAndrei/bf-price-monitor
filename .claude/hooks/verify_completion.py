@@ -71,7 +71,8 @@ if recent_commit or dirty_python:
         tests = subprocess.run(
             [sys.executable, "-m", "pytest", "-x", "--tb=no", "-q"],
             cwd=cwd,
-            capture_output=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,  # keep crashes (e.g. PermissionError) visible
             text=True,
             timeout=PYTEST_TIMEOUT_SECONDS,
         )
