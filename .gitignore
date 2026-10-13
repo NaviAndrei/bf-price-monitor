@@ -6,6 +6,7 @@ __pycache__/
 .mypy_cache/
 .ruff_cache/
 .pytest_cache/
+.pytest_tmp/
 data/alerts.json
 data/formatted_alerts.json
 data/price_history.db

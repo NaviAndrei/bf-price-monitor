@@ -53,5 +53,5 @@ plugins = ["pydantic.mypy"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "--tb=short -q"
+addopts = "--tb=short -q --basetemp=.pytest_tmp"
 pythonpath = ["scripts"]
