@@ -276,3 +276,9 @@ Known risk / Next: a legitimately zero-result page costs up to 3 x 8 s of timeou
 ## 2026-10-03: #37 button-clock doc fix (becaa1a)
 - feedback-labels.md cites the Bot API progress-bar note; answer window marked unverified (12/12 callbacks unanswered). #37 still open: run 37141305841 polled no updates for the 13:05Z press.
 - ruff clean, 695 tests pass.
+
+## 2026-10-13 - Delta roadmap snapshot (Sprints 8-11)
+- Added docs/roadmap/bf-price-monitor-roadmap.md (derived snapshot; main path 50 h = 16+8+11+15); ruff check clean, pytest exit 0 (1 skipped); commit 7887529. branch_guard.py now allows master-fkamih.
+
+## 2026-10-13 - External research addendum (Sprints 8-14)
+- Added docs/roadmap/bf-price-monitor-research-addendum.md (56 logged steps, 11 proposed items T-62..T-72, Sprints 8-14 = 87 h on either label path); ruff check and format clean, pytest exit 0 (694 passed, 1 skipped); commit 0e8bc03. Key change: OUG 27/2022 is an energy ordinance; the 30-day rule is HG 947/2000 art. 4^1 (HG 686/2022).
