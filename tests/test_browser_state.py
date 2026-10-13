@@ -516,6 +516,9 @@ def test_main_closes_browser_state_even_when_run_raises(monkeypatch, tmp_path):
     )
     monkeypatch.setattr(scrape, "DB_FILE", tmp_path / "price_history.db")
     monkeypatch.setattr(scrape.time, "sleep", lambda *_: None)
+    # No live network in tests: scrape_emag_listing() calls fetch() for the
+    # real listing page, so stub it to "no response" (the adapter returns []).
+    monkeypatch.setattr(scrape, "fetch", lambda url, site: None)
 
     calls = {"close": 0}
 
