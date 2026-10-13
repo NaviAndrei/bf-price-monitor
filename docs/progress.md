@@ -272,3 +272,6 @@ Known risk / Next: a legitimately zero-result page costs up to 3 x 8 s of timeou
 - selector-healthcheck upgraded to context:fork + agent:Explore
 - selector-drift-detector: maxTurns set to 30
 - 680 tests pass, 1 skipped
+
+## 2026-10-13 - Delta roadmap snapshot (Sprints 8-11)
+- Added docs/roadmap/bf-price-monitor-roadmap.md (derived snapshot; main path 50 h = 16+8+11+15); ruff check clean, pytest exit 0 (1 skipped); commit 7887529. branch_guard.py now allows master-fkamih.
