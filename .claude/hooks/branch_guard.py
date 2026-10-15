@@ -8,8 +8,11 @@ string is never mistaken for a git invocation), split into segments on
 ; && || | & ( ) and newlines, and each segment starting with `git` is
 judged on its subcommand and flags:
 
-  * creating a branch (git branch <name>, checkout -b/-B, switch -c/-C,
-    branch -c/-C, worktree add -b/-B) is blocked everywhere;
+  * creating a branch (git branch <name>, checkout -b/-B/-t/--track/--orphan,
+    switch -c/-C/-t/--track/--orphan, branch -c/-C, any worktree add,
+    update-ref refs/heads/...) is blocked everywhere;
+  * forcing a push (--force*, a short flag containing f, a +refspec) is
+    blocked everywhere, whatever the token order;
   * commit / push / merge are blocked on any branch outside
     ALLOWED_BRANCHES;
   * on ALLOWED_BRANCHES, reset --hard, rebase and branch -d/-D/-m/-M are
@@ -17,23 +20,39 @@ judged on its subcommand and flags:
   * everything else, including every read-only form (branch -v/-vv/-a/-r/
     --list/--show-current, status, log, diff, show, fetch, ...), is allowed.
 
+Shell wrappers (bash/sh/zsh/dash -c, cmd /c, powershell/pwsh -Command/-c) are
+unwrapped up to MAX_WRAPPER_DEPTH levels; deeper nesting is blocked. The
+program name is compared by basename without .exe, so C:\\Git\\cmd\\git.exe
+counts as git.
+
 Exit code 2 = BLOCK (reason on stderr), exit code 0 = ALLOW.
 Fail-open: a command that shlex cannot parse is allowed with a warning.
 Known gap: command/process substitution ($(...), backticks) is not parsed.
 """
 
 import json
+import ntpath
 import re
 import shlex
 import subprocess
 import sys
 
-ALLOWED_BRANCHES = {"master", "master-fkamih"}
+ALLOWED_BRANCHES = {"master"}
 
 SEPARATOR_CHARS = set(";&|()\n")
 WRAPPERS = {"command", "env", "nohup", "sudo", "time"}
-SHELLS = {"bash", "sh", "zsh", "dash", "pwsh", "powershell"}
-SHELL_COMMAND_FLAGS = {"-c", "-command"}
+SHELLS = {"bash", "sh", "zsh", "dash", "pwsh", "powershell", "cmd"}
+# These take the command as the single argument after -c; the others
+# (cmd, powershell, pwsh) take the rest of the line.
+ONE_STRING_SHELLS = {"bash", "sh", "zsh", "dash"}
+SHELL_COMMAND_FLAGS = {"-c", "-command", "/c"}
+MAX_WRAPPER_DEPTH = 3
+
+# A backslash before a path character is a Windows separator, not an escape.
+# It is swapped for a marker so shlex keeps it, then restored per token.
+_PATH_BACKSLASH = re.compile(r"\\(?=[\w.:~-]|$)")
+_BACKSLASH_MARK = "\x00"
+FORCE_SHORT_FLAG = re.compile(r"^-[A-Za-z]*f[A-Za-z]*$")
 
 GIT_OPTIONS_WITH_VALUE = {"-C", "-c", "--git-dir", "--work-tree", "--namespace"}
 BRANCH_LONG_WITH_VALUE = {
@@ -63,12 +82,14 @@ def _allowed_list():
 
 
 def split_segments(command):
-    lexer = shlex.shlex(command, posix=True, punctuation_chars=";&|<>()\n")
+    protected = _PATH_BACKSLASH.sub(_BACKSLASH_MARK, command)
+    lexer = shlex.shlex(protected, posix=True, punctuation_chars=";&|<>()\n")
     lexer.whitespace_split = True
     lexer.whitespace = " \t\r"
     lexer.commenters = ""
     segments, current = [], []
     for token in lexer:
+        token = token.replace(_BACKSLASH_MARK, "\\")
         if all(ch in SEPARATOR_CHARS for ch in token):
             segments.append(current)
             current = []
@@ -79,7 +100,7 @@ def split_segments(command):
 
 
 def _program_name(token):
-    name = token.replace("\\", "/").rsplit("/", 1)[-1].lower()
+    name = ntpath.basename(token).lower()
     return name[:-4] if name.endswith(".exe") else name
 
 
@@ -145,21 +166,42 @@ def _classify_branch(args):
     return None
 
 
+def _long_flags(args):
+    flags = set()
+    for token in args:
+        if token == "--":
+            break
+        if token.startswith("--"):
+            flags.add(token.split("=", 1)[0])
+    return flags
+
+
+def _is_force_push(args):
+    return any(
+        token.startswith(("--force", "+")) or FORCE_SHORT_FLAG.match(token)
+        for token in args
+    )
+
+
 def _creates_branch(sub, args):
     if sub == "checkout":
-        return _has_short_flag(args, "bB")
+        return _has_short_flag(args, "bBt") or bool(
+            {"--orphan", "--track"} & _long_flags(args)
+        )
     if sub == "switch":
-        return _has_short_flag(args, "cC") or bool(
-            {"--create", "--force-create"} & set(args)
+        return _has_short_flag(args, "cCt") or bool(
+            {"--create", "--force-create", "--orphan", "--track"} & _long_flags(args)
         )
     if sub == "worktree":
-        return args[:1] == ["add"] and _has_short_flag(args[1:], "bB")
+        return args[:1] == ["add"]
+    if sub == "update-ref":
+        return any(token.startswith("refs/heads/") for token in args)
     if sub == "branch":
         return _classify_branch(args) == "create"
     return False
 
 
-def _check_segment(segment, get_branch):
+def _check_segment(segment, get_branch, depth=0):
     tokens = _strip_prefixes(segment)
     if not tokens:
         return None
@@ -167,7 +209,15 @@ def _check_segment(segment, get_branch):
     if program in SHELLS:
         for i, token in enumerate(tokens[1:], 1):
             if token.lower() in SHELL_COMMAND_FLAGS and i + 1 < len(tokens):
-                return evaluate(tokens[i + 1], get_branch)
+                if depth >= MAX_WRAPPER_DEPTH:
+                    return (
+                        "BLOCKED: shell wrappers nested deeper than "
+                        f"{MAX_WRAPPER_DEPTH} levels cannot be inspected."
+                    )
+                rest = tokens[i + 1 :]
+                one_string = len(rest) == 1 or program in ONE_STRING_SHELLS
+                inner = rest[0] if one_string else shlex.join(rest)
+                return evaluate(inner, get_branch, depth + 1)
         return None
     if program != "git":
         return None
@@ -180,6 +230,12 @@ def _check_segment(segment, get_branch):
         return (
             "BLOCKED: creating a new branch is disabled on this repo — all "
             f"work goes directly on an allowed branch ({_allowed_list()})."
+        )
+
+    if sub == "push" and _is_force_push(args):
+        return (
+            "BLOCKED: forcing a push (--force*, a -f style flag or a +refspec) "
+            "is disabled on this repo."
         )
 
     if sub in ("commit", "push", "merge"):
@@ -207,7 +263,7 @@ def _check_segment(segment, get_branch):
     return None
 
 
-def evaluate(command, get_branch):
+def evaluate(command, get_branch, depth=0):
     """Return a block reason for `command`, or None when it is allowed."""
     try:
         segments = split_segments(command)
@@ -218,7 +274,7 @@ def evaluate(command, get_branch):
         )
         return None
     for segment in segments:
-        reason = _check_segment(segment, get_branch)
+        reason = _check_segment(segment, get_branch, depth)
         if reason:
             return f"{reason} Command: {command[:150]}"
     return None

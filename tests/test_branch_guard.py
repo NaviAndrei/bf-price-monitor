@@ -2,6 +2,7 @@
 
 import importlib.util
 import json
+import shlex
 import subprocess
 import sys
 from pathlib import Path
@@ -44,13 +45,32 @@ ALLOWED = [
     ("git -C . status", "master", "global option before a read-only subcommand"),
     ("git commit -m 'msg'", "master", "commit allowed on master"),
     ("git push origin master", "master", "push allowed on master"),
-    (
-        "git merge --no-edit origin/master",
-        "master-fkamih",
-        "merge allowed on master-fkamih",
-    ),
+    ("git merge --no-edit origin/master", "master", "merge allowed on master"),
     ("git branch -D old", "feature/x", "delete only blocked on protected branches"),
     ("git rebase main", "feature/x", "rebase only blocked on protected branches"),
+    ("git push", "master", "plain push"),
+    ("git push -u origin master", "master", "-u is not a force flag"),
+    ("git push origin master --follow-tags", "master", "--follow-tags is not --force"),
+    ("git push --tags", "master", "tags push"),
+    ("git push --dry-run origin master", "master", "dry run"),
+    ('echo "git push --force"', "master", "quoted text is not a git call"),
+    ("git log --oneline", "master", "read-only"),
+    ("git commit -m 'document the -f flag'", "master", "message text is not a flag"),
+    ("git worktree list", "master", "listing worktrees creates nothing"),
+    ("git checkout master", "master", "checkout of an existing branch"),
+    ("git switch master", "master", "switch to an existing branch"),
+    ("git checkout -- tests/test_branch_guard.py", "master", "file restore"),
+    ("git update-ref refs/tags/v1 HEAD", "master", "only refs/heads is a branch"),
+    ("cmd /c git status", "master", "read-only inside cmd /c"),
+    (
+        'powershell -Command "git log --oneline"',
+        "master",
+        "read-only inside powershell",
+    ),
+    ('bash -c "echo git push --force"', "master", "text inside echo, not a git call"),
+    (r"C:\Git\cmd\git.exe status", "master", "unquoted Windows git path, read-only"),
+    (r'"C:\Program Files\Git\cmd\git.exe" log', "master", "quoted Windows git path"),
+    ("git fetch --force origin", "master", "fetch -f is not a push"),
 ]
 
 BLOCKED = [
@@ -67,13 +87,61 @@ BLOCKED = [
     ("git reset --hard HEAD~1", "master", "hard reset on protected branch"),
     ("git rebase origin/master", "master", "rebase on protected branch"),
     ("git branch -D old", "master", "delete on protected branch"),
-    ("git branch -d old", "master-fkamih", "delete on protected branch"),
+    ("git branch -d old", "master", "lowercase delete on protected branch"),
     ("git branch -m old new", "master", "rename on protected branch"),
     ("git branch -M new", "master", "forced rename on protected branch"),
     ("git status && git checkout -b x", "master", "creation in a later segment"),
     ("git status\ngit checkout -b x", "master", "creation after a newline"),
     ("git -C . checkout -b x", "master", "global option must not hide the subcommand"),
     ('bash -c "git checkout -b x"', "master", "creation inside a shell -c string"),
+    ("git commit -m x", "master-fkamih", "master-fkamih is no longer allowed"),
+    # force push, any token order
+    ("git push --force origin master", "master", "force push"),
+    ("git push origin master --force", "master", "flag after arguments"),
+    ("git push origin +master", "master", "plus refspec forces"),
+    ("git push --force-with-lease origin master", "master", "lease still forces"),
+    ("git push --force-with-lease=master:abc", "master", "lease with value"),
+    ("git push --force-if-includes", "master", "force-if-includes"),
+    ("git push -f", "master", "short flag"),
+    ("git push -fu origin master", "master", "f inside combined short flags"),
+    ("git -C . push origin master -f", "master", "global option, trailing flag"),
+    ("git push -f origin x", "feature/x", "blocked outside allowed branches too"),
+    # more branch-creating forms
+    ("git worktree add ../wt", "master", "bare worktree add makes a branch"),
+    ("git worktree add ../wt master", "master", "worktree add with commit-ish"),
+    ("git checkout --orphan x", "master", "orphan branch"),
+    ("git switch --orphan x", "master", "orphan branch"),
+    ("git checkout --track origin/foo", "master", "tracking branch"),
+    ("git checkout -t origin/foo", "master", "tracking branch, short"),
+    ("git switch --track origin/foo", "master", "tracking branch"),
+    ("git switch -t origin/foo", "master", "tracking branch, short"),
+    ("git update-ref refs/heads/x HEAD", "master", "branch via update-ref"),
+    # wrappers
+    ("cmd /c git branch newname", "master", "cmd /c"),
+    ('cmd.exe /c "git checkout -b x"', "master", "cmd.exe /c with one string"),
+    ('powershell -Command "git push --force"', "master", "powershell -Command"),
+    ('pwsh -NoProfile -c "git worktree add ../x"', "master", "pwsh -c after flags"),
+    ('sh -c "git switch -c x"', "master", "sh -c"),
+    (r'bash -c "cmd /c \"git branch x\""', "master", "bash wrapping cmd"),
+    # program-name normalisation
+    (r"C:\Git\cmd\git.exe branch newname", "master", "unquoted Windows path"),
+    (r'"C:\Program Files\Git\cmd\git.exe" checkout -b x', "master", "quoted path"),
+    (r"C:\Git\cmd\git.exe push --force", "master", "force via Windows path"),
+    (r"C:\Windows\System32\cmd.exe /c git branch x", "master", "cmd.exe by path"),
+    ("GIT.EXE branch newname", "master", "case and .exe are ignored"),
+]
+
+
+def _wrap(command, times, shell="bash -c"):
+    for _ in range(times):
+        command = f"{shell} {shlex.quote(command)}"
+    return command
+
+
+NESTED = [
+    (_wrap("git branch x", 3), "master", "three wrapper levels are still unwrapped"),
+    (_wrap("git push -f", 2, "cmd /c"), "master", "two cmd levels"),
+    (_wrap("git status", 4), "master", "more than three levels is refused"),
 ]
 
 
@@ -96,6 +164,16 @@ def test_allowed(command, branch, why):
     ids=[f"{b}:{c!r}" for c, b, _ in BLOCKED],
 )
 def test_blocked(command, branch, why):
+    reason = _evaluate(command, branch)
+    assert reason is not None and reason.startswith("BLOCKED"), why
+
+
+@pytest.mark.parametrize(
+    ("command", "branch", "why"),
+    NESTED,
+    ids=[f"{b}:nested{i}" for i, (_, b, _) in enumerate(NESTED)],
+)
+def test_nested_wrappers(command, branch, why):
     reason = _evaluate(command, branch)
     assert reason is not None and reason.startswith("BLOCKED"), why
 
