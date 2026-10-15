@@ -12,7 +12,8 @@ judged on its subcommand and flags:
     switch -c/-C/-t/--track/--orphan, branch -c/-C, any worktree add,
     update-ref refs/heads/...) is blocked everywhere;
   * forcing a push (--force*, a short flag containing f, a +refspec) is
-    blocked everywhere, whatever the token order;
+    blocked everywhere, whatever the token order; so is a :refspec, which
+    deletes a remote branch;
   * commit / push / merge are blocked on any branch outside
     ALLOWED_BRANCHES;
   * on ALLOWED_BRANCHES, reset --hard, rebase and branch -d/-D/-m/-M are
@@ -21,7 +22,10 @@ judged on its subcommand and flags:
     --list/--show-current, status, log, diff, show, fetch, ...), is allowed.
 
 Shell wrappers (bash/sh/zsh/dash -c, cmd /c, powershell/pwsh -Command/-c) are
-unwrapped up to MAX_WRAPPER_DEPTH levels; deeper nesting is blocked. The
+unwrapped up to MAX_WRAPPER_DEPTH levels; deeper nesting is blocked. Braces
+around a block ({ git ... }) are stripped, and powershell/pwsh with
+-EncodedCommand (-e, -ec, -enc, ...) is blocked because the payload cannot be
+inspected. The
 program name is compared by basename without .exe, so C:\\Git\\cmd\\git.exe
 counts as git.
 
@@ -183,6 +187,31 @@ def _is_force_push(args):
     )
 
 
+def _is_remote_delete(args):
+    return any(token.startswith(":") for token in args)
+
+
+def _is_encoded_flag(token):
+    flag = token.lower()
+    return flag == "-ec" or (len(flag) >= 2 and "-encodedcommand".startswith(flag))
+
+
+def _strip_script_block(tokens):
+    """Drop the braces around a block: `{ git x }` in PowerShell or bash."""
+    tokens = list(tokens)
+    while tokens and tokens[0].startswith("{"):
+        tokens[0] = tokens[0].lstrip("{")
+        if tokens[0]:
+            break
+        tokens.pop(0)
+    while tokens and tokens[-1].endswith("}"):
+        tokens[-1] = tokens[-1].rstrip("}")
+        if tokens[-1]:
+            break
+        tokens.pop()
+    return tokens
+
+
 def _creates_branch(sub, args):
     if sub == "checkout":
         return _has_short_flag(args, "bBt") or bool(
@@ -202,11 +231,20 @@ def _creates_branch(sub, args):
 
 
 def _check_segment(segment, get_branch, depth=0):
-    tokens = _strip_prefixes(segment)
+    tokens = _strip_prefixes(_strip_script_block(segment))
     if not tokens:
         return None
     program = _program_name(tokens[0])
     if program in SHELLS:
+        if program in ("powershell", "pwsh"):
+            for token in tokens[1:]:
+                if token.lower() in SHELL_COMMAND_FLAGS:
+                    break
+                if _is_encoded_flag(token):
+                    return (
+                        "BLOCKED: an encoded PowerShell command cannot be "
+                        "inspected; pass the command as plain text with -Command."
+                    )
         for i, token in enumerate(tokens[1:], 1):
             if token.lower() in SHELL_COMMAND_FLAGS and i + 1 < len(tokens):
                 if depth >= MAX_WRAPPER_DEPTH:
@@ -236,6 +274,12 @@ def _check_segment(segment, get_branch, depth=0):
         return (
             "BLOCKED: forcing a push (--force*, a -f style flag or a +refspec) "
             "is disabled on this repo."
+        )
+
+    if sub == "push" and _is_remote_delete(args):
+        return (
+            "BLOCKED: a refspec starting with ':' deletes a remote branch; "
+            "that is disabled on this repo."
         )
 
     if sub in ("commit", "push", "merge"):

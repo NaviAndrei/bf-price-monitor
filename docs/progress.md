@@ -293,3 +293,7 @@ Next: after the next workflow-run collection, check it with `uv run python scrip
 ## 2026-10-15 - Branch guard: force-push and branch-creation bypasses
 - branch_guard.py now blocks force pushes (any token order, +refspec), worktree add, --orphan/--track/-t and update-ref refs/heads, unwraps cmd /c and powershell/pwsh/bash -c up to 3 levels, and treats C:\Git\cmd\git.exe as git; ALLOWED_BRANCHES is {"master"}.
 - ruff clean; tests/test_branch_guard.py 103 passed, full suite 784 passed, 1 skipped; nothing pushed. Commit SHA: see git log (commit holds this entry).
+
+## 2026-10-15 - Branch guard: remote delete, script blocks, encoded commands
+- branch_guard.py now blocks `git push` with a :refspec (remote branch delete), unwraps `{ ... }` script blocks and bash groups, and refuses powershell/pwsh -EncodedCommand (-e, -ec, -enc) because the payload cannot be inspected.
+- ruff clean; tests/test_branch_guard.py 126 passed, full suite 807 passed, 1 skipped; nothing pushed. Commit SHA: see git log (commit holds this entry).

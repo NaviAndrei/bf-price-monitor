@@ -71,6 +71,19 @@ ALLOWED = [
     (r"C:\Git\cmd\git.exe status", "master", "unquoted Windows git path, read-only"),
     (r'"C:\Program Files\Git\cmd\git.exe" log', "master", "quoted Windows git path"),
     ("git fetch --force origin", "master", "fetch -f is not a push"),
+    ("git push origin master:master", "master", "explicit same-name refspec"),
+    ("git push origin HEAD:master", "master", "refspec with a source is not a delete"),
+    ('powershell -Command "& { git status }"', "master", "read-only script block"),
+    ("& git log --oneline", "master", "call operator, read-only"),
+    ("{ git status; }", "master", "bash group, read-only"),
+    ("git log --format={%h}", "master", "braces inside an argument"),
+    (
+        "pwsh -NoProfile -ExecutionPolicy Bypass -File run.ps1",
+        "master",
+        "-ExecutionPolicy is not -EncodedCommand",
+    ),
+    ('powershell -Command "echo -e"', "master", "-e inside the command text"),
+    ("powershell -c echo -e", "master", "flags after -c belong to the command"),
 ]
 
 BLOCKED = [
@@ -129,6 +142,23 @@ BLOCKED = [
     (r"C:\Git\cmd\git.exe push --force", "master", "force via Windows path"),
     (r"C:\Windows\System32\cmd.exe /c git branch x", "master", "cmd.exe by path"),
     ("GIT.EXE branch newname", "master", "case and .exe are ignored"),
+    # remote branch delete
+    ("git push origin :old", "master", "empty source deletes the remote branch"),
+    ("git push origin :refs/heads/old", "master", "full ref delete"),
+    ("git -C . push origin master :old", "master", "delete after other arguments"),
+    # PowerShell script blocks and the call operator
+    ('powershell -Command "& { git branch x }"', "master", "script block"),
+    ('pwsh -c "& { git push --force }"', "master", "script block, force push"),
+    ('pwsh -c "& { & { git branch x } }"', "master", "nested script blocks"),
+    ("& git branch x", "master", "call operator"),
+    (r'& "C:\Git\cmd\git.exe" checkout -b x', "master", "call operator with path"),
+    ("{ git branch x; }", "master", "bash group"),
+    # encoded commands cannot be inspected
+    ("powershell -EncodedCommand ZwBpAHQA", "master", "full flag"),
+    ("pwsh -enc ZwBpAHQA", "master", "-enc"),
+    ("PWSH -EC ZwBpAHQA", "master", "-ec in any case"),
+    ("powershell -NoProfile -e ZwBpAHQA", "master", "-e after other flags"),
+    ("cmd /c powershell -enc ZwBpAHQA", "master", "encoded command inside cmd"),
 ]
 
 
