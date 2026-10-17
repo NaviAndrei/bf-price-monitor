@@ -1,0 +1,114 @@
+{
+  "schema_version": 1,
+  "shops": [
+    {
+      "id": "emag",
+      "display_name": "eMAG",
+      "enabled": true,
+      "allowed_hosts": ["www.emag.ro", "emag.ro"],
+      "search_url": "https://www.emag.ro/search/{query}",
+      "query_encoding": "plus",
+      "fetch": "http",
+      "price_format": "ro_lei",
+      "sku_adapter": "emag",
+      "selectors": {
+        "listing_ready": null,
+        "card": ".card-item",
+        "title_link": ".card-v2-title",
+        "price": ".product-new-price",
+        "reference_price": null
+      },
+      "stock": {
+        "target": null,
+        "rules": [
+          { "status": "out_of_stock", "all": [{ "type": "text_contains", "value": "stoc epuizat" }] },
+          { "status": "out_of_stock", "all": [{ "type": "text_contains", "value": "indisponibil" }] },
+          { "status": "limited_stock", "all": [{ "type": "attr_equals", "attr": "data-availability-id", "value": "2" }] },
+          { "status": "limited_stock", "all": [{ "type": "text_contains", "value": "ultimul produs" }] },
+          { "status": "in_stock", "all": [{ "type": "attr_equals", "attr": "data-availability-id", "value": "3" }] },
+          { "status": "in_stock", "all": [{ "type": "text_contains", "value": "in stoc" }] }
+        ]
+      },
+      "seller": { "name": null, "is_marketplace": null },
+      "probe_query": "laptop lenovo v15",
+      "robots_review": {
+        "checked_on": "2026-09-06",
+        "note": "robots.txt disallows /product/; only /search/ listing pages are requested (scrape.py:936-937)."
+      }
+    },
+    {
+      "id": "pcgarage",
+      "display_name": "PC Garage",
+      "enabled": true,
+      "allowed_hosts": ["www.pcgarage.ro", "pcgarage.ro"],
+      "search_url": "https://www.pcgarage.ro/cauta/?q={query}",
+      "query_encoding": "plus",
+      "fetch": "browser",
+      "price_format": "ro_lei",
+      "sku_adapter": "pcgarage",
+      "selectors": {
+        "listing_ready": ".product_box",
+        "card": ".product_box",
+        "title_link": ".product_box_name a",
+        "price": ".product_box_price_container p.price",
+        "reference_price": null
+      },
+      "stock": {
+        "target": ".product_box_availability",
+        "rules": [
+          { "status": "out_of_stock", "all": [{ "type": "class_has", "value": "outofstock" }] },
+          { "status": "supplier_stock", "all": [{ "type": "class_has", "value": "insupplierstock" }] },
+          {
+            "status": "limited_stock",
+            "all": [
+              { "type": "class_has", "value": "instock" },
+              { "type": "text_contains", "value": "limitat" }
+            ]
+          },
+          { "status": "in_stock", "all": [{ "type": "class_has", "value": "instock" }] }
+        ]
+      },
+      "seller": { "name": "PC Garage", "is_marketplace": false },
+      "probe_query": "laptop asus vivobook",
+      "robots_review": {
+        "checked_on": "2026-09-06",
+        "note": "robots.txt disallows /detalii-produs/; only /cauta/ listing pages are requested (scrape.py:1013-1014)."
+      }
+    },
+    {
+      "id": "flanco",
+      "display_name": "Flanco",
+      "enabled": true,
+      "allowed_hosts": ["www.flanco.ro", "flanco.ro"],
+      "search_url": "https://www.flanco.ro/catalogsearch/result/?q={query}",
+      "query_encoding": "plus",
+      "fetch": "browser",
+      "price_format": "ro_lei",
+      "sku_adapter": "flanco",
+      "selectors": {
+        "listing_ready": "li.product-item",
+        "card": "li.product-item",
+        "title_link": ".product-item-link",
+        "price": ".price-box.price-final_price .special-price .price",
+        "reference_price": ".pretVechi .pricePrp .price"
+      },
+      "stock": {
+        "target": ".stocky-txt",
+        "rules": [
+          { "status": "out_of_stock", "all": [{ "type": "class_contains", "value": "out-of-stock" }] },
+          { "status": "out_of_stock", "all": [{ "type": "class_contains", "value": "sold-out" }] },
+          { "status": "limited_stock", "all": [{ "type": "class_has", "value": "limited-stock" }] },
+          { "status": "supplier_stock", "all": [{ "type": "class_has", "value": "supplier-stock" }] },
+          { "status": "in_stock", "all": [{ "type": "class_has", "value": "in-stock" }] },
+          { "status": "in_stock", "all": [{ "type": "class_has", "value": "bin-display" }] }
+        ]
+      },
+      "seller": { "name": "Flanco", "is_marketplace": false },
+      "probe_query": "laptop asus vivobook",
+      "robots_review": {
+        "checked_on": null,
+        "note": "robots.txt is itself Cloudflare-challenge-gated and could not be read (scrape.py:1087-1091); only /catalogsearch/result/ listing pages are requested."
+      }
+    }
+  ]
+}
