@@ -16,7 +16,7 @@
 
 ## Architecture & Code Boundaries
 - **Pipeline stages:** `scrape.py` (adapters) ➔ `analyze.py` (discount evaluation) ➔ `notify.py` (Telegram delivery).
-- **Domain model progression:** Always maintain the strict separation: `Watch` ➔ `CanonicalProduct` ➔ `Offer` ➔ `Observation`. `Watch` currently has no retailer/site identity field, so this chain isn't fully wired yet — tracked as #56.
+- **Domain model progression:** Always maintain the strict separation: `Watch` ➔ `CanonicalProduct` ➔ `Offer` ➔ `Observation`. `Watch` carries a `site` field (`bf_price_monitor/domain/models.py`).
 - **Deterministic primacy:** The rule engine (`rule_verdict`) is strictly authoritative. The LLM (Hugging Face / Ollama) is an explanation generator only; it must NEVER override, invert, or bypass a deterministic discount verdict.
 
 ## Git & Commit Standards

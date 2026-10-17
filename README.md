@@ -258,7 +258,7 @@ Setup:
 ## Notes
 
 - Scraping only ever hits listing/search pages, respecting each site's
-  `robots.txt`, with a randomized 3–7 second delay between sites.
+  `robots.txt`, with a randomized 4–9 second delay between requests.
 - Each scraped product keeps the last 90 days of observations (every run's
   reading, not one per day), and never fewer than its 2 most recent ones.
 - `data/alerts.json` and `data/formatted_alerts.json` are regenerated every
