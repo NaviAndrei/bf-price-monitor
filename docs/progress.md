@@ -297,3 +297,7 @@ Next: after the next workflow-run collection, check it with `uv run python scrip
 ## 2026-10-15 - Branch guard: remote delete, script blocks, encoded commands
 - branch_guard.py now blocks `git push` with a :refspec (remote branch delete), unwraps `{ ... }` script blocks and bash groups, and refuses powershell/pwsh -EncodedCommand (-e, -ec, -enc) because the payload cannot be inspected.
 - ruff clean; tests/test_branch_guard.py 126 passed, full suite 807 passed, 1 skipped; nothing pushed. Commit SHA: see git log (commit holds this entry).
+
+## 2026-10-17 - Retailer config design spike (docs only)
+- docs/design/retailers-config.md and retailers.draft.json: eMAG, PC Garage and Flanco all fit a data file plus four named behaviours; draft schema validates, stock rules match all 24 fixture/edge cards; found scrape.py ignores `enabled` and persist can overwrite watchlist edits. No issue exists yet (proposed in session).
+- ruff clean; no code, tests or workflows changed, no live network; nothing pushed. Commit SHA: 6fe5d35.
