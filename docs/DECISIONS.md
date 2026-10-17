@@ -796,3 +796,37 @@ observation to the same 27 product arrays.
   so a broken scraper for that shop goes unnoticed until it is re-enabled.
   That is intended. A "paused" health record type is Phase 2 material
   (docs/design/retailers-config.md §6.2).
+
+## 2026-10-17 — Dashboard Phase 1 slice B: core library (`bf_price_monitor/dashboard/`)
+- **Edits are operations, not file replacements.** `add`, `update`,
+  `set_enabled` and `delete` each carry the watch exactly as the user saw it.
+  Applied if the current watch equals it; a no-op if the current watch already
+  equals the result (a replay whose push landed earlier); otherwise a
+  `Conflict`. An unrelated bot commit therefore never blocks an edit, and a
+  same-watch race is never silently overwritten.
+- **Hidden fields pass through.** Edits patch the current watch dict and never
+  rebuild it from form data, so `cadence_minutes`, `owner`, `atl_policy`,
+  `track_all_time_low`, `seller_policy` and so on survive every edit (pinned by
+  a test). The form does not offer `cadence_minutes`: nothing reads it, the
+  schedule is cron. Site and query are fixed after creation (the id is derived
+  from them).
+- **Unknown keys:** the pure editor keeps them, but the watchlist schema has
+  `additionalProperties: false`, so `store.save` refuses a document that has
+  one rather than dropping it. A file with an unknown key is already invalid
+  for the bot's own validator.
+- **Journal under `.git/bf-dashboard/`.** Every op is fsynced there before any
+  git work. Each attempt fetches, detaches at origin/master (as
+  `persist_history.py` does), replays the journal and pushes, so an unpushed
+  commit is never relied on; the journal re-derives it. A replayed op that
+  conflicts moves to `conflicts.jsonl`, with every later op on the same watch.
+- **Failure states:** `pushed | not_pushed | rejected | conflict | invalid`,
+  with a reason (auth, network, timeout, rejected) so the UI can say what to do.
+  A rejected push is retried three times (1 s, 2 s); other failures are not.
+- **Safety:** every git call has a timeout (30 s network, 10 s local) and runs
+  with `GIT_TERMINAL_PROMPT=0` and `GCM_INTERACTIVE=never`. A thread lock plus
+  an OS byte lock serialize writers; a second process fails fast ("clone busy").
+  No rebase, hard reset, force or branch-creating git verb appears in the
+  package (a test scans the sources).
+- **Not done yet:** the HTTP server and page (slice C). Nothing imports this
+  package. The Windows `msvcrt` lock path is exercised locally only; CI runs
+  Ubuntu and uses `fcntl`.

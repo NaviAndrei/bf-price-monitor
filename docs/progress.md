@@ -313,3 +313,7 @@ Next: after the next workflow-run collection, check it with `uv run python scrip
 ## 2026-10-17 - #75 Dashboard Phase 1 slice A: honour `enabled: false`
 - scrape._watch_retailers skips disabled watches (no fetch, no alert, no health record, so no false SCRAPER BREAKDOWN for a fully disabled shop); notify's cooldown and channel loaders skip them too; report and qa_watchlist unchanged.
 - 871 passed; ruff check, ruff format --check and mypy --strict clean (19 files); not pushed. Code commit SHA: 39288f1 (Refs #75).
+
+## 2026-10-17 - #75 Dashboard Phase 1 slice B: store, journal and git sync
+- bf_price_monitor/dashboard/ (operations, store, journal, locking, gitcmd, sync, config) built test-first against local bare repos; 99 new tests incl. hidden-field round-trip and conflict cascade; nothing imports it yet.
+- 970 passed, coverage 96
