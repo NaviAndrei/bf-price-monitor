@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import copy
 import json
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -219,3 +220,27 @@ def test_legacy_bare_dict_is_wrapped_like_load_history():
 def test_corrupt_documents_raise_history_merge_error(text):
     with pytest.raises(HistoryMergeError):
         load_history_doc(text)
+
+
+def test_legacy_rows_without_stock_status_or_observed_at_merge():
+    # Production still holds rows from before stock tracking: date and price
+    # only. They must load and merge, not raise KeyError.
+    legacy = {"date": "2026-09-06", "price": 2899.99}
+    base = _doc(**{KEY: _entry(legacy, BASE)})
+    tip = _doc(**{KEY: _entry(legacy, BASE, A)})
+    incoming = _doc(**{KEY: _entry(legacy, BASE, B)})
+    text = json.dumps(incoming)
+
+    merged = merge_history_docs(load_history_doc(text), tip, base)
+
+    assert merged["products"][KEY]["history"] == [legacy, BASE, A, B]
+
+
+def test_production_history_loads_and_self_merge_is_a_no_op():
+    # Guards against the loader or merge rejecting real data: persist would
+    # then fail every run. Merging the file with itself must change nothing.
+    path = Path(__file__).parents[2] / "data" / "price_history.json"
+    doc = load_history_doc(path.read_text(encoding="utf-8"))
+
+    assert merge_history_docs(doc, copy.deepcopy(doc), copy.deepcopy(doc)) == doc
+    assert merge_history_docs(doc, copy.deepcopy(doc), None) == doc

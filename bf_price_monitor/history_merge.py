@@ -38,7 +38,10 @@ class HistoryMergeError(ValueError):
 
 
 def _signature(h: Entry) -> _Signature:
-    return (h["date"], h.get("observed_at"), h["price"], h["stock_status"])
+    # Legacy rows from before stock tracking carry only date and price (343
+    # of them in production as of 2026-10-17), so stock_status is optional
+    # here just like observed_at.
+    return (h["date"], h.get("observed_at"), h["price"], h.get("stock_status"))
 
 
 def merge_product_entries(a: Entry, b: Entry) -> Entry:
@@ -76,24 +79,35 @@ def merge_product_entries(a: Entry, b: Entry) -> Entry:
 def merge_product_entry(
     incoming: Entry, tip: Entry | None, base: Entry | None
 ) -> Entry:
-    """Three-way merge of one product's entry; see the module docstring."""
+    """Three-way merge of one product's entry; see the module docstring.
+
+    No base is an empty base, which reduces to merge_product_entries' union.
+    The history is combined here rather than inside merge_product_entries,
+    whose verbatim strict field reads would raise on legacy rows; it is
+    still used for the scalar fields and lifetime stats.
+    """
     if tip is None:
         return incoming
-    if base is None:
-        return merge_product_entries(incoming, tip)
-    base_sigs = {_signature(h) for h in base.get("history", [])}
+    base_history = [] if base is None else base.get("history", [])
+    base_sigs = {_signature(h) for h in base_history}
     incoming_sigs = {_signature(h) for h in incoming.get("history", [])}
     removed_by_incoming = base_sigs - incoming_sigs
     kept_from_tip = [
         h for h in tip.get("history", []) if _signature(h) not in removed_by_incoming
     ]
-    added_by_incoming = [
-        h for h in incoming.get("history", []) if _signature(h) not in base_sigs
-    ]
-    return merge_product_entries(
-        {**incoming, "history": added_by_incoming},
-        {**tip, "history": kept_from_tip},
-    )
+    history = [h for h in incoming.get("history", []) if _signature(h) not in base_sigs]
+    # Same dedup rule as merge_product_entries: incoming rows are kept as
+    # they are, tip rows only when their signature is not already present.
+    seen = {_signature(h) for h in history}
+    for h in kept_from_tip:
+        signature = _signature(h)
+        if signature not in seen:
+            history.append(h)
+            seen.add(signature)
+    history.sort(key=lambda h: (h["date"], h.get("observed_at") or ""))
+    merged = merge_product_entries({**incoming, "history": []}, {**tip, "history": []})
+    merged["history"] = history
+    return merged
 
 
 def merge_history_docs(incoming: Doc, tip: Doc, base: Doc | None) -> Doc:
@@ -143,9 +157,7 @@ def load_history_doc(text: str) -> Doc:
         if not isinstance(history, list):
             raise HistoryMergeError(f"product {key!r} has no 'history' list")
         for row in history:
-            if not isinstance(row, dict) or not {"date", "price", "stock_status"} <= (
-                row.keys()
-            ):
+            if not isinstance(row, dict) or not {"date", "price"} <= row.keys():
                 raise HistoryMergeError(f"product {key!r} has a malformed observation")
     return {"schema_version": data["schema_version"], "products": products}
 
