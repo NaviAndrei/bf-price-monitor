@@ -309,3 +309,7 @@ Next: after the next workflow-run collection, check it with `uv run python scrip
 ## 2026-10-17 - #74 follow-up: legacy rows in merge-by-data persist
 - history_merge.py now accepts the 343 production rows that carry only date and price (stock_status optional); a test loads the real price_history.json and checks a self-merge is a no-op; real-data dry run added 333 rows, kept all legacy rows, 1998 lines added / 0 removed.
 - 863 passed; ruff, ruff format and mypy --strict clean; pushed with the #74 batch (99dbdc4..23a874a). Commit SHA: 23a874a (Refs #74).
+
+## 2026-10-17 - #75 Dashboard Phase 1 slice A: honour `enabled: false`
+- scrape._watch_retailers skips disabled watches (no fetch, no alert, no health record, so no false SCRAPER BREAKDOWN for a fully disabled shop); notify's cooldown and channel loaders skip them too; report and qa_watchlist unchanged.
+- 871 passed; ruff check, ruff format --check and mypy --strict clean (19 files); not pushed. Code commit SHA: 39288f1 (Refs #75).

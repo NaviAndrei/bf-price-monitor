@@ -776,3 +776,23 @@ observation to the same 27 product arrays.
   `>>` and demonstrably still deliver outputs; they were left alone.
 - Verified with local bare-repo tests only (stale-base race, rejected push,
   no-op, bad input). The first real queued run is the live check.
+
+## 2026-10-17 — Dashboard Phase 1 slice A: `enabled: false` is honoured
+- **Where:** the filter sits in `scrape._watch_retailers`, the single place
+  that turns watches into (watch, retailer) pairs. It also covers fan-out
+  (`site: "all"`) watches.
+- **Why there and not later in `_run`:** a shop enters `per_store`, and so
+  the health log, only through a yielded pair. Skipping disabled watches
+  before that point means a shop whose watches are all disabled writes no
+  health record at all. It therefore can never collect the two zero-product
+  records that quarantine it and raise a false "SCRAPER BREAKDOWN". Skipping
+  after `per_store.setdefault` would have caused exactly that alert.
+- **notify.py:** the cooldown loader and the channel loader skip disabled
+  watches too. Otherwise a paused watch with a short `cooldown_hours` would
+  still tighten the cooldown of the live watches on the same site.
+- **Unchanged:** qa_watchlist already filtered disabled watches, and
+  report.py still lists them labelled "disabled".
+- **Trade-off:** while a shop is fully disabled it emits no health signal,
+  so a broken scraper for that shop goes unnoticed until it is re-enabled.
+  That is intended. A "paused" health record type is Phase 2 material
+  (docs/design/retailers-config.md §6.2).
