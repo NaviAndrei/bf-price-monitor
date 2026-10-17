@@ -316,4 +316,4 @@ Next: after the next workflow-run collection, check it with `uv run python scrip
 
 ## 2026-10-17 - #75 Dashboard Phase 1 slice B: store, journal and git sync
 - bf_price_monitor/dashboard/ (operations, store, journal, locking, gitcmd, sync, config) built test-first against local bare repos; 99 new tests incl. hidden-field round-trip and conflict cascade; nothing imports it yet.
-- 970 passed, coverage 96
+- 970 passed, total coverage 96 percent; ruff check, ruff format --check and mypy --strict clean; not pushed. Code commit SHA: 8877c5f (Refs #75).
