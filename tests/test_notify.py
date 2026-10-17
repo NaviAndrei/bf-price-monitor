@@ -1460,6 +1460,33 @@ def _deal_watch(**overrides):
     return {"site": DEAL_ALERT["site"], "query": DEAL_ALERT["query"], **overrides}
 
 
+def test_disabled_watch_does_not_lower_site_cooldown(_full_pipeline_env):
+    # Dashboard Phase 1, slice A: a paused watch must not tighten the
+    # cooldown of the live watches on the same site.
+    _write_modern_watchlist(
+        [
+            _deal_watch(cooldown_hours=48),
+            {"site": DEAL_ALERT["site"], "query": "iphone 15", "cooldown_hours": 1}
+            | {"enabled": False},
+        ]
+    )
+
+    assert notify._load_cooldown_by_site() == {DEAL_ALERT["site"]: 48}
+
+
+def test_disabled_watch_channels_are_not_routed(_full_pipeline_env):
+    _write_modern_watchlist(
+        [
+            _deal_watch(channels=["telegram"]),
+            _deal_watch(channels=["email", "ntfy"], enabled=False),
+        ]
+    )
+
+    assert notify._load_channels_by_watch() == {
+        (DEAL_ALERT["site"], DEAL_ALERT["query"]): ("telegram",)
+    }
+
+
 def _base_event_id(alert=DEAL_ALERT):
     return notify._deal_event_id(notify._deal_dedup_key(alert))
 

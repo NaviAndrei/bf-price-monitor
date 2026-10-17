@@ -934,6 +934,8 @@ def _load_cooldown_by_site() -> dict[str, float]:
         watchlist = watchlist.get("watches", [])
     by_site: dict[str, float] = {}
     for entry in watchlist:
+        if entry.get("enabled", True) is False:
+            continue  # a paused watch must not tighten live watches' cooldown
         cooldown_hours = entry.get("cooldown_hours")
         site = entry.get("site")
         if cooldown_hours is None or site is None:
@@ -1084,6 +1086,8 @@ def _load_channels_by_watch() -> dict[tuple[str, str], tuple[str, ...]]:
         watchlist = watchlist.get("watches", [])
     by_watch: dict[tuple[str, str], tuple[str, ...]] = {}
     for entry in watchlist:
+        if entry.get("enabled", True) is False:
+            continue  # scrape never alerts for it, so it routes nothing
         channels = entry.get("channels")
         if not channels:
             continue

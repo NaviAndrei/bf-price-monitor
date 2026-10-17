@@ -1179,13 +1179,20 @@ def _watch_retailers(
 ) -> Iterator[tuple[dict[str, Any], str]]:
     """Yields (watch, retailer) pairs: every non-placeholder SCRAPERS key
     for a fan-out watch, otherwise just the watch's own site (even an
-    unknown or placeholder one, so single-site behavior is unchanged)."""
+    unknown or placeholder one, so single-site behavior is unchanged).
+
+    A watch with `enabled: false` yields nothing, so it is never fetched,
+    never alerts, and never puts its shop into per-store health stats: a
+    shop whose watches are all disabled gets no zero-product record and so
+    can never be quarantined as a false SCRAPER BREAKDOWN."""
     fanout_sites = [
         site
         for site, scraper in SCRAPERS.items()
         if not is_placeholder_scraper(scraper)
     ]
     for item in watchlist:
+        if item.get("enabled", True) is False:
+            continue
         sites = fanout_sites if item["site"] == FANOUT_SITE else [item["site"]]
         for site in sites:
             yield item, site
@@ -1763,8 +1770,10 @@ def _run(watchlist: list[dict]) -> None:
     json.dump(
         alerts, open(ALERTS_FILE, "w", encoding="utf-8"), indent=2, ensure_ascii=False
     )
+    disabled = sum(1 for item in watchlist if item.get("enabled", True) is False)
     print(
-        f"Checked {len(watchlist)} watchlist entries, {len(alerts)} price change(s) detected"
+        f"Checked {len(watchlist)} watchlist entries ({disabled} disabled), "
+        f"{len(alerts)} price change(s) detected"
     )
 
 

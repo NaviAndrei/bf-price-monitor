@@ -484,6 +484,23 @@ def test_fanout_watch_lists_products_from_every_retailer(tmp_path):
     assert "Lenovo" not in others
 
 
+def test_report_still_labels_disabled_watch(tmp_path):
+    # Dashboard Phase 1, slice A: scrape now skips disabled watches, but the
+    # report must keep listing them, labelled, so a paused watch stays visible.
+    data_dir = _write_data_dir(tmp_path)
+    watchlist = json.loads((data_dir / "watchlist.json").read_text(encoding="utf-8"))
+    watchlist["watches"][1]["enabled"] = False
+    (data_dir / "watchlist.json").write_text(json.dumps(watchlist), encoding="utf-8")
+
+    html = _render(data_dir)
+
+    blocks = _watch_blocks(html)
+    [pcgarage] = [b for h, b in blocks.items() if "laptop asus vivobook" in h]
+    assert "disabled" in pcgarage
+    [emag] = [b for h, b in blocks.items() if "laptop lenovo v15" in h]
+    assert "disabled" not in emag
+
+
 def test_single_site_watch_still_matches_only_its_own_retailer(tmp_path):
     html = _render(_write_data_dir(tmp_path))
 

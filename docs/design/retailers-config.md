@@ -175,7 +175,7 @@ The dashboard must only offer fields that actually change behaviour. Grepping
 | `seller_policy` | `scrape.py:1645` | live |
 | `cooldown_hours` | `notify.py:923-943` (minimum per site) | live |
 | `channels` | `notify.py:1074-1093` (keyed by site and query) | live |
-| `enabled` | only `qa_watchlist.py:339` and `report.py:435` | **ignored by the scraper**: a disabled watch is still scraped and still alerts |
+| `enabled` | `scrape.py` `_watch_retailers`; notify's cooldown and channel loaders; `qa_watchlist.py:339`; `report.py:435` | live since dashboard Phase 1 slice A: a disabled watch is not fetched, does not alert, and writes no health record |
 | `cadence_minutes` | nothing | ignored (the cron schedule is fixed) |
 | `track_all_time_low` | nothing in the live path | ignored (`atl_policy` is what is read) |
 | `drop_rule`, `drop_threshold` | nothing (DECISIONS 2026-09-23) | ignored |

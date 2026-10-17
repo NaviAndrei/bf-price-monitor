@@ -1,5 +1,6 @@
 import json
 import sqlite3
+import uuid
 from datetime import UTC, date, datetime, timedelta
 
 import pytest
@@ -1679,6 +1680,109 @@ def test_real_scraper_quarantine_is_unaffected_by_the_placeholder_marker(
     [alert] = _health_alerts()
     assert "SCRAPER BREAKDOWN: Flanco" in alert
     assert scrape._quarantined_stores(_health_records()) == {"flanco"}
+
+
+# --- Dashboard Phase 1, slice A: `enabled: false` is honoured ---------------
+
+
+def _modern_watch(site, query="laptop lenovo v15", **overrides):
+    return {
+        "id": str(uuid.uuid5(uuid.NAMESPACE_URL, f"{site}:{query}")),
+        "site": site,
+        "query": query,
+        **overrides,
+    }
+
+
+def test_watch_retailers_skips_disabled_watches(monkeypatch):
+    monkeypatch.setattr(scrape, "SCRAPERS", _fanout_scrapers([]))
+    off = _modern_watch("emag", enabled=False)
+    on = _modern_watch("pcgarage", enabled=True)
+    legacy = {"site": "flanco", "query": "laptop lenovo v15"}
+
+    pairs = list(scrape._watch_retailers([off, on, legacy]))
+
+    assert pairs == [(on, "pcgarage"), (legacy, "flanco")]
+
+
+def test_disabled_watch_is_never_fetched_and_never_alerts(
+    tmp_path, monkeypatch, capsys
+):
+    calls = []
+    watchlist = {
+        "watches": [
+            _modern_watch("emag", enabled=False),
+            _modern_watch("pcgarage"),
+        ]
+    }
+    _configure_run(tmp_path, monkeypatch, watchlist, _fanout_scrapers(calls))
+    _seed_prior_prices(scrape.HISTORY_FILE)
+
+    scrape.main()
+
+    assert calls == [("pcgarage", "laptop lenovo v15")]
+    assert [a["site"] for a in _alerts(scrape.ALERTS_FILE)] == ["pcgarage"]
+    assert {r["store"] for r in _health_records()} == {"pcgarage"}
+    assert "Checked 2 watchlist entries (1 disabled)" in capsys.readouterr().out
+
+
+def test_disabled_fanout_watch_queries_no_retailer(tmp_path, monkeypatch):
+    calls = []
+    watchlist = {
+        "watches": [
+            _modern_watch(scrape.FANOUT_SITE, enabled=False),
+            _modern_watch("emag", query="iphone 15"),
+        ]
+    }
+    _configure_run(tmp_path, monkeypatch, watchlist, _fanout_scrapers(calls))
+
+    scrape.main()
+
+    assert calls == [("emag", "iphone 15")]
+    assert {r["store"] for r in _health_records()} == {"emag"}
+
+
+def test_watch_without_enabled_field_is_scraped(tmp_path, monkeypatch):
+    # Legacy items cannot carry `enabled` (schema additionalProperties:
+    # false), and modern items may omit it; both default to enabled.
+    calls = []
+    _configure_run(
+        tmp_path,
+        monkeypatch,
+        {"watches": [_modern_watch("flanco")]},
+        _fanout_scrapers(calls),
+    )
+
+    scrape.main()
+
+    assert calls == [("flanco", "laptop lenovo v15")]
+
+
+def test_disabling_every_watch_of_one_shop_never_trips_breakdown(tmp_path, monkeypatch):
+    # A paused shop's scraper would return nothing; if it were still queried,
+    # two zero-product runs while eMAG succeeds would quarantine it and raise
+    # a false SCRAPER BREAKDOWN. Disabled watches must keep it out entirely.
+    calls = []
+    scrapers = _fanout_scrapers(calls)
+    scrapers["pcgarage"] = lambda query: []
+    watchlist = {
+        "watches": [
+            _modern_watch("pcgarage", enabled=False),
+            _modern_watch("pcgarage", query="iphone 15", enabled=False),
+            _modern_watch("emag"),
+        ]
+    }
+    _configure_run(tmp_path, monkeypatch, watchlist, scrapers)
+
+    for _ in range(2):
+        scrape.main()
+        assert _health_alerts() == []
+
+    assert {site for site, _ in calls} == {"emag"}
+    records = _health_records()
+    assert [r["store"] for r in records] == ["emag", "emag"]
+    assert all(r["products_parsed"] == 1 for r in records)
+    assert scrape._quarantined_stores(records) == set()
 
 
 def test_offer_sku_uses_retailer_adapter_and_logs_pattern_mismatch(capsys):
