@@ -305,3 +305,7 @@ Next: after the next workflow-run collection, check it with `uv run python scrip
 ## 2026-10-17 - #74 Persist price history by data from the master tip
 - monitor.yml checks out `ref: master` in scrape and persist; persist now runs scripts/persist_history.py (three-way merge by data via bf_price_monitor/history_merge.py, bounded push retries, no rebase); CI no longer uploads or commits data/watchlist.json.
 - 861 passed; ruff check and ruff format --check clean; mypy --strict clean (19 files); not pushed. Code commit SHA: a6dc033 (Refs #74).
+
+## 2026-10-17 - #74 follow-up: legacy rows in merge-by-data persist
+- history_merge.py now accepts the 343 production rows that carry only date and price (stock_status optional); a test loads the real price_history.json and checks a self-merge is a no-op; real-data dry run added 333 rows, kept all legacy rows, 1998 lines added / 0 removed.
+- 863 passed; ruff, ruff format and mypy --strict clean; pushed with the #74 batch (99dbdc4..23a874a). Commit SHA: 23a874a (Refs #74).
