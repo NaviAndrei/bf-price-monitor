@@ -301,3 +301,7 @@ Next: after the next workflow-run collection, check it with `uv run python scrip
 ## 2026-10-17 - Retailer config design spike (docs only)
 - docs/design/retailers-config.md and retailers.draft.json: eMAG, PC Garage and Flanco all fit a data file plus four named behaviours; draft schema validates, stock rules match all 24 fixture/edge cards; found scrape.py ignores `enabled` and persist can overwrite watchlist edits. No issue exists yet (proposed in session).
 - ruff clean; no code, tests or workflows changed, no live network; nothing pushed. Commit SHA: 6fe5d35.
+
+## 2026-10-17 - #74 Persist price history by data from the master tip
+- monitor.yml checks out `ref: master` in scrape and persist; persist now runs scripts/persist_history.py (three-way merge by data via bf_price_monitor/history_merge.py, bounded push retries, no rebase); CI no longer uploads or commits data/watchlist.json.
+- 861 passed; ruff check and ruff format --check clean; mypy --strict clean (19 files); not pushed. Code commit SHA: a6dc033 (Refs #74).

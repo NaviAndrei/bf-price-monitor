@@ -58,8 +58,11 @@ than crashing the run.
    ntfy via its `channels` field; every channel shares the same outbox,
    retry and dead-letter handling.
 4. `.github/workflows/monitor.yml` runs all three scripts every 2 hours (and
-   on manual trigger), then commits the updated `data/price_history.json`
-   and `data/watchlist.json` back to the repo.
+   on manual trigger) from the current `master` tip, then
+   `scripts/persist_history.py` commits `data/price_history.json` back to the
+   repo. It merges the run's observations into whatever is on `master` by
+   data, not by text, so two runs that overlap never lose each other's rows.
+   `data/watchlist.json` is only ever changed by you; CI never commits it.
 
 ## Setup
 
@@ -256,7 +259,8 @@ Setup:
 
 - Scraping only ever hits listing/search pages, respecting each site's
   `robots.txt`, with a randomized 3–7 second delay between sites.
-- Price history is capped at the last 30 daily entries per product.
+- Each scraped product keeps the last 90 days of observations (every run's
+  reading, not one per day), and never fewer than its 2 most recent ones.
 - `data/alerts.json` and `data/formatted_alerts.json` are regenerated every
   run and are gitignored; `data/price_history.json` and
   `data/watchlist.json` are the persisted state committed by the workflow.

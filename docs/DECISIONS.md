@@ -733,3 +733,46 @@ repository variables. The 2-hour cron and manual dispatch always pass.
 - **Timestamps.** Telegram has no press timestamp. `received_at_utc` is the
   getUpdates receipt time and `telegram_message_date_utc` the alert's send
   time; neither is the press time.
+
+## 2026-10-17 — #74: persist merges price history by data, from the master tip
+Run 38583134765 lost a whole scrape. It waited in the `monitor` concurrency
+queue, and `actions/checkout` (no `ref:`) reset to the SHA the run was
+created with (`c5f25b35c`), although master had moved to `9204aec2e`. Persist
+committed a full `data/price_history.json` built on that stale base, and
+replaying it on the tip hit a textual conflict: both commits appended one
+observation to the same 27 product arrays.
+- **`ref: master`** on the scrape and persist checkouts only, so a queued run
+  scrapes and persists from the current tip. Gate and golden-gate are
+  unchanged; they read no data.
+- **Merge by data, three ways.** `scripts/persist_history.py` (stdlib, run by
+  the bare system Python) fetches the tip, merges with
+  `bf_price_monitor/history_merge.py`, commits only `data/price_history.json`
+  and pushes a fast-forward, retrying a rejected push up to 3 times from a
+  fresh fetch (5 s, 10 s backoff). Per product, an observation survives when
+  the tip has it and the incoming run did not remove it, or when the incoming
+  run added it. The base is the scrape job's checkout SHA, passed as a job
+  output; `--require-base` makes a missing or malformed base exit 2 instead of
+  merging. A plain two-way union was rejected: the tip still holds every row
+  `prune_history` (90 days, minimum 2) trims, so a union would undo pruning
+  on every run once rows age out (about 2026-12-05). Products are a union, as
+  the scrape never deletes one. `_merge_product_entries` moved verbatim into
+  `history_merge.py` so scrape.py and persist share one implementation.
+- **No rebase, reset or force.** Rebasing replays a whole-file edit and
+  cannot merge two appends to the same arrays, which is exactly what failed.
+  Recomputing the merge on each attempt never rewrites history: an unpushed
+  attempt is left behind on a detached HEAD.
+- **`data/watchlist.json` is no longer uploaded or committed by CI.**
+  scrape.py never writes it (its only use is the read in `main()`), and
+  re-committing the scrape job's older copy could revert an edit pushed while
+  a run was in flight.
+- **Recovery is manual and time-limited.** If every push attempt fails, the
+  scraped history exists only in that run's `price-data` artifact, kept for 1
+  day (`retention-days: 1`). Re-run the persist job, or download the artifact
+  and run `persist_history.py --incoming <dir> --base <sha> --require-base`
+  from a clean master checkout, before it expires.
+- The `Record base commit` step writes `GITHUB_OUTPUT` with
+  `Add-Content -Encoding ascii`, because this job runs Windows PowerShell 5.1,
+  whose `>>` writes UTF-16LE. The older fingerprint and cache-check steps use
+  `>>` and demonstrably still deliver outputs; they were left alone.
+- Verified with local bare-repo tests only (stale-base race, rejected push,
+  no-op, bad input). The first real queued run is the live check.
