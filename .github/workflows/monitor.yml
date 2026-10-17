@@ -98,6 +98,8 @@ jobs:
     outputs:
       restore_status: ${{ steps.restore_state.outputs.state_status }}
       save_status: ${{ steps.save_state.outputs.state_status }}
+      # #74: the commit this run scraped from, so persist can merge three ways.
+      base_sha: ${{ steps.base.outputs.sha }}
     env:
       PYTHON: C:\Program Files\Python312\python.exe
       # Pinned explicitly, same reasoning as PYTHON above: the runner service
@@ -125,11 +127,21 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          # #74: without ref, a run that waited in the concurrency queue
+          # checks out the SHA from when it was created and scrapes stale
+          # history; master is always the current tip.
+          ref: master
           fetch-depth: 0
           # This job never pushes, so the checkout token (already read-only
           # via the job's `permissions` block) shouldn't even be left sitting
           # in .git/config for the rest of the job to find.
           persist-credentials: false
+
+      # #74: Add-Content -Encoding ascii, not `>>`: Windows PowerShell 5.1's
+      # redirection writes UTF-16LE.
+      - name: Record base commit
+        id: base
+        run: Add-Content -Path $env:GITHUB_OUTPUT -Value "sha=$(git rev-parse HEAD)" -Encoding ascii
 
       # T-18 (#24): the fingerprint is a SHA-256 of uv.lock, which already
       # pins the Playwright package version (and therefore its browser
@@ -300,13 +312,16 @@ jobs:
       # before a later check could read it there, but an uploaded artifact
       # lives on GitHub's side independent of that. persist never reads or
       # commits this file; it is not added to persist's `git add` allowlist.
+      #
+      # #74: data/watchlist.json is no longer uploaded. scrape.py never
+      # writes it, and re-committing this job's older copy could revert an
+      # edit pushed while the run was in flight.
       - name: Upload updated data files
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: price-data
           path: |
             data/price_history.json
-            data/watchlist.json
             data/scrape_health.jsonl
           retention-days: 1
 
@@ -368,42 +383,27 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          # #74: the current tip, not the SHA this run was queued with.
+          ref: master
           fetch-depth: 0
 
+      # #74: outside the work tree, so the artifact never overwrites tracked
+      # files; persist_history.py reads it and merges by data.
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: price-data
-          path: data
+          path: ${{ runner.temp }}/price-data
 
-      - name: Commit updated price history
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/price_history.json data/watchlist.json
-          git diff --staged --quiet
-          if ($LASTEXITCODE -ne 0) {
-            git commit -m "chore: update price history [skip ci]"
-
-            # Overlapping runs on this persistent self-hosted runner can each
-            # start from the same origin/master tip and race to push -- rebase
-            # onto the current remote tip immediately before pushing so a run
-            # that finishes second integrates the other run's commit instead
-            # of getting a non-fast-forward rejection.
-                        if (Test-Path ".git/rebase-merge") { Remove-Item -Recurse -Force ".git/rebase-merge" }
-            if (Test-Path ".git/rebase-apply") { Remove-Item -Recurse -Force ".git/rebase-apply" }
-            git pull --rebase origin master
-            if ($LASTEXITCODE -ne 0) {
-              Write-Error "git pull --rebase failed -- likely a genuine content conflict in data/price_history.json between two runs' commits, not just the race this rebase is meant to absorb. Aborting the rebase so this persistent runner's checkout isn't left mid-rebase and blocking every subsequent scheduled run."
-              git rebase --abort
-              exit 1
-            }
-
-            git push
-            if ($LASTEXITCODE -ne 0) {
-              Write-Error "git push failed even after a successful rebase -- unexpected; needs manual investigation rather than a blind retry."
-              exit 1
-            }
-          }
+      # #74: replaces "commit the whole file, then replay it on the remote
+      # tip", which hit a textual conflict whenever another run had appended
+      # to the same arrays first (run 38583134765) and lost that run's rows.
+      # The script fetches the tip, merges observations three ways against
+      # the scrape's base commit, commits only data/price_history.json and
+      # pushes a fast-forward, retrying on rejection. See docs/DECISIONS.md.
+      - name: Persist price history
+        env:
+          BASE_SHA: ${{ needs.scrape-analyze-notify.outputs.base_sha }}
+        run: '& "C:\Program Files\Python312\python.exe" scripts/persist_history.py --incoming "${{ runner.temp }}\price-data" --base "$env:BASE_SHA" --require-base'
 
       - name: Ping healthcheck
         if: ${{ success() }}

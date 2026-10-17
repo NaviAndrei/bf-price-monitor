@@ -31,6 +31,11 @@ from pydantic import ValidationError
 
 from bf_price_monitor.config import load_watchlist
 from bf_price_monitor.domain import Observation
+
+# #74: moved verbatim so scripts/persist_history.py (stdlib-only) can share it.
+from bf_price_monitor.history_merge import (
+    merge_product_entries as _merge_product_entries,
+)
 from bf_price_monitor.identity import (
     IdentityError,
     extract_retailer_sku,
@@ -380,33 +385,6 @@ def _canonicalize_product_keys(products: dict) -> dict:
             # silently drop one entry's history.
             canonical[key] = _merge_product_entries(canonical[key], entry)
     return canonical
-
-
-def _merge_product_entries(a: dict, b: dict) -> dict:
-    merged = dict(a)
-    history = list(a.get("history", []))
-    seen = {
-        (h["date"], h.get("observed_at"), h["price"], h["stock_status"])
-        for h in history
-    }
-    for h in b.get("history", []):
-        signature = (h["date"], h.get("observed_at"), h["price"], h["stock_status"])
-        if signature not in seen:
-            history.append(h)
-            seen.add(signature)
-    history.sort(key=lambda h: (h["date"], h.get("observed_at") or ""))
-    merged["history"] = history
-
-    lows = [e["all_time_low"] for e in (a, b) if "all_time_low" in e]
-    if lows:
-        merged["all_time_low"] = min(lows)
-    highs = [e["all_time_high"] for e in (a, b) if "all_time_high" in e]
-    if highs:
-        merged["all_time_high"] = max(highs)
-    first_seens = [e["first_seen"] for e in (a, b) if "first_seen" in e]
-    if first_seens:
-        merged["first_seen"] = min(first_seens)
-    return merged
 
 
 def save_history(products: dict) -> None:
