@@ -325,3 +325,7 @@ Next: after the next workflow-run collection, check it with `uv run python scrip
 ## 2026-10-18 - #76 confirmed on a live run
 - Persist log: base=ccbeaab... origin_tip=ccbeaab..., then pushed 1534a0c...; the base came from base_sha.txt via --base-file. Upload step: 3 files; state gate restored and saved; no "Skip output" warning (observed by the owner).
 - No code change. Fix commit 27ce79e. Closes #76. Recovery of the #343/#345 rows is still a separate step.
+
+## 2026-10-19 - #79 quarantined stores are re-probed
+- A quarantined store is fetched again once its newest health record is 6 h old; non-zero releases it with one RECOVERED alert, zero keeps it quarantined with no repeat alerts; 8 new tests plus the suite, ruff check, ruff format --check and mypy --strict clean.
+- Code commit SHA: 8322d1a (Refs #79). Not pushed, no live run yet; the live check (eMAG probed, next bot commit above 162 lines) is still open.

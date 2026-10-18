@@ -862,3 +862,33 @@ observation to the same 27 product arrays.
   0516d39f2cc46aec9a8e6b302951f8587eff2c6f --require-base` whether or not
   this fix is live. They have 1-day retention: the earliest (#343, started
   about 17:59 UTC on 17 Oct) expires about 18:00 UTC on 18 Oct.
+
+## 2026-10-19 - #79: quarantined stores are re-probed
+
+- **Why the old rule could never clear.** Quarantine is a query over
+  `scrape_health.jsonl`: the last two records of a store both parsed zero
+  while another store succeeded. A quarantined store was skipped before any
+  fetch and excluded from the new records, so it wrote nothing. The evidence
+  the query reads could never change, and eMAG stayed skipped from
+  2026-10-09.
+- **Decision.** Quarantine stays a query (the T-09 decision; no stored
+  flag). A quarantined store whose newest record is at least
+  `QUARANTINE_PROBE_HOURS` (6) old is fetched normally and writes a record
+  (`_probe_due_stores`, clock injected as `now_utc`). A probe's own record,
+  zero or not, restarts the 6-hour clock.
+- **Release and flapping.** Any non-zero probe (`products_parsed > 0`)
+  releases the store at once, even a single product; there is no
+  confirmation run. A store that then fails again needs two new zero
+  records to be quarantined again, so a flapping site can cost two failed
+  runs per cycle of release and re-quarantine. Accepted: the cost is two
+  extra fetches, and a stricter release rule would delay recovery.
+- **Alerts.** Release sends one RECOVERED alert through
+  `scrape_health_alerts.json`. A zero probe sends no BREAKDOWN (the store
+  was already quarantined) and no DEAD-MAN (suppressed for a probed store
+  that stays quarantined, or it would repeat every probe).
+- **Unique text.** `notify._health_event_id` hashes the message and a SENT
+  hash is skipped, so the RECOVERED text carries the run timestamp.
+- **Known gap, not fixed here.** The same hash rule means a second
+  BREAKDOWN with identical text for the same store would be suppressed
+  after the first was SENT. Needs its own issue.
+- **Not changed.** Runtime-state files, `report.py`, `notify.py`.
