@@ -235,3 +235,143 @@ def test_every_push_rejected_exits_1_with_backoff(repos, monkeypatch):
     assert exit_code == 1
     assert sleeps == [5, 10]
     assert B_OBS["observed_at"] not in _history(_origin_doc(repos["origin"]))
+
+
+# --- #76: --base-file (a commit SHA must never travel through a job output) --
+
+
+def _persist_with_argv(repos, monkeypatch, *extra: str, **kwargs):
+    _write(repos["incoming"] / "price_history.json", _doc(BASE_OBS, B_OBS))
+    monkeypatch.chdir(repos["b"])
+    return persist_history.main(
+        ["--incoming", str(repos["incoming"]), *extra], **kwargs
+    )
+
+
+def _base_file(repos, content: str | bytes) -> Path:
+    path = repos["incoming"] / "base_sha.txt"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    data = content if isinstance(content, bytes) else content.encode("utf-8")
+    path.write_bytes(data)
+    return path
+
+
+def test_base_file_happy_path_merges_three_ways(repos, monkeypatch):
+    _push_run_a(repos)
+    path = _base_file(repos, repos["base"])
+
+    exit_code = _persist_with_argv(
+        repos, monkeypatch, "--base-file", str(path), "--require-base"
+    )
+
+    assert exit_code == 0
+    assert _history(_origin_doc(repos["origin"])) == [
+        BASE_OBS["observed_at"],
+        A_OBS["observed_at"],
+        B_OBS["observed_at"],
+    ]
+
+
+@pytest.mark.parametrize(
+    "wrap",
+    [
+        lambda sha: sha + "\r\n",
+        lambda sha: "\r\n " + sha + " \t\n\n",
+        lambda sha: "﻿" + sha,
+    ],
+    ids=["crlf", "padded", "bom"],
+)
+def test_base_file_tolerates_whitespace_crlf_and_bom(repos, monkeypatch, wrap):
+    _push_run_a(repos)
+    path = _base_file(repos, wrap(repos["base"]))
+
+    exit_code = _persist_with_argv(
+        repos, monkeypatch, "--base-file", str(path), "--require-base"
+    )
+
+    assert exit_code == 0
+    assert B_OBS["observed_at"] in _history(_origin_doc(repos["origin"]))
+
+
+def test_missing_base_file_exits_2_naming_the_file(repos, monkeypatch, capsys):
+    calls: list[tuple[str, ...]] = []
+    monkeypatch.setattr(
+        persist_history, "_git", lambda *args, **kwargs: calls.append(args)
+    )
+    missing = repos["incoming"] / "nope_base_sha.txt"
+
+    exit_code = _persist_with_argv(
+        repos, monkeypatch, "--base-file", str(missing), "--require-base"
+    )
+
+    err = capsys.readouterr().err
+    assert exit_code == 2
+    assert "::error::persist_history:" in err
+    assert "nope_base_sha.txt" in err
+    assert calls == []
+
+
+@pytest.mark.parametrize("content", ["", "  \r\n", "HEAD", "abc123", "Z" * 40])
+def test_empty_or_non_hex_base_file_exits_2_naming_the_file(
+    repos, monkeypatch, capsys, content
+):
+    path = _base_file(repos, content)
+    before = _git(repos["origin"], "rev-parse", "master")
+
+    exit_code = _persist_with_argv(
+        repos, monkeypatch, "--base-file", str(path), "--require-base"
+    )
+
+    err = capsys.readouterr().err
+    assert exit_code == 2
+    assert "::error::persist_history:" in err
+    assert "base_sha.txt" in err
+    assert _git(repos["origin"], "rev-parse", "master") == before
+
+
+def test_base_and_base_file_together_are_rejected(repos, monkeypatch):
+    path = _base_file(repos, repos["base"])
+
+    with pytest.raises(SystemExit) as exc:
+        _persist_with_argv(
+            repos,
+            monkeypatch,
+            "--base",
+            repos["base"],
+            "--base-file",
+            str(path),
+            "--require-base",
+        )
+
+    assert exc.value.code == 2
+
+
+def test_attached_empty_base_exits_2_with_the_scripts_own_message(
+    repos, monkeypatch, capsys
+):
+    """Regression pin: an empty `--base=` is the form the workflow must use if
+    a value can ever be empty; it reaches the script's message, not argparse's
+    usage error."""
+    exit_code = _persist_with_argv(repos, monkeypatch, "--base=", "--require-base")
+
+    err = capsys.readouterr().err
+    assert exit_code == 2
+    assert "::error::persist_history:" in err
+    assert "usage:" not in err
+
+
+def test_sha_containing_587_is_a_valid_base():
+    sha = "0516d39f2cc46aec9a8e6b302951f8587eff2c6f"
+    assert "587" in sha
+    assert persist_history._validate_base(sha, True) == sha
+
+
+def test_empty_base_file_without_require_base_falls_back_to_two_way_merge(
+    repos, monkeypatch, capsys
+):
+    path = _base_file(repos, "")
+
+    exit_code = _persist_with_argv(repos, monkeypatch, "--base-file", str(path))
+
+    assert exit_code == 0
+    assert "WARNING [persist] no --base given" in capsys.readouterr().err

@@ -12,6 +12,8 @@ data/formatted_alerts.json
 data/price_history.db
 data/price_history.db-wal
 data/price_history.db-shm
+# #76: written by the scrape job so persist knows its base commit
+data/base_sha.txt
 .remember/
 .vscode/
 .claude/settings.local.json

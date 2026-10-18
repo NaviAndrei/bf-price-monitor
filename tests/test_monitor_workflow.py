@@ -72,14 +72,59 @@ def test_ref_master_on_exactly_the_scrape_and_persist_checkouts(jobs):
     }
 
 
-def test_base_commit_is_recorded_with_ascii_add_content(jobs):
-    scrape_job = jobs["scrape-analyze-notify"]
-    step = _step(scrape_job, "Record base commit")
-    assert "id: base" in step
-    assert "Add-Content -Path $env:GITHUB_OUTPUT" in step
+def test_base_commit_is_written_to_an_ascii_file_not_a_job_output(jobs):
+    # #76: GitHub skips any job output that may contain a secret (a short
+    # secret can be a substring of a commit SHA), so the SHA travels as a
+    # file inside the price-data artifact instead.
+    step = _step(jobs["scrape-analyze-notify"], "Record base commit")
+    assert "Set-Content" in step
+    assert "data/base_sha.txt" in step
     assert "-Encoding ascii" in step
+    assert "-NoNewline" in step
+    assert "[0-9a-f]{40}" in step
+    assert "GITHUB_OUTPUT" not in step
     assert ">>" not in step
-    assert "base_sha: ${{ steps.base.outputs.sha }}" in scrape_job
+
+
+def _job_outputs(job_text: str) -> dict[str, str]:
+    """Key -> value of a job's `outputs:` block ({} if it has none)."""
+    out: dict[str, str] = {}
+    rows = job_text.splitlines()
+    for i, row in enumerate(rows):
+        if row == "    outputs:":
+            for entry in rows[i + 1 :]:
+                if not entry.startswith(" " * 6):
+                    break  # the block ends at the first shallower line
+                if entry.strip().startswith("#"):
+                    continue
+                key, _, value = entry.strip().partition(":")
+                out[key] = value.strip()
+            break
+    return out
+
+
+def test_no_job_output_carries_a_commit_sha(text, jobs):
+    # Assert on the output key and the step reference, not on the substring
+    # "base_sha": data/base_sha.txt and --base-file legitimately contain it.
+    assert "steps.base.outputs" not in text
+    outputs = {name: _job_outputs(body) for name, body in jobs.items()}
+    assert outputs == {
+        "gate": {"should_run": "${{ steps.decide.outputs.should_run }}"},
+        "golden-gate": {},
+        "scrape-analyze-notify": {
+            "restore_status": "${{ steps.restore_state.outputs.state_status }}",
+            "save_status": "${{ steps.save_state.outputs.state_status }}",
+        },
+        "persist": {},
+    }
+    assert all("base_sha" not in key for body in outputs.values() for key in body)
+
+
+def test_outputs_parser_sees_a_base_sha_key_if_one_is_added():
+    sample = (
+        "    outputs:\n      restore_status: x\n      base_sha: ${{ y }}\n    env:\n"
+    )
+    assert set(_job_outputs(sample)) == {"restore_status", "base_sha"}
 
 
 def test_watchlist_is_neither_uploaded_nor_persisted(jobs):
@@ -93,7 +138,9 @@ def test_watchlist_is_neither_uploaded_nor_persisted(jobs):
     assert paths == [
         "data/price_history.json",
         "data/scrape_health.jsonl",
+        "data/base_sha.txt",
     ]
+    assert "retention-days: 3" in upload
     assert "watchlist.json" not in jobs["persist"]
 
 
@@ -105,7 +152,9 @@ def test_persist_downloads_outside_the_work_tree_and_calls_the_script(jobs):
         '"C:\\Program Files\\Python312\\python.exe" scripts/persist_history.py' in step
     )
     assert "--require-base" in step
-    assert "BASE_SHA: ${{ needs.scrape-analyze-notify.outputs.base_sha }}" in step
+    assert r'--base-file "${{ runner.temp }}\price-data\base_sha.txt"' in step
+    assert "BASE_SHA" not in step
+    assert '--base "' not in step
     assert "git add" not in persist
     assert "git push" not in persist
 

@@ -98,8 +98,6 @@ jobs:
     outputs:
       restore_status: ${{ steps.restore_state.outputs.state_status }}
       save_status: ${{ steps.save_state.outputs.state_status }}
-      # #74: the commit this run scraped from, so persist can merge three ways.
-      base_sha: ${{ steps.base.outputs.sha }}
     env:
       PYTHON: C:\Program Files\Python312\python.exe
       # Pinned explicitly, same reasoning as PYTHON above: the runner service
@@ -137,11 +135,17 @@ jobs:
           # in .git/config for the rest of the job to find.
           persist-credentials: false
 
-      # #74: Add-Content -Encoding ascii, not `>>`: Windows PowerShell 5.1's
-      # redirection writes UTF-16LE.
+      # #74/#76: the commit this run scraped from, so persist can merge three
+      # ways. Written to a file that rides in the price-data artifact, NOT to
+      # a job output: GitHub skips any output that may contain a secret, and a
+      # short secret can be a substring of a commit SHA (run 39065591612).
+      # Set-Content -Encoding ascii, not `>>`: Windows PowerShell 5.1's
+      # redirection writes UTF-16LE. A bad SHA fails here, not later in persist.
       - name: Record base commit
-        id: base
-        run: Add-Content -Path $env:GITHUB_OUTPUT -Value "sha=$(git rev-parse HEAD)" -Encoding ascii
+        run: |
+          $sha = (git rev-parse HEAD).Trim()
+          if ($sha -notmatch '^[0-9a-f]{40}$') { throw "git rev-parse HEAD returned '$sha'" }
+          Set-Content -Path data/base_sha.txt -Value $sha -Encoding ascii -NoNewline
 
       # T-18 (#24): the fingerprint is a SHA-256 of uv.lock, which already
       # pins the Playwright package version (and therefore its browser
@@ -323,7 +327,8 @@ jobs:
           path: |
             data/price_history.json
             data/scrape_health.jsonl
-          retention-days: 1
+            data/base_sha.txt
+          retention-days: 3
 
       # T-27 (#34): static, self-contained HTML report of this run (inline
       # CSS/SVG, no JavaScript, no CDN). Placed after the data upload and
@@ -400,10 +405,10 @@ jobs:
       # The script fetches the tip, merges observations three ways against
       # the scrape's base commit, commits only data/price_history.json and
       # pushes a fast-forward, retrying on rejection. See docs/DECISIONS.md.
+      # #76: the base SHA comes from the artifact's base_sha.txt. A missing or
+      # bad file exits 2 with the script's own message (--require-base).
       - name: Persist price history
-        env:
-          BASE_SHA: ${{ needs.scrape-analyze-notify.outputs.base_sha }}
-        run: '& "C:\Program Files\Python312\python.exe" scripts/persist_history.py --incoming "${{ runner.temp }}\price-data" --base "$env:BASE_SHA" --require-base'
+        run: '& "C:\Program Files\Python312\python.exe" scripts/persist_history.py --incoming "${{ runner.temp }}\price-data" --base-file "${{ runner.temp }}\price-data\base_sha.txt" --require-base'
 
       - name: Ping healthcheck
         if: ${{ success() }}

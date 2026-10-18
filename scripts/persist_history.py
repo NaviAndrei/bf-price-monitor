@@ -14,7 +14,13 @@ newest tip. Nothing here moves a branch backwards or rewrites a commit: an
 unpushed attempt is simply left behind on a detached HEAD.
 
 Usage (CI always passes --require-base):
+    python scripts/persist_history.py --incoming DIR --base-file FILE --require-base
     python scripts/persist_history.py --incoming DIR --base SHA --require-base
+
+CI reads the base SHA from a file inside the price-data artifact, never from a
+job output (#76): GitHub skips any output that may contain a secret, and a
+short secret can be a substring of a commit SHA. Manual recovery from the
+artifacts still uses --base <sha>.
 
 Exit codes: 0 pushed or nothing to commit; 1 every push attempt was rejected;
 2 bad input or a merge/git error (never retried).
@@ -76,12 +82,12 @@ def _empty_doc() -> Doc:
     return {"schema_version": HISTORY_SCHEMA_VERSION, "products": {}}
 
 
-def _validate_base(raw: str, require_base: bool) -> str | None:
+def _validate_base(raw: str, require_base: bool, source: str = "--base") -> str | None:
     base = raw.strip()
     if not base:
         if require_base:
             raise PersistError(
-                "--base is empty but --require-base is set; the scrape job's "
+                f"{source} is empty but --require-base is set; the scrape job's "
                 "'Record base commit' step did not produce a commit SHA"
             )
         print(
@@ -91,8 +97,24 @@ def _validate_base(raw: str, require_base: bool) -> str | None:
         )
         return None
     if not SHA_RE.fullmatch(base):
-        raise PersistError(f"--base must be a 40-character hex SHA, got {base!r}")
+        raise PersistError(f"{source} must be a 40-character hex SHA, got {base!r}")
     return base
+
+
+def _resolve_base(args: argparse.Namespace) -> str | None:
+    """The base SHA from --base-file (CI) or --base (manual recovery)."""
+    if args.base_file is None:
+        return _validate_base(args.base, args.require_base)
+    path: Path = args.base_file
+    try:
+        raw = path.read_text(encoding="utf-8-sig")
+    except (OSError, UnicodeDecodeError) as e:
+        raise PersistError(
+            f"--base-file {path} could not be read ({e.__class__.__name__}); the "
+            "price-data artifact has no base_sha.txt, so the scrape job's "
+            "'Record base commit' step or its upload did not run"
+        ) from e
+    return _validate_base(raw, args.require_base, source=f"--base-file {path}")
 
 
 def _load_incoming(incoming_dir: Path) -> Doc:
@@ -153,15 +175,22 @@ def parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
         help="Directory holding the scrape job's price_history.json",
     )
     parser.add_argument("--max-attempts", type=int, default=3)
-    parser.add_argument(
+    source = parser.add_mutually_exclusive_group()
+    source.add_argument(
         "--base",
         default="",
         help="Commit the scrape job checked out (40-character hex SHA)",
     )
+    source.add_argument(
+        "--base-file",
+        type=Path,
+        default=None,
+        help="File holding that SHA (what the scrape job uploads as base_sha.txt)",
+    )
     parser.add_argument(
         "--require-base",
         action="store_true",
-        help="Fail instead of falling back to a two-way merge when --base is empty",
+        help="Fail instead of falling back to a two-way merge when no base SHA is given",
     )
     args = parser.parse_args(argv)
     if args.max_attempts < 1:
@@ -176,7 +205,7 @@ def main(
 ) -> int:
     args = parse_args(argv)
     try:
-        base = _validate_base(args.base, args.require_base)
+        base = _resolve_base(args)
         incoming = _load_incoming(args.incoming)
         base_doc = None if base is None else _load_base(base)
         for attempt in range(1, args.max_attempts + 1):
