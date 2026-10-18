@@ -830,3 +830,35 @@ observation to the same 27 product arrays.
 - **Not done yet:** the HTTP server and page (slice C). Nothing imports this
   package. The Windows `msvcrt` lock path is exercised locally only; CI runs
   Ubuntu and uses `fcntl`.
+
+## 2026-10-18 — #76: the base SHA travels as an artifact file, never a job output
+- **What failed:** on a tip whose SHA contains a registered secret's value,
+  GitHub skips the scrape job's `base_sha` output ("Skip output 'base_sha'
+  since it may contain secret", run 39065591612). Persist's `BASE_SHA` was
+  empty, Windows PowerShell 5.1 dropped the empty quoted `--base ""`
+  argument, and argparse exited 1 with "expected one argument" before
+  `persist_history.py` could print its own exit-2 message. A failed persist
+  never commits, so the tip stayed put and every real scrape run on it
+  failed (#343, #345 on 0516d39; runs on later tips passed).
+- **Rule:** never pass commit hashes (or any value that could contain a
+  secret substring) through job outputs. Pass them as files inside the
+  artifact. The scrape job writes `data/base_sha.txt` (validated as 40 hex,
+  ASCII, no newline) and `persist_history.py --base-file` reads it.
+  `--base` still works and is what manual recovery from an artifact uses:
+  `--base <sha> --require-base`.
+- **Fail-closed stays:** a missing, empty or non-hex file exits 2 naming the
+  file; `--require-base` still forbids the two-way fallback. An empty value
+  that must reach a command line should use the attached form (`--base=`).
+- **Artifact retention** for `price-data` goes from 1 to 3 days, so a future
+  persist failure leaves time to recover. The data is already public in the
+  repository history.
+- **Other job outputs audited, unchanged:** `gate.should_run` (true/false),
+  `restore_status` and `save_status` (status words). None is a hash.
+- **Unverified:** that a short secret (for example SMTP_PORT=587) is the
+  substring; secret values are hidden. The mechanism (skipped output, empty
+  env, argparse failure) is verified in the run log.
+- **Recovery of the lost rows is independent of this fix.** The artifacts
+  of failed runs #343 and #345 can be merged with `--base
+  0516d39f2cc46aec9a8e6b302951f8587eff2c6f --require-base` whether or not
+  this fix is live. They have 1-day retention: the earliest (#343, started
+  about 17:59 UTC on 17 Oct) expires about 18:00 UTC on 18 Oct.

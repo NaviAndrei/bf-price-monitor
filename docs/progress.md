@@ -317,3 +317,6 @@ Next: after the next workflow-run collection, check it with `uv run python scrip
 ## 2026-10-17 - #75 Dashboard Phase 1 slice B: store, journal and git sync
 - bf_price_monitor/dashboard/ (operations, store, journal, locking, gitcmd, sync, config) built test-first against local bare repos; 99 new tests incl. hidden-field round-trip and conflict cascade; nothing imports it yet.
 - 970 passed, total coverage 96 percent; ruff check, ruff format --check and mypy --strict clean; not pushed. Code commit SHA: 8877c5f (Refs #75).
+## 2026-10-18 - #76 persist: base SHA via artifact file
+- Scrape job writes data/base_sha.txt into the price-data artifact; persist_history.py --base-file reads it (job output base_sha removed, retention 1 to 3 days); 16 new tests, 986 total.
+- Tests, ruff check, ruff format --check and mypy --strict clean; not pushed, no live run yet. Code commit SHA: 27ce79e (Refs #76). Recovery of #343/#345 rows is separate; #343's artifact expires about 18:00 UTC on 18 Oct.
