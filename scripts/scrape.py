@@ -212,6 +212,12 @@ HISTORY_SCHEMA_VERSION = 1
 # broken selector/site redesign) rather than a transient network blip.
 DEAD_MAN_THRESHOLD_HOURS = 24
 
+# A quarantined store is skipped before any fetch, so it writes no health
+# record and the two zero records that quarantined it would stay the newest
+# forever. Once its newest record is this old it is fetched again (a probe):
+# any products_parsed > 0 releases it, a zero keeps it quarantined.
+QUARANTINE_PROBE_HOURS = 6
+
 # T-32 (#43): a store whose most recent run's 403/429 rate exceeded 5% sits
 # out the next 30 minutes rather than getting hit again immediately.
 RATE_LIMIT_COOLDOWN_THRESHOLD = 0.05
@@ -1374,6 +1380,23 @@ def _quarantined_stores(records: list[dict]) -> set[str]:
     return quarantined
 
 
+def _probe_due_stores(
+    records: list[dict], quarantined: set[str], now_utc: datetime
+) -> set[str]:
+    # The quarantined stores whose newest health record is at least
+    # QUARANTINE_PROBE_HOURS old. `now_utc` is a parameter so tests inject
+    # the clock; a probe's own record (zero or not) restarts this clock.
+    due = set()
+    for store in quarantined:
+        prev = _previous_record(records, store)
+        if prev is None or "run_started_utc" not in prev:
+            continue  # nothing to age: stays skipped, as before
+        age = now_utc - datetime.fromisoformat(prev["run_started_utc"])
+        if age >= timedelta(hours=QUARANTINE_PROBE_HOURS):
+            due.add(store)
+    return due
+
+
 def _rate_limited_stores(records: list[dict], now_utc: datetime) -> set[str]:
     # T-32 (#43): IP reputation defense. A store's most recent run is in
     # cooldown when its 403/429 rate exceeded RATE_LIMIT_COOLDOWN_THRESHOLD
@@ -1477,6 +1500,8 @@ def _run(watchlist: list[dict]) -> None:
 
     health_records_before = _read_health_records()
     quarantined_before = _quarantined_stores(health_records_before)
+    probing = _probe_due_stores(health_records_before, quarantined_before, now_utc)
+    still_skipped = quarantined_before - probing
     rate_limited_before = _rate_limited_stores(health_records_before, now_utc)
     per_store = _run_state.per_store
 
@@ -1497,7 +1522,10 @@ def _run(watchlist: list[dict]) -> None:
         )
         stats["watches_requested"] += 1
 
-        if site in quarantined_before:
+        if site in probing and stats["watches_requested"] == 1:
+            print(f"[{site}] quarantine probe: newest health record is old, fetching")
+
+        if site in still_skipped:
             stats["watches_skipped"] += 1
             print(
                 f"[{site}] skipped: quarantined after Critical Selector Drift "
@@ -1679,11 +1707,7 @@ def _run(watchlist: list[dict]) -> None:
 
     new_health_records = []
     for site, stats in per_store.items():
-        if (
-            site in quarantined_before
-            or site in rate_limited_before
-            or site not in SCRAPERS
-        ):
+        if site in still_skipped or site in rate_limited_before or site not in SCRAPERS:
             continue
         prev = _previous_record(health_records_before, site)
         last_known_good_utc = (
@@ -1734,10 +1758,29 @@ def _run(watchlist: list[dict]) -> None:
             "queries! Possible website redesign or bot-wall."
         )
 
+    recovered = [
+        rec
+        for rec in new_health_records
+        if rec["store"] in probing
+        and rec["products_parsed"] > 0
+        and rec["store"] not in quarantined_after
+    ]
+    for rec in recovered:
+        display = STORE_DISPLAY_NAMES.get(rec["store"], rec["store"].title())
+        # The run timestamp keeps the text unique: notify.py dedupes health
+        # alerts by a hash of the text, so a repeat would never be delivered.
+        health_alerts.append(
+            f"✅ RECOVERED: {display} parsed {rec['products_parsed']} products "
+            f"again after a quarantine (run {run_started_utc})."
+        )
+
     stale_stores = [
         rec["store"]
         for rec in new_health_records
-        if rec["last_known_good_utc"] is not None
+        # A probe that stays quarantined is already alerted; repeating a
+        # dead-man alert every probe would be noise.
+        if not (rec["store"] in probing and rec["store"] in quarantined_after)
+        and rec["last_known_good_utc"] is not None
         and (
             now_utc - datetime.fromisoformat(rec["last_known_good_utc"])
         ).total_seconds()

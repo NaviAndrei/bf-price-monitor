@@ -1796,3 +1796,195 @@ def test_offer_sku_uses_retailer_adapter_and_logs_pattern_mismatch(capsys):
     assert "URL_PATTERN_MISMATCH" in err
     assert "fingerprint=pid-v1:" in err
     assert scrape.offer_sku("flanco", "https://flanco.ro/") == ""
+
+
+# --- quarantine probe: a quarantined store is re-fetched once its newest
+# health record is old enough, so the quarantine can clear -----------------
+
+
+def _seed_quarantine(newest_age: timedelta, store: str = "emag") -> None:
+    """Two zero records for `store` (the newest `newest_age` old) plus a
+    successful pcgarage record in each of those runs: the exact state
+    _quarantined_stores() reports as Critical Selector Drift."""
+    now = datetime.now(UTC)
+    rows = []
+    for run_id, age in (
+        ("old-1", newest_age + timedelta(hours=5)),
+        ("old-2", newest_age),
+    ):
+        started = (now - age).isoformat()
+        for name, parsed in ((store, 0), ("pcgarage", 3)):
+            rows.append(
+                {
+                    "store": name,
+                    "run_id": run_id,
+                    "run_started_utc": started,
+                    "watches_requested": 1,
+                    "products_parsed": parsed,
+                    "matched_count": 0,
+                    "parse_failures": 0,
+                    "challenge_detected": False,
+                    "latency_seconds": 1.0,
+                    "last_known_good_utc": (now - timedelta(days=9)).isoformat()
+                    if name == store
+                    else started,
+                }
+            )
+    scrape.SCRAPE_HEALTH_FILE.parent.mkdir(parents=True, exist_ok=True)
+    scrape.SCRAPE_HEALTH_FILE.write_text(
+        "".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8"
+    )
+    assert scrape._quarantined_stores(scrape._read_health_records()) == {store}
+
+
+def _probe_run(tmp_path, monkeypatch, emag_results):
+    calls = {"emag": 0}
+
+    def emag_scraper(query):
+        calls["emag"] += 1
+        return emag_results
+
+    _configure_run(
+        tmp_path,
+        monkeypatch,
+        [{"site": "emag", "query": "q"}, {"site": "pcgarage", "query": "q"}],
+        {
+            "emag": emag_scraper,
+            "pcgarage": lambda query: [
+                _watchlist_entry(url="https://pcgarage.example/1")
+            ],
+        },
+    )
+    return calls
+
+
+def _emag_records():
+    return [r for r in _health_records() if r["store"] == "emag"]
+
+
+def test_fresh_quarantine_is_skipped_and_writes_no_record(tmp_path, monkeypatch):
+    calls = _probe_run(tmp_path, monkeypatch, [_watchlist_entry()])
+    _seed_quarantine(timedelta(hours=1))
+
+    scrape.main()
+
+    assert calls["emag"] == 0
+    assert len(_emag_records()) == 2
+
+
+def test_old_quarantine_is_probed_and_recorded(tmp_path, monkeypatch, capsys):
+    calls = _probe_run(tmp_path, monkeypatch, [])
+    _seed_quarantine(timedelta(hours=7))
+
+    scrape.main()
+
+    assert calls["emag"] == 1
+    assert len(_emag_records()) == 3
+    assert "[emag] quarantine probe" in capsys.readouterr().out
+
+
+def test_quarantine_with_a_nine_day_old_record_is_probed_on_the_first_run(
+    tmp_path, monkeypatch
+):
+    # The live state that prompted this: eMAG's newest record was days old.
+    calls = _probe_run(tmp_path, monkeypatch, [_watchlist_entry()])
+    _seed_quarantine(timedelta(days=9))
+
+    scrape.main()
+
+    assert calls["emag"] == 1
+
+
+def test_probe_success_releases_and_alerts_once(tmp_path, monkeypatch):
+    calls = _probe_run(tmp_path, monkeypatch, [_watchlist_entry()])
+    _seed_quarantine(timedelta(hours=7))
+
+    scrape.main()
+
+    recovered = [a for a in _health_alerts() if "RECOVERED" in a]
+    assert len(recovered) == 1 and "eMAG" in recovered[0]
+    assert not any("BREAKDOWN" in a for a in _health_alerts())
+    assert scrape._quarantined_stores(scrape._read_health_records()) == set()
+
+    scrape.main()  # released: fetched normally, no second RECOVERED
+    assert calls["emag"] == 2
+    assert not any("RECOVERED" in a for a in _health_alerts())
+
+
+def test_probe_zero_stays_quarantined_without_repeat_alerts(tmp_path, monkeypatch):
+    calls = _probe_run(tmp_path, monkeypatch, [])
+    _seed_quarantine(timedelta(hours=7))
+
+    scrape.main()
+
+    assert calls["emag"] == 1
+    assert _emag_records()[-1]["products_parsed"] == 0
+    assert scrape._quarantined_stores(scrape._read_health_records()) == {"emag"}
+    alerts = _health_alerts()
+    assert not any(
+        "BREAKDOWN" in a or "DEAD-MAN" in a or "RECOVERED" in a for a in alerts
+    )
+
+    scrape.main()  # the probe just wrote a fresh record: skipped again
+    assert calls["emag"] == 1
+
+
+def test_disabled_only_shop_is_never_probed(tmp_path, monkeypatch):
+    calls = {"emag": 0}
+
+    def emag_scraper(query):
+        calls["emag"] += 1
+        return [_watchlist_entry()]
+
+    _configure_run(
+        tmp_path,
+        monkeypatch,
+        {
+            "watches": [
+                _modern_watch("emag", "q", enabled=False),
+                _modern_watch("pcgarage", "q"),
+            ]
+        },
+        {
+            "emag": emag_scraper,
+            "pcgarage": lambda query: [
+                _watchlist_entry(url="https://pcgarage.example/1")
+            ],
+        },
+    )
+    _seed_quarantine(timedelta(days=9))
+
+    scrape.main()
+
+    assert calls["emag"] == 0
+    assert len(_emag_records()) == 2
+
+
+def test_probe_due_stores_threshold_with_injected_clock():
+    now = datetime(2026, 10, 19, 12, 0, tzinfo=UTC)
+
+    def rec(hours_ago):
+        return {
+            "store": "emag",
+            "run_started_utc": (now - timedelta(hours=hours_ago)).isoformat(),
+        }
+
+    due = scrape._probe_due_stores
+    hours = scrape.QUARANTINE_PROBE_HOURS
+    assert due([rec(hours)], {"emag"}, now) == {"emag"}
+    assert due([rec(hours - 0.01)], {"emag"}, now) == set()
+    assert due([rec(100), rec(1)], {"emag"}, now) == set()  # newest record wins
+    assert due([], {"emag"}, now) == set()  # no records: nothing to age
+    assert due([rec(100)], set(), now) == set()  # not quarantined
+
+
+def test_recovered_text_differs_per_recovery(tmp_path, monkeypatch):
+    # notify._health_event_id is a content hash and a SENT hash is skipped,
+    # so a second recovery with identical text would never be delivered.
+    _probe_run(tmp_path, monkeypatch, [_watchlist_entry()])
+    texts = []
+    for _ in range(2):
+        _seed_quarantine(timedelta(hours=7))
+        scrape.main()
+        texts += [a for a in _health_alerts() if "RECOVERED" in a]
+    assert len(texts) == 2 and texts[0] != texts[1]
