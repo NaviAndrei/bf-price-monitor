@@ -321,3 +321,7 @@ Next: after the next workflow-run collection, check it with `uv run python scrip
 ## 2026-10-18 - #76 persist: base SHA via artifact file
 - Scrape job writes data/base_sha.txt into the price-data artifact; persist_history.py --base-file reads it (job output base_sha removed, retention 1 to 3 days); 16 new tests, 986 total.
 - Tests, ruff check, ruff format --check and mypy --strict clean; not pushed, no live run yet. Code commit SHA: 27ce79e (Refs #76). Recovery of #343/#345 rows is separate; #343's artifact expires about 18:00 UTC on 18 Oct.
+
+## 2026-10-18 - #76 confirmed on a live run
+- Persist log: base=ccbeaab... origin_tip=ccbeaab..., then pushed 1534a0c...; the base came from base_sha.txt via --base-file. Upload step: 3 files; state gate restored and saved; no "Skip output" warning (observed by the owner).
+- No code change. Fix commit 27ce79e. Closes #76. Recovery of the #343/#345 rows is still a separate step.
