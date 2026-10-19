@@ -37,7 +37,7 @@ than crashing the run.
    `data/alerts.json`. Each recorded product also carries:
    - `stock_status`: `in_stock`, `limited_stock`, `supplier_stock`,
      `out_of_stock`, or `unknown` — granularity varies by site depending on
-     what its listing page actually exposes (see "Site status" below).
+     what its listing page actually exposes (see "Site status" above).
      Alerts are suppressed (but the price is still recorded to history) when
      `stock_status` is `out_of_stock`, since a sold-out price isn't
      actionable.
@@ -58,7 +58,10 @@ than crashing the run.
    ntfy via its `channels` field; every channel shares the same outbox,
    retry and dead-letter handling.
 4. `.github/workflows/monitor.yml` runs all three scripts every 2 hours (and
-   on manual trigger) from the current `master` tip, then
+   on manual trigger) from the current `master` tip. During a configured
+   Black Friday week it also runs every 30 minutes; see
+   [docs/runbooks/BF_WEEK_CADENCE.md](docs/runbooks/BF_WEEK_CADENCE.md).
+   Then
    `scripts/persist_history.py` commits `data/price_history.json` back to the
    repo. It merges the run's observations into whatever is on `master` by
    data, not by text, so two runs that overlap never lose each other's rows.
@@ -233,11 +236,11 @@ pings a [Healthchecks.io](https://healthchecks.io) URL after every other
 step in the run has succeeded.
 
 This is a **dead-man switch**: it only confirms that a fully successful
-monitoring run completed end to end. It is not a per-store scraper-health
-alert — it says nothing about whether eMAG, PC Garage, or Flanco's
-selectors are still valid, or whether any individual site returned zero
-products (that class of failure needs the `selector-drift-detector` check
-instead).
+monitoring run completed end to end. It says nothing about whether eMAG, PC
+Garage, or Flanco's selectors are still valid, or whether any individual
+site returned zero products. That is covered by the in-app checks in
+"Per-store scraper health" below, and by the `selector-drift-detector`
+check when you need to inspect the live pages.
 
 If the self-hosted runner PC loses power or network, if the runner service
 stops accepting jobs, if the workflow is delayed or cannot complete, or if
@@ -248,7 +251,9 @@ grace period elapses.
 Setup:
 
 1. Create a Healthchecks.io check with a schedule matching the workflow's
-   cron (`0 */2 * * *`, i.e. every 2 hours).
+   cron (`0 */2 * * *`, i.e. every 2 hours). The 30-minute Black Friday
+   cron only scrapes inside the configured peak window, so this 2-hour
+   schedule stays the baseline.
 2. Add its ping URL as the `HEALTHCHECK_URL` repository Actions secret
    (**Settings → Secrets and variables → Actions**).
 3. Never commit or disclose that URL — anyone with it can spoof successful
@@ -287,6 +292,12 @@ a second outage of the same store alert again instead of being dropped.
 - `data/alerts.json` and `data/formatted_alerts.json` are regenerated every
   run and are gitignored; `data/price_history.json` and
   `data/watchlist.json` are the persisted state committed by the workflow.
+- Per-run state that must not be public (the SQLite backup,
+  `data/scrape_health.jsonl` and `data/alert_outbox.jsonl`) is not committed.
+  The runner restores and saves it in a local, ACL-protected directory
+  (`BF_STATE_ROOT`, `C:\bf-monitor-runtime-state`) around every run, never
+  as a GitHub artifact. The quarantine and dead-man checks depend on that
+  history; without it they cannot fire (see `docs/DECISIONS.md`).
 
 ## Self-hosted runner environment (do not "clean up" these settings)
 
