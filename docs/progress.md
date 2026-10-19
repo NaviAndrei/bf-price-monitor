@@ -329,3 +329,6 @@ Next: after the next workflow-run collection, check it with `uv run python scrip
 ## 2026-10-19 - #79 quarantined stores are re-probed
 - A quarantined store is fetched again once its newest health record is 6 h old; non-zero releases it with one RECOVERED alert, zero keeps it quarantined with no repeat alerts; 8 new tests plus the suite, ruff check, ruff format --check and mypy --strict clean.
 - Code commit SHA: 8322d1a (Refs #79). Not pushed, no live run yet; the live check (eMAG probed, next bot commit above 162 lines) is still open.
+
+## 2026-10-19 - #79 confirmed on a live run
+- Attempt 2 of run 39109621017 probed eMAG (23:27:43Z), parsed 51 products, normal runs followed; bot commits now add 400+ lines. RECOVERED Telegram delivery not observed (send_test_alert inheritance on the re-run is an unconfirmed hypothesis). Re-runs keep the original createdAt in `gh run list`; the 17 Oct hypothesis was refuted. Fix commit 8322d1a. Closes #79.

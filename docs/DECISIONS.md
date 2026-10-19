@@ -891,4 +891,27 @@ observation to the same 27 product arrays.
 - **Known gap, not fixed here.** The same hash rule means a second
   BREAKDOWN with identical text for the same store would be suppressed
   after the first was SENT. Needs its own issue.
+- **Tracking.** The BREAKDOWN/DEAD-MAN dedupe gap is tracked in #80.
 - **Not changed.** Runtime-state files, `report.py`, `notify.py`.
+
+### 2026-10-19 - #79 live verification
+- **Exercised live.** Attempt 2 of run 39109621017 (a manual run from
+  2026-10-18 07:57Z, re-run at 23:23Z on master) logged
+  `[emag] quarantine probe: newest health record is old, fetching` at
+  23:27:43Z and parsed 51 eMAG products. Attempt 1 of the same run
+  (07:59Z) had logged `[emag] skipped: quarantined`. The scheduled run at
+  23:51Z then fetched eMAG normally (49 products, no probe line, as
+  expected once released). The probe's persist produced bot commit
+  1e46f40 (+494 lines; the later one adds 472), against 162 lines per
+  commit while eMAG was quarantined.
+- **RECOVERED delivery NOT observed.** RECOVERED delivery was not
+  observed: the log grep was inconclusive and Telegram was not checked.
+  The re-run likely inherited send_test_alert (unconfirmed). Confirm on
+  the next real recovery.
+- **Re-runs keep the original `createdAt`.** In `gh run list` a re-run
+  shows the first attempt's creation time (07:57Z), not when it ran
+  (23:23Z). Use `gh api .../runs/<id>/attempts/N` for the real times. This
+  hid the run that produced 1e46f40 from the list.
+- **17 Oct hypothesis refuted.** The guess that an unrestored-state run on
+  17 Oct had cleared the quarantine is wrong: the health file has no eMAG
+  rows between 2026-10-09 03:16Z (zero) and 2026-10-18 23:26Z (51).
