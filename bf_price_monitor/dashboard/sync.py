@@ -131,7 +131,12 @@ class GitSync:
                 self._before_push()
                 push = self._run_network("push", self._cfg.remote, self._push_spec())
                 if push.returncode == 0:
-                    head = self._git.run("rev-parse", "HEAD").stdout.strip()
+                    try:
+                        head: str | None = self._git.run(
+                            "rev-parse", "HEAD"
+                        ).stdout.strip()
+                    except (GitError, GitTimeout):
+                        head = None  # the push landed; only the label is unknown
                     self.journal.remove(applied)
                     return self._finish("pushed", focus, fates, head=head)
                 reason = classify_failure(push.stderr)

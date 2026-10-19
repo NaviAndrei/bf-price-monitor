@@ -956,3 +956,7 @@ observation to the same 27 product arrays.
   the port, random per-launch token in a header on every write, JSON bodies
   only (415 otherwise), no CORS headers, no CDN assets. The token is printed
   to stdout once and never logged.
+- **One slice B change was made in slice C:** `GitSync._sync` no longer fails
+  when `git rev-parse HEAD` errors after a successful push. The push has
+  landed and the journal entry is cleared; the result is `pushed` with an
+  unknown head, so the server answers 200 instead of a misleading 500.

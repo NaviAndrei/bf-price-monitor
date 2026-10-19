@@ -586,6 +586,25 @@ def test_crash_after_a_successful_push_does_not_duplicate_the_edit(
     assert sum('"monitor lg"' in s for s in scratch.origin_subjects()) == 1
 
 
+def test_push_that_landed_is_pushed_even_if_rev_parse_then_fails(scratch: Scratch):
+    state = {"pushed": False}
+
+    def runner(args: Any, cwd: Any, env: Any, timeout: Any) -> Any:
+        result = gitcmd.default_runner(args, cwd, env, timeout)
+        if args and args[0] == "push" and result.returncode == 0:
+            state["pushed"] = True
+        elif state["pushed"] and tuple(args) == ("rev-parse", "HEAD"):
+            return subprocess.CompletedProcess(["git", *args], 128, "", "boom")
+        return result
+
+    with make_client(scratch, runner=runner) as c:
+        response = post(c, "/api/watches", {"site": "flanco", "query": "monitor lg"})
+        assert response.status_code == 200
+        assert response.json()["state"] == "pushed"
+        assert c.get("/api/pending").json()["pending_count"] == 0
+    assert "monitor lg" in origin_queries(scratch)
+
+
 @pytest.mark.parametrize(
     "text",
     [
