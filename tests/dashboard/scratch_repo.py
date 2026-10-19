@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import subprocess
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -104,3 +105,14 @@ def build_scratch(tmp_path: Path) -> Scratch:
     git(tmp_path, "clone", "-q", str(s.origin), "dash")
     git(tmp_path, "clone", "-q", str(s.origin), "other")
     return s
+
+
+def other_edit_watchlist(s: Scratch, mutate: Callable[[dict[str, Any]], None]) -> None:
+    """A second writer lands a watchlist edit on origin."""
+    git(s.other, "pull", "-q", "--no-rebase", "origin", "master")
+    path = s.other / WATCHLIST
+    doc = json.loads(path.read_text(encoding="utf-8"))
+    mutate(doc)
+    path.write_text(json.dumps(doc, indent=2) + "\n", encoding="utf-8")
+    git(s.other, "commit", "-q", "-am", "other edit")
+    git(s.other, "push", "-q", "origin", "HEAD:master")

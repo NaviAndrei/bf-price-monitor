@@ -13,6 +13,7 @@ import argparse
 import hashlib
 import hmac
 import os
+import re
 import secrets
 import sys
 import time
@@ -22,21 +23,31 @@ from typing import Any
 import uvicorn
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel, ConfigDict
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
-from bf_price_monitor.dashboard import store
+from bf_price_monitor.dashboard import operations, store
 from bf_price_monitor.dashboard.config import (
     ConfigError,
     DashboardConfig,
     load_config,
     validate_clone,
 )
-from bf_price_monitor.dashboard.gitcmd import Git, GitError, GitTimeout, Runner
+from bf_price_monitor.dashboard.gitcmd import (
+    NETWORK_TIMEOUT,
+    Git,
+    GitError,
+    GitTimeout,
+    Runner,
+    classify_failure,
+)
 from bf_price_monitor.dashboard.gitcmd import default_runner as _default_runner
 from bf_price_monitor.dashboard.journal import JournalError
+from bf_price_monitor.dashboard.locking import CloneBusy, CloneLock
+from bf_price_monitor.dashboard.operations import InvalidOperation
 from bf_price_monitor.dashboard.sites import CHANNELS, KNOWN_SITES
 from bf_price_monitor.dashboard.store import StoreError
-from bf_price_monitor.dashboard.sync import WATCHLIST_REL, GitSync
+from bf_price_monitor.dashboard.sync import WATCHLIST_REL, GitSync, SyncResult
 
 LOOPBACK = "127.0.0.1"
 DEFAULT_PORT = 8765
@@ -234,8 +245,183 @@ def create_app(
         return response
 
     _register_read_routes(app)
+    _register_write_routes(app)
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=[LOOPBACK, "localhost"])
     return app
+
+
+_USERINFO = re.compile(r"(?<=://)[^/@\s]+@")
+
+
+def redact(text: str) -> str:
+    """Drop ``user:secret@`` from URLs so git's messages are safe to return."""
+    return _USERINFO.sub("", text)
+
+
+class _Body(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+
+class AddBody(_Body):
+    # Any: values are validated (types, ranges) by operations.make_add.
+    site: str
+    query: str
+    target_price: Any = None
+    min_drop_percent: Any = None
+    channels: Any = None
+
+
+class EditBody(_Body):
+    expected: dict[str, Any]
+    changes: dict[str, Any]
+
+
+class ExpectedBody(_Body):
+    expected: dict[str, Any]
+
+
+def _etag(cfg: DashboardConfig) -> str | None:
+    try:
+        return hashlib.sha256((cfg.clone / WATCHLIST_REL).read_bytes()).hexdigest()
+    except OSError:
+        return None
+
+
+def _respond(result: SyncResult, cfg: DashboardConfig) -> JSONResponse:
+    body: dict[str, Any] = {
+        "state": result.state,
+        "reason": result.reason,
+        "detail": redact(result.detail),
+        "saved_locally": result.state in ("not_pushed", "rejected"),
+        "pending_count": result.pending_count,
+        "conflicts": result.conflicts,
+        "head": result.head,
+        "etag": _etag(cfg),
+    }
+    if result.state == "conflict":
+        body["error"] = "reload"
+        return JSONResponse(body, status_code=409)
+    if result.state == "invalid":
+        body["error"] = redact(result.detail)
+        return JSONResponse(body, status_code=422)
+    # pushed: done. not_pushed / rejected: kept in the journal, 202 Accepted.
+    return JSONResponse(body, status_code=200 if result.state == "pushed" else 202)
+
+
+def _register_write_routes(app: FastAPI) -> None:
+    def sync_of() -> GitSync:
+        sync: GitSync = app.state.sync
+        return sync
+
+    def guarded(action: Callable[[], JSONResponse]) -> JSONResponse:
+        """Clone-state check, then the action; map the failures to HTTP."""
+        cfg: DashboardConfig = app.state.cfg
+        try:
+            check_clone_ready(cfg, app.state.runner)
+            return action()
+        except CloneNotReady as exc:
+            return _reject(503, redact(str(exc)))
+        except CloneBusy as exc:
+            return _reject(423, str(exc))
+        except (GitError, GitTimeout, OSError) as exc:
+            return _reject(500, redact(f"save failed: {exc}"))
+
+    def submit(build: Callable[[], operations.Op]) -> JSONResponse:
+        try:
+            op = build()
+        except InvalidOperation as exc:
+            return _reject(422, str(exc))
+        return guarded(lambda: _respond(sync_of().submit(op), app.state.cfg))
+
+    def matching(wid: str, expected: dict[str, Any]) -> dict[str, Any]:
+        if expected.get("id") != wid:
+            raise InvalidOperation(
+                "watch id in the path does not match the expected one"
+            )
+        return expected
+
+    @app.post("/api/watches")
+    def add_watch(body: AddBody) -> JSONResponse:
+        return submit(
+            lambda: operations.make_add(
+                body.site,
+                body.query,
+                target_price=body.target_price,
+                min_drop_percent=body.min_drop_percent,
+                channels=body.channels,
+            )
+        )
+
+    @app.post("/api/watches/{wid}/update")
+    def update_watch(wid: str, body: EditBody) -> JSONResponse:
+        return submit(
+            lambda: operations.make_update(matching(wid, body.expected), body.changes)
+        )
+
+    @app.post("/api/watches/{wid}/enable")
+    def enable_watch(wid: str, body: ExpectedBody) -> JSONResponse:
+        return submit(
+            lambda: operations.make_set_enabled(matching(wid, body.expected), True)
+        )
+
+    @app.post("/api/watches/{wid}/disable")
+    def disable_watch(wid: str, body: ExpectedBody) -> JSONResponse:
+        return submit(
+            lambda: operations.make_set_enabled(matching(wid, body.expected), False)
+        )
+
+    @app.post("/api/watches/{wid}/remove")
+    def remove_watch(wid: str, body: ExpectedBody) -> JSONResponse:
+        return submit(lambda: operations.make_delete(matching(wid, body.expected)))
+
+    @app.post("/api/retry")
+    def retry_pending() -> JSONResponse:
+        return guarded(lambda: _respond(sync_of().retry(), app.state.cfg))
+
+    @app.post("/api/refresh")
+    def refresh() -> JSONResponse:
+        cfg: DashboardConfig = app.state.cfg
+
+        def action() -> JSONResponse:
+            sync = sync_of()
+            if sync.journal.pending():
+                # Detaching onto origin would hide unpushed edits; replaying
+                # the journal is the safe way to catch up.
+                return _respond(sync.retry(), cfg)
+            ref = f"refs/remotes/{cfg.remote}/{cfg.branch}"
+            git = Git(cfg.clone, app.state.runner)
+            with CloneLock(sync.lock_path):
+                try:
+                    fetch = git.run(
+                        "fetch",
+                        cfg.remote,
+                        f"refs/heads/{cfg.branch}:{ref}",
+                        timeout=NETWORK_TIMEOUT,
+                        check=False,
+                    )
+                except GitTimeout as exc:
+                    return JSONResponse(
+                        {"state": "offline", "reason": "timeout", "detail": str(exc)}
+                    )
+                if fetch.returncode != 0:
+                    last = (fetch.stderr.strip().splitlines() or [""])[-1]
+                    return JSONResponse(
+                        {
+                            "state": "offline",
+                            "reason": classify_failure(fetch.stderr),
+                            "detail": redact(last),
+                        }
+                    )
+                git.run("switch", "--detach", ref)
+            return JSONResponse({"state": "refreshed", "etag": _etag(cfg)})
+
+        return guarded(action)
+
+    @app.post("/api/conflicts/{op_id}/dismiss")
+    def dismiss_conflict(op_id: str) -> JSONResponse:
+        if sync_of().dismiss_conflict(op_id):
+            return JSONResponse({"dismissed": True})
+        return _reject(404, "no such conflict")
 
 
 def _parse_port(value: str) -> int:
