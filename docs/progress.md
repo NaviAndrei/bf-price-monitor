@@ -336,3 +336,6 @@ Next: after the next workflow-run collection, check it with `uv run python scrip
 ## 2026-10-19 - #80 unique health-alert text per outage
 - BREAKDOWN now carries the outage start and DEAD-MAN the last-good time, so a repeat outage is not deduped by notify's content hash; 4 new tests plus the suite, ruff check, ruff format --check and mypy --strict clean.
 - Code commit: see git log (Refs #80). Not pushed.
+
+## 2026-10-19 - #80 closed without a live test
+- Closed at the owner's request with no live outage observed; the fix (e7f3340) is covered by unit tests only. If a repeat outage still sends no alert, open a new issue. Closes #80.
