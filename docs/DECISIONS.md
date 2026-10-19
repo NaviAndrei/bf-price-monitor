@@ -915,3 +915,19 @@ observation to the same 27 product arrays.
 - **17 Oct hypothesis refuted.** The guess that an unrestored-state run on
   17 Oct had cleared the quarantine is wrong: the health file has no eMAG
   rows between 2026-10-09 03:16Z (zero) and 2026-10-18 23:26Z (51).
+
+### 2026-10-19 - #80: health-alert text identifies the outage
+- **Problem.** `notify._health_event_id` hashes the alert text and skips a
+  hash that was already SENT. BREAKDOWN and DEAD-MAN used fixed text, so a
+  second outage of the same store (now possible after #79) would send
+  nothing.
+- **Decision.** Put the outage identity in the text, not in notify.py.
+  BREAKDOWN appends `(outage since <run_started_utc of the first record of
+  the trailing zero streak>)` via `_outage_start`. DEAD-MAN appends each
+  stale store's `last_known_good_utc`. Both are stable while an outage
+  lasts (repeats still dedupe, a failed probe extends the same streak) and
+  change after a recovery, so a new outage alerts once.
+- **Why not change notify.py.** The dedupe is deliberate crash-replay
+  protection; the producer knows what an outage is, the sender does not.
+- **Existing text prefixes are unchanged**, so report and analyze readers
+  that match on `SCRAPER BREAKDOWN` / `DEAD-MAN CHECK` keep working.

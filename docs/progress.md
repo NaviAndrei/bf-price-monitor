@@ -332,3 +332,7 @@ Next: after the next workflow-run collection, check it with `uv run python scrip
 
 ## 2026-10-19 - #79 confirmed on a live run
 - Attempt 2 of run 39109621017 probed eMAG (23:27:43Z), parsed 51 products, normal runs followed; bot commits now add 400+ lines. RECOVERED Telegram delivery not observed (send_test_alert inheritance on the re-run is an unconfirmed hypothesis). Re-runs keep the original createdAt in `gh run list`; the 17 Oct hypothesis was refuted. Fix commit 8322d1a. Closes #79.
+
+## 2026-10-19 - #80 unique health-alert text per outage
+- BREAKDOWN now carries the outage start and DEAD-MAN the last-good time, so a repeat outage is not deduped by notify's content hash; 4 new tests plus the suite, ruff check, ruff format --check and mypy --strict clean.
+- Code commit: see git log (Refs #80). Not pushed.
