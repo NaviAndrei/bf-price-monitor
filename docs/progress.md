@@ -339,3 +339,7 @@ Next: after the next workflow-run collection, check it with `uv run python scrip
 
 ## 2026-10-19 - #80 closed without a live test
 - Closed at the owner's request with no live outage observed; the fix (e7f3340) is covered by unit tests only. If a repeat outage still sends no alert, open a new issue. Closes #80.
+
+## 2026-10-20 - #75 dashboard slice C: local server and page
+- `bf_price_monitor/dashboard/server.py` plus a static page serve the slice B engine on 127.0.0.1 behind S11 guards (exact Host:port, per-launch token, JSON-only, no CORS); 1137 tests pass (139 new in tests/dashboard/test_server_*.py), dashboard coverage 95%, ruff check, ruff format --check and mypy --strict clean; manual smoke run (docs/runbooks/DASHBOARD.md) still open.
+- Commits (Refs #75): e3ecd37 deps, 3617509 docs, 7d34d2e CLAUDE.md, 095f87a skeleton, a40a8ef and 7e339d3 read routes, b15b969 write routes, c00736a page, 01b62f4 review fixes. Not pushed.
