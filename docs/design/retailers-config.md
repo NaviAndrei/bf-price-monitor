@@ -294,6 +294,28 @@ Rules for the save step:
    (`monitor.yml:394`) handles a merge commit on the remote tip without
    trouble.
 
+**As built in slice B and C (supersedes the diagram above).** The dashboard
+does not run the merge and abort sequence. Slice B's `GitSync` does what
+`scripts/persist_history.py` does: journal the edit first, fetch, detach at
+`origin/master`, replay every pending operation as one commit each, push. A
+rejected push is retried up to three times with a fresh fetch. The reasons:
+
+- **No merges, so no merge to abort.** An unpushed local commit is never relied
+  on. The next attempt detaches onto the fresh origin tip and re-derives the
+  commit from the journaled operation, so nothing is lost and nothing is
+  rewritten. "Saved locally, not pushed" means "the operation is in the
+  journal".
+- **Conflicts are per watch, not per file.** Each operation carries the watch
+  exactly as the user saw it. A mismatch moves that operation (and later ones
+  on the same watch) to `conflicts.jsonl`, and the API answers 409. An
+  unrelated edit to another watch never blocks a save.
+- **The blob SHA is advisory.** The API returns a content hash of
+  `data/watchlist.json` as `etag` so the page can tell it is stale, but a write
+  is never refused or allowed because of it.
+- **Clone state.** The clone must be clean and either detached or on `master`.
+  It ends detached after the first save by design, so "on master" is not
+  required.
+
 ### Trap 3: should config move to SQLite with the Sprint 4 migration?
 
 **Recommendation: keep `watchlist.json` and `retailers.json` as JSON in git.**

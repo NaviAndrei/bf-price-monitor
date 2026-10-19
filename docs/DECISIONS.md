@@ -931,3 +931,28 @@ observation to the same 27 product arrays.
   protection; the producer knows what an outage is, the sender does not.
 - **Existing text prefixes are unchanged**, so report and analyze readers
   that match on `SCRAPER BREAKDOWN` / `DEAD-MAN CHECK` keep working.
+
+## 2026-10-20 — Dashboard Phase 1 slice C: HTTP layer over the slice B save engine
+- **Slice B's `GitSync` is the only write path.** The Trap 2 sequence in the
+  design doc (ff-only or merge, `merge --abort`, blob SHA gate) is superseded:
+  journal replay on a detached HEAD never merges, so there is nothing to
+  abort, and a lost push is recovered from the journal rather than a kept
+  local commit. The design doc now says so under Trap 2.
+- **409 means a per-watch conflict.** It comes from the expected-value check in
+  `operations.apply`. The `etag` (sha256 of the file bytes) is returned for the
+  page's benefit and never gates a write: the bot no longer commits
+  `watchlist.json`, so a changed blob usually means an unrelated edit.
+- **Clone state:** clean, and detached or on `master`, checked at startup and
+  before every write. Slice B detaches the clone on purpose.
+- **Form fields are exactly what `operations.py` can change:** add (site,
+  query, target_price, min_drop_percent, channels), edit (target_price,
+  min_drop_percent, channels), enable or disable, remove. Everything else is
+  shown read-only; `EDITABLE_FIELDS` is not extended. Constraints for a later
+  slice: `seller_policy` any|trusted, `cooldown_hours` integer >= 1,
+  `cadence_minutes` 5..1440, `drop_rule` percentage|absolute,
+  `drop_threshold` > 0. `atl_policy` has no schema constraint (`{}`), so the
+  analyzer's use of it must be read before an editor is proposed.
+- **Local-server guards (S11):** `127.0.0.1` only, exact `Host` check including
+  the port, random per-launch token in a header on every write, JSON bodies
+  only (415 otherwise), no CORS headers, no CDN assets. The token is printed
+  to stdout once and never logged.
