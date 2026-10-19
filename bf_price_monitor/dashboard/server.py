@@ -505,7 +505,12 @@ def main(
     # stdout only; the fragment is never sent to the server or to logs.
     print(f"Dashboard: http://{LOOPBACK}:{args.port}/#token={token}", flush=True)
     uvicorn.run(
-        app, host=LOOPBACK, port=args.port, log_level="warning", access_log=False
+        app,
+        host=LOOPBACK,
+        port=args.port,
+        log_level="warning",
+        access_log=False,
+        proxy_headers=False,  # never trust X-Forwarded-* from a local client
     )
     return 0
 

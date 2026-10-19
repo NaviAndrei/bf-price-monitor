@@ -53,6 +53,7 @@ def test_main_binds_loopback_only_and_prints_the_token_to_stdout_only(
     assert call["host"] == "127.0.0.1"
     assert call["port"] == 9123
     assert call["access_log"] is False
+    assert call["proxy_headers"] is False
 
 
 def test_main_uses_a_new_token_each_launch(

@@ -81,6 +81,23 @@ def test_rejected_host_runs_before_the_token_check(client: TestClient):
     assert response.status_code == 400
 
 
+@pytest.mark.parametrize("host", ["evil.example", f"0.0.0.0:{PORT}"])
+def test_foreign_host_without_a_token_gets_the_host_rejection(
+    client: TestClient, host: str
+):
+    response = client.post(
+        "/probe",
+        headers={"host": host, "content-type": "application/json"},
+        content=b"{}",
+    )
+    assert response.status_code == 400  # not the token guard's 403
+
+
+def test_foreign_host_with_a_valid_token_is_still_rejected(client: TestClient):
+    response = _write(client, "POST", headers={"host": f"0.0.0.0:{PORT}"})
+    assert response.status_code == 400
+
+
 # --- token -----------------------------------------------------------------
 
 
