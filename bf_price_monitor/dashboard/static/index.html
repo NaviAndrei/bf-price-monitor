@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Watchlist dashboard</title>
+  <link rel="stylesheet" href="/static/app.css">
+  <script src="/static/app.js" defer></script>
+</head>
+<body>
+  <header>
+    <h1>Watchlist</h1>
+    <span id="clone-status" class="pill"></span>
+    <button type="button" id="btn-refresh">Refresh from GitHub</button>
+  </header>
+
+  <section id="token-box" hidden>
+    <label for="token-input">Write token (printed by the server on start)</label>
+    <input id="token-input" type="password" autocomplete="off" spellcheck="false">
+    <button type="button" id="btn-token">Use token</button>
+  </section>
+
+  <div id="banners" aria-live="polite"></div>
+
+  <main>
+    <table id="watch-table">
+      <thead>
+        <tr>
+          <th>Site</th>
+          <th>Query</th>
+          <th>Target price</th>
+          <th>Min drop %</th>
+          <th>Channels</th>
+          <th>On</th>
+          <th>Other settings (read-only)</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="watch-rows"></tbody>
+    </table>
+    <p id="empty" hidden>No watches yet.</p>
+
+    <details id="add-section">
+      <summary>Add a watch</summary>
+      <form id="add-form" autocomplete="off">
+        <label>Site <select name="site" required></select></label>
+        <label>Query <input name="query" required maxlength="200"></label>
+        <label>Target price <input name="target_price" type="number" step="any" min="0"></label>
+        <label>Min drop % <input name="min_drop_percent" type="number" step="any" min="0" max="100"></label>
+        <fieldset id="add-channels"><legend>Channels</legend></fieldset>
+        <button type="submit">Add</button>
+        <p class="form-error" id="add-error" role="alert"></p>
+      </form>
+    </details>
+
+    <section id="pending-section" hidden>
+      <h2>Saved locally, waiting to be pushed</h2>
+      <ul id="pending-list"></ul>
+      <button type="button" id="btn-retry">Retry push</button>
+    </section>
+
+    <section id="conflicts-section" hidden>
+      <h2>Edits that could not be applied</h2>
+      <ul id="conflicts-list"></ul>
+    </section>
+  </main>
+
+  <dialog id="edit-dialog">
+    <form id="edit-form" autocomplete="off">
+      <h2 id="edit-title"></h2>
+      <label>Target price <input name="target_price" type="number" step="any" min="0"></label>
+      <label>Min drop % <input name="min_drop_percent" type="number" step="any" min="0" max="100"></label>
+      <fieldset id="edit-channels"><legend>Channels</legend></fieldset>
+      <p class="hint">Leave a price empty to remove it. Site and query cannot be changed; remove and re-add instead.</p>
+      <p class="form-error" id="edit-error" role="alert"></p>
+      <button type="submit">Save</button>
+      <button type="button" id="edit-cancel">Cancel</button>
+    </form>
+  </dialog>
+</body>
+</html>

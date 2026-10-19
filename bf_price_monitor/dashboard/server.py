@@ -18,11 +18,13 @@ import secrets
 import sys
 import time
 from collections.abc import Awaitable, Callable, Mapping, Sequence
+from pathlib import Path
 from typing import Any
 
 import uvicorn
 from fastapi import FastAPI, Request, Response
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
@@ -246,6 +248,7 @@ def create_app(
 
     _register_read_routes(app)
     _register_write_routes(app)
+    _register_ui(app)
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=[LOOPBACK, "localhost"])
     return app
 
@@ -422,6 +425,18 @@ def _register_write_routes(app: FastAPI) -> None:
         if sync_of().dismiss_conflict(op_id):
             return JSONResponse({"dismissed": True})
         return _reject(404, "no such conflict")
+
+
+STATIC_DIR = Path(__file__).parent / "static"
+
+
+def _register_ui(app: FastAPI) -> None:
+    """The page and its two assets, all served from this package (no CDN)."""
+    app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+
+    @app.get("/", include_in_schema=False)
+    def index() -> FileResponse:
+        return FileResponse(STATIC_DIR / "index.html", media_type="text/html")
 
 
 def _parse_port(value: str) -> int:
