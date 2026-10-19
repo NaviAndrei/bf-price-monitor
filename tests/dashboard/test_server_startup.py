@@ -143,4 +143,6 @@ def test_main_refuses_a_dirty_clone(
     path.write_text("[]", encoding="utf-8")
     assert server.main([], _env(scratch)) == 2
     assert uvicorn_calls == []
-    assert capsys.readouterr().err.startswith("error:")
+    err = capsys.readouterr().err
+    assert err.startswith("error:")
+    assert "git restore --staged --worktree" in err  # tells you how to recover

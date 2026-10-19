@@ -88,7 +88,8 @@ function button(label, onclick) {
 function describeResult(status, data) {
   if (status === 200) return null;
   if (status === 202) {
-    const why = data.reason ? " (" + data.reason + ")" : "";
+    const cause = data.reason || data.detail;
+    const why = cause ? " (" + cause + ")" : "";
     banner(
       "warn",
       "Saved locally, not pushed" + why + ". Your change is queued and nothing is lost.",

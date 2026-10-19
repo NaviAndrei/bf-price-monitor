@@ -41,7 +41,8 @@ def test_watchlist_returns_the_watches_etag_and_menus(
     body = client.get("/api/watchlist").json()
     assert body["watches"] == seed_doc()["watches"]
     raw = (scratch.clone / WATCHLIST).read_bytes()
-    assert body["etag"] == hashlib.sha256(raw).hexdigest()
+    folded = raw.replace(b"\r\n", b"\n")  # clones may be CRLF (core.autocrlf)
+    assert body["etag"] == hashlib.sha256(folded).hexdigest()
     assert body["sites"] == list(KNOWN_SITES)
     assert body["channels"] == list(CHANNELS)
     assert body["pending_count"] == 0

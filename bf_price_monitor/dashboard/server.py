@@ -16,6 +16,7 @@ import os
 import re
 import secrets
 import sys
+import threading
 import time
 from collections.abc import Awaitable, Callable, Mapping, Sequence
 from pathlib import Path
@@ -127,7 +128,7 @@ def clone_health(cfg: DashboardConfig, runner: Runner) -> dict[str, Any]:
             "branch": "unknown",
             "tree_clean": False,
             "head": "",
-            "detail": str(exc),
+            "detail": redact(str(exc)),
         }
     detail = ""
     if branch not in (DETACHED, cfg.branch):
@@ -169,10 +170,9 @@ def _register_read_routes(app: FastAPI) -> None:
         cfg: DashboardConfig = app.state.cfg
         path = cfg.clone / WATCHLIST_REL
         doc = store.load(path)
-        etag = hashlib.sha256(path.read_bytes()).hexdigest()
         return {
             "watches": doc["watches"],
-            "etag": etag,  # advisory only: writes are never gated on it (D2)
+            "etag": _etag(cfg),  # advisory only: writes are never gated on it (D2)
             "sites": list(KNOWN_SITES),
             "channels": list(CHANNELS),
             "clone": clone_health(cfg, app.state.runner),
@@ -215,12 +215,18 @@ def create_app(
     app.state.cfg = cfg
     app.state.runner = runner
     app.state.sync = GitSync(cfg, runner=runner, sleep_fn=sleep_fn)
+    # One write at a time in this process: the clone-state check and the
+    # action it guards must not interleave with another request's edit.
+    app.state.write_lock = threading.Lock()
 
     hosts = allowed_hosts(port)
     token_bytes = token.encode("utf-8")
 
     # Middleware added later wraps the earlier ones, so the order of
-    # registration below is innermost -> outermost.
+    # registration below is innermost -> outermost: TrustedHostMiddleware
+    # (names only, ignores ports), then the token and content-type guard,
+    # then the exact host:port guard, which also stamps every response.
+    app.add_middleware(TrustedHostMiddleware, allowed_hosts=[LOOPBACK, "localhost"])
 
     @app.middleware("http")
     async def write_guard(request: Request, call_next: Next) -> Response:
@@ -236,8 +242,8 @@ def create_app(
 
     @app.middleware("http")
     async def host_guard(request: Request, call_next: Next) -> Response:
-        # TrustedHostMiddleware (below) checks names but ignores ports, so
-        # the exact host:port match happens here.
+        # TrustedHostMiddleware checks names but ignores ports, so the exact
+        # host:port match happens here, before the token is even looked at.
         if request.headers.get("host", "").lower() not in hosts:
             response: Response = _reject(400, "invalid host")
         else:
@@ -249,11 +255,10 @@ def create_app(
     _register_read_routes(app)
     _register_write_routes(app)
     _register_ui(app)
-    app.add_middleware(TrustedHostMiddleware, allowed_hosts=[LOOPBACK, "localhost"])
     return app
 
 
-_USERINFO = re.compile(r"(?<=://)[^/@\s]+@")
+_USERINFO = re.compile(r"(?<=://)[^/\s]*@")
 
 
 def redact(text: str) -> str:
@@ -284,18 +289,23 @@ class ExpectedBody(_Body):
 
 
 def _etag(cfg: DashboardConfig) -> str | None:
+    """sha256 of the file with CRLF folded to LF, so a Windows checkout with
+    core.autocrlf and the LF bytes the server writes hash the same."""
     try:
-        return hashlib.sha256((cfg.clone / WATCHLIST_REL).read_bytes()).hexdigest()
+        raw = (cfg.clone / WATCHLIST_REL).read_bytes()
     except OSError:
         return None
+    return hashlib.sha256(raw.replace(b"\r\n", b"\n")).hexdigest()
 
 
-def _respond(result: SyncResult, cfg: DashboardConfig) -> JSONResponse:
+def _respond(
+    result: SyncResult, cfg: DashboardConfig, *, queued: bool = False
+) -> JSONResponse:
     body: dict[str, Any] = {
         "state": result.state,
         "reason": result.reason,
         "detail": redact(result.detail),
-        "saved_locally": result.state in ("not_pushed", "rejected"),
+        "saved_locally": queued or result.state in ("not_pushed", "rejected"),
         "pending_count": result.pending_count,
         "conflicts": result.conflicts,
         "head": result.head,
@@ -306,7 +316,7 @@ def _respond(result: SyncResult, cfg: DashboardConfig) -> JSONResponse:
         return JSONResponse(body, status_code=409)
     if result.state == "invalid":
         body["error"] = redact(result.detail)
-        return JSONResponse(body, status_code=422)
+        return JSONResponse(body, status_code=202 if queued else 422)
     # pushed: done. not_pushed / rejected: kept in the journal, 202 Accepted.
     return JSONResponse(body, status_code=200 if result.state == "pushed" else 202)
 
@@ -320,21 +330,38 @@ def _register_write_routes(app: FastAPI) -> None:
         """Clone-state check, then the action; map the failures to HTTP."""
         cfg: DashboardConfig = app.state.cfg
         try:
-            check_clone_ready(cfg, app.state.runner)
-            return action()
+            with app.state.write_lock:
+                check_clone_ready(cfg, app.state.runner)
+                return action()
         except CloneNotReady as exc:
             return _reject(503, redact(str(exc)))
         except CloneBusy as exc:
             return _reject(423, str(exc))
         except (GitError, GitTimeout, OSError) as exc:
-            return _reject(500, redact(f"save failed: {exc}"))
+            # The edit may already be journaled or even pushed: say so.
+            return _reject(
+                500,
+                redact(f"save may be incomplete ({exc}); reload to check"),
+            )
 
     def submit(build: Callable[[], operations.Op]) -> JSONResponse:
         try:
             op = build()
         except InvalidOperation as exc:
             return _reject(422, str(exc))
-        return guarded(lambda: _respond(sync_of().submit(op), app.state.cfg))
+
+        def run() -> JSONResponse:
+            sync = sync_of()
+            before = {e["op_id"] for e in sync.journal.pending()}
+            result = sync.submit(op)
+            # "invalid" because origin's file is unreadable leaves the new
+            # edit queued in the journal: that is a save, not a rejection.
+            queued = result.state == "invalid" and any(
+                e["op_id"] not in before for e in sync.journal.pending()
+            )
+            return _respond(result, app.state.cfg, queued=queued)
+
+        return guarded(run)
 
     def matching(wid: str, expected: dict[str, Any]) -> dict[str, Any]:
         if expected.get("id") != wid:
@@ -464,6 +491,14 @@ def main(
         check_clone_ready(cfg, runner)
     except (ConfigError, CloneNotReady) as exc:
         print(f"error: {exc}", file=sys.stderr)
+        if "uncommitted" in str(exc):
+            # e.g. the previous server died between writing and committing
+            print(
+                "hint: in the dashboard clone run: "
+                "git restore --staged --worktree .   (queued edits are kept "
+                "in .git/bf-dashboard and are replayed on the next save)",
+                file=sys.stderr,
+            )
         return 2
     token = new_token()
     app = create_app(cfg, token=token, port=args.port, runner=runner)

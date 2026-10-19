@@ -515,3 +515,114 @@ def test_token_never_appears_in_responses_or_logs_across_writes(
     ]
     assert all(TOKEN not in t for t in texts)
     assert TOKEN not in caplog.text
+
+
+# --- review follow-ups ---------------------------------------------------------
+
+
+def test_concurrent_writes_are_serialised_not_refused(scratch: Scratch):
+    from concurrent.futures import ThreadPoolExecutor
+
+    with make_client(scratch) as c:
+
+        def add(n: int) -> int:
+            status: int = post(
+                c, "/api/watches", {"site": "flanco", "query": f"monitor {n}"}
+            ).status_code
+            return status
+
+        with ThreadPoolExecutor(max_workers=4) as pool:
+            statuses = list(pool.map(add, range(4)))
+    assert statuses == [200, 200, 200, 200]
+    assert {f"monitor {n}" for n in range(4)} <= set(origin_queries(scratch))
+
+
+def test_edit_queued_because_origin_is_unreadable_is_a_save_not_a_rejection(
+    client: TestClient, scratch: Scratch
+):
+    legacy = scratch.other / WATCHLIST
+    git(scratch.other, "pull", "-q", "--no-rebase", "origin", "master")
+    good = legacy.read_text(encoding="utf-8")
+    legacy.write_text('[{"site": "emag", "query": "x"}]\n', encoding="utf-8")
+    git(scratch.other, "commit", "-q", "-am", "legacy shape")
+    git(scratch.other, "push", "-q", "origin", "HEAD:master")
+
+    response = post(client, "/api/watches", {"site": "flanco", "query": "monitor lg"})
+    assert response.status_code == 202
+    body = response.json()
+    assert body["saved_locally"] is True
+    assert body["pending_count"] == 1
+    assert "legacy" in body["error"]
+
+    legacy.write_text(good, encoding="utf-8")
+    git(scratch.other, "commit", "-q", "-am", "restore modern shape")
+    git(scratch.other, "push", "-q", "origin", "HEAD:master")
+    assert post(client, "/api/retry").json()["state"] == "pushed"
+    assert origin_queries(scratch).count("monitor lg") == 1
+
+
+def test_crash_after_a_successful_push_does_not_duplicate_the_edit(
+    scratch: Scratch, monkeypatch: pytest.MonkeyPatch
+):
+    with make_client(scratch) as first:
+        journal = first.app.state.sync.journal  # type: ignore[attr-defined]
+
+        def disk_full(_ids: Any) -> None:
+            raise OSError("disk full")
+
+        monkeypatch.setattr(journal, "remove", disk_full)
+        response = post(
+            first, "/api/watches", {"site": "flanco", "query": "monitor lg"}
+        )
+        assert response.status_code == 500
+        assert "may be incomplete" in response.json()["error"]
+    assert "monitor lg" in origin_queries(scratch)  # the push really landed
+
+    with make_client(scratch) as second:  # restart: journal still holds the op
+        assert second.get("/api/pending").json()["pending_count"] == 1
+        assert post(second, "/api/retry").json()["state"] == "pushed"
+        assert second.get("/api/pending").json()["pending_count"] == 0
+    assert origin_queries(scratch).count("monitor lg") == 1
+    assert sum('"monitor lg"' in s for s in scratch.origin_subjects()) == 1
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "unable to access 'https://x-access-token:ghp_AAA@github.com/o/r.git/'",
+        "fatal: https://user:p@ss@github.com/o/r.git",
+        "remote: https://ghp_BBB@github.com/o/r.git denied",
+        "no url here",
+    ],
+)
+def test_redact_strips_credentials_from_urls(text: str):
+    cleaned = server.redact(text)
+    assert "ghp_" not in cleaned and "x-access-token" not in cleaned
+    assert "p@ss" not in cleaned and "user:" not in cleaned
+    assert ("github.com" in cleaned) == ("github.com" in text)
+
+
+def test_health_detail_is_redacted(scratch: Scratch):
+    leak = (
+        "fatal: unable to access 'https://x-access-token:ghp_CCC@github.com/o/r.git/'"
+    )
+
+    def runner(args: Any, cwd: Any, env: Any, timeout: Any) -> Any:
+        if args and args[0] == "status":
+            return subprocess.CompletedProcess(["git", *args], 128, "", leak)
+        return gitcmd.default_runner(args, cwd, env, timeout)
+
+    with make_client(scratch, runner=runner) as c:
+        text = c.get("/api/health").text + c.get("/api/watchlist").text
+    assert "ghp_CCC" not in text and "x-access-token" not in text
+
+
+def test_etag_ignores_crlf_checkouts(client: TestClient, scratch: Scratch):
+    path = scratch.clone / WATCHLIST
+    lf = path.read_bytes().replace(b"\r\n", b"\n")  # this machine may check out CRLF
+    path.write_bytes(lf)
+    first = client.get("/api/watchlist").json()["etag"]
+    path.write_bytes(lf.replace(b"\n", b"\r\n"))
+    assert client.get("/api/watchlist").json()["etag"] == first
+    path.write_bytes(lf.replace(b"\n", b"\n "))  # real content change still shows
+    assert client.get("/api/watchlist").json()["etag"] != first

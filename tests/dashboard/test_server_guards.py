@@ -265,3 +265,14 @@ def test_server_does_not_import_the_pipeline_or_read_secret_env():
     source = Path(server.__file__).read_text(encoding="utf-8")
     assert "os.getenv" not in source
     assert source.count("os.environ") <= 1  # only main()'s default mapping
+
+
+def test_foreign_host_rejection_also_carries_the_hardening_headers(
+    client: TestClient,
+):
+    response = client.get("/probe", headers={"host": "evil.example"})
+    assert response.status_code == 400
+    assert response.headers["x-content-type-options"] == "nosniff"
+    assert "default-src 'self'" in response.headers["content-security-policy"]
+    response = client.post("/probe", content=b"{}")  # 403 from the token guard
+    assert response.headers["cache-control"] == "no-store"
