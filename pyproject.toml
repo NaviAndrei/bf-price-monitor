@@ -20,6 +20,14 @@ dev = [
     "ruff",
     "mypy",
     "pre-commit",
+    "bf-price-monitor[dashboard]",
+    "httpx2",
+]
+# Slice C (#75): local watchlist dashboard server. Never installed by the
+# monitor workflow or the Docker image (no extras there).
+dashboard = [
+    "fastapi>=0.115",
+    "uvicorn>=0.32",
 ]
 # T-29 (#36): offline anomaly pilot only. Never installed by the monitor
 # workflow (`uv sync --frozen`) or the Docker image (`--no-dev`, no extras).
