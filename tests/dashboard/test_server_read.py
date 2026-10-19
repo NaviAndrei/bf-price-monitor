@@ -110,7 +110,7 @@ def test_health_of_a_fresh_clone(client: TestClient):
     health = client.get("/api/health").json()
     assert health["ok"] is True
     assert health["branch"] == "master"
-    assert health["clean"] is True
+    assert health["tree_clean"] is True
     assert len(health["head"]) >= 7
 
 
@@ -125,7 +125,7 @@ def test_health_reports_a_dirty_clone(client: TestClient, scratch: Scratch):
     (scratch.clone / WATCHLIST).write_text("{}", encoding="utf-8")
     health = client.get("/api/health").json()
     assert health["ok"] is False
-    assert health["clean"] is False
+    assert health["tree_clean"] is False
     assert "uncommitted" in health["detail"]
 
 

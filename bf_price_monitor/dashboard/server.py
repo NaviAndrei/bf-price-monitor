@@ -112,7 +112,7 @@ def clone_health(cfg: DashboardConfig, runner: Runner) -> dict[str, Any]:
         return {
             "ok": False,
             "branch": "unknown",
-            "clean": False,
+            "tree_clean": False,
             "head": "",
             "detail": str(exc),
         }
@@ -124,7 +124,7 @@ def clone_health(cfg: DashboardConfig, runner: Runner) -> dict[str, Any]:
     return {
         "ok": not detail,
         "branch": branch,
-        "clean": clean,
+        "tree_clean": clean,
         "head": head.strip(),
         "detail": detail,
     }
