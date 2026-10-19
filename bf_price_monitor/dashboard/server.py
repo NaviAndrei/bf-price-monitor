@@ -10,18 +10,21 @@ The token is printed to stdout once and is never logged or echoed (S9).
 from __future__ import annotations
 
 import argparse
+import hashlib
 import hmac
 import os
 import secrets
 import sys
 import time
 from collections.abc import Awaitable, Callable, Mapping, Sequence
+from typing import Any
 
 import uvicorn
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import JSONResponse
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
+from bf_price_monitor.dashboard import store
 from bf_price_monitor.dashboard.config import (
     ConfigError,
     DashboardConfig,
@@ -30,13 +33,17 @@ from bf_price_monitor.dashboard.config import (
 )
 from bf_price_monitor.dashboard.gitcmd import Git, GitError, GitTimeout, Runner
 from bf_price_monitor.dashboard.gitcmd import default_runner as _default_runner
-from bf_price_monitor.dashboard.sync import GitSync
+from bf_price_monitor.dashboard.journal import JournalError
+from bf_price_monitor.dashboard.sites import CHANNELS, KNOWN_SITES
+from bf_price_monitor.dashboard.store import StoreError
+from bf_price_monitor.dashboard.sync import WATCHLIST_REL, GitSync
 
 LOOPBACK = "127.0.0.1"
 DEFAULT_PORT = 8765
 TOKEN_HEADER = "x-bf-dashboard-token"
 SAFE_METHODS = frozenset({"GET", "HEAD"})
 ENV_PREFIX = "BF_DASHBOARD_"
+DETACHED = "detached"
 
 HARDENING_HEADERS = {
     "cache-control": "no-store",
@@ -69,22 +76,109 @@ def check_clone_ready(cfg: DashboardConfig, runner: Runner = _default_runner) ->
     Slice B detaches the clone before every sync, so "attached to master" is
     not required; attached to anything else is refused.
     """
+    branch, clean = _inspect_clone(cfg, runner)
+    if branch not in (DETACHED, cfg.branch):
+        raise CloneNotReady(
+            f"clone is on {branch}, not {cfg.branch} or a detached HEAD"
+        )
+    if not clean:
+        raise CloneNotReady("clone has uncommitted changes")
+
+
+def _inspect_clone(cfg: DashboardConfig, runner: Runner) -> tuple[str, bool]:
+    """(branch name or ``detached``, whether tracked files are unmodified)."""
     git = Git(cfg.clone, runner)
     try:
         head = git.run("symbolic-ref", "-q", "HEAD", check=False)
         if head.returncode not in (0, 1):
             raise CloneNotReady("cannot read the clone's HEAD")
-        ref = head.stdout.strip()
-        if head.returncode == 0 and ref != f"refs/heads/{cfg.branch}":
-            raise CloneNotReady(
-                f"clone is on {ref.removeprefix('refs/heads/')}, "
-                f"not {cfg.branch} or a detached HEAD"
-            )
+        branch = (
+            head.stdout.strip().removeprefix("refs/heads/")
+            if head.returncode == 0
+            else DETACHED
+        )
         status = git.run("status", "--porcelain", "--untracked-files=no")
     except (GitError, GitTimeout, OSError) as exc:
         raise CloneNotReady(f"cannot inspect the clone: {exc}") from exc
-    if status.stdout.strip():
-        raise CloneNotReady("clone has uncommitted changes")
+    return branch, not status.stdout.strip()
+
+
+def clone_health(cfg: DashboardConfig, runner: Runner) -> dict[str, Any]:
+    """Never raises: the page shows this even when the clone is unusable."""
+    try:
+        branch, clean = _inspect_clone(cfg, runner)
+        head = Git(cfg.clone, runner).run("rev-parse", "--short", "HEAD").stdout
+    except (CloneNotReady, GitError, GitTimeout, OSError) as exc:
+        return {
+            "ok": False,
+            "branch": "unknown",
+            "clean": False,
+            "head": "",
+            "detail": str(exc),
+        }
+    detail = ""
+    if branch not in (DETACHED, cfg.branch):
+        detail = f"clone is on {branch}, not {cfg.branch} or a detached HEAD"
+    elif not clean:
+        detail = "clone has uncommitted changes"
+    return {
+        "ok": not detail,
+        "branch": branch,
+        "clean": clean,
+        "head": head.strip(),
+        "detail": detail,
+    }
+
+
+def _register_read_routes(app: FastAPI) -> None:
+    @app.exception_handler(StoreError)
+    async def store_error(request: Request, exc: StoreError) -> Response:
+        return _reject(503, str(exc))
+
+    @app.exception_handler(JournalError)
+    async def journal_error(request: Request, exc: JournalError) -> Response:
+        return _reject(500, str(exc))
+
+    def sync_of() -> GitSync:
+        sync: GitSync = app.state.sync
+        return sync
+
+    def pending_view() -> dict[str, Any]:
+        status = sync_of().status()
+        return {
+            "pending": sync_of().journal.pending(),
+            "pending_count": status.pending_count,
+            "conflicts": status.conflicts,
+        }
+
+    @app.get("/api/watchlist")
+    def get_watchlist() -> dict[str, Any]:
+        cfg: DashboardConfig = app.state.cfg
+        path = cfg.clone / WATCHLIST_REL
+        doc = store.load(path)
+        etag = hashlib.sha256(path.read_bytes()).hexdigest()
+        return {
+            "watches": doc["watches"],
+            "etag": etag,  # advisory only: writes are never gated on it (D2)
+            "sites": list(KNOWN_SITES),
+            "channels": list(CHANNELS),
+            "clone": clone_health(cfg, app.state.runner),
+            **pending_view(),
+        }
+
+    @app.get("/api/pending")
+    def get_pending() -> dict[str, Any]:
+        view = pending_view()
+        return {"pending": view["pending"], "pending_count": view["pending_count"]}
+
+    @app.get("/api/conflicts")
+    def get_conflicts() -> dict[str, Any]:
+        return {"conflicts": sync_of().status().conflicts}
+
+    @app.get("/api/health")
+    def get_health() -> dict[str, Any]:
+        health: dict[str, Any] = clone_health(app.state.cfg, app.state.runner)
+        return health
 
 
 def _reject(status: int, message: str) -> JSONResponse:
@@ -139,6 +233,7 @@ def create_app(
             response.headers[name] = value
         return response
 
+    _register_read_routes(app)
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=[LOOPBACK, "localhost"])
     return app
 
