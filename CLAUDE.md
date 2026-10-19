@@ -10,7 +10,8 @@
 
 ## Environment & Essential Commands
 - Windows self-hosted runner environment / PowerShell terminal.
-- **Run all tests:** `python -m pytest -v` (bare `pytest` may resolve to the wrong interpreter on Windows; always use `python -m pytest` to guarantee the active venv)
+- **Run all tests:** `.venv/Scripts/python.exe -m pytest -v` (plain `python -m pytest` resolves to the system Python 3.12, not the venv, and misses installed extras).
+- **Sync the venv:** `uv sync --frozen --extra dev --extra anomaly` (a bare `--extra dev` removes the anomaly packages).
 - **Lint & format checks:** `ruff check .` and `ruff format --check .`
 - **Project status update:** `powershell -ExecutionPolicy Bypass -File scripts/set_project_status.ps1 -IssueNumber <N> -Status "<Status>"`
 
