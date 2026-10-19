@@ -1380,6 +1380,20 @@ def _quarantined_stores(records: list[dict]) -> set[str]:
     return quarantined
 
 
+def _outage_start(records: list[dict], store: str) -> str | None:
+    # run_started_utc of the first record in the store's trailing run of
+    # zero-product records: the identity of the current outage. A failed
+    # probe extends the streak without changing it; a success ends it.
+    start = None
+    for rec in reversed(records):
+        if rec["store"] != store:
+            continue
+        if rec["products_parsed"] != 0:
+            break
+        start = rec.get("run_started_utc")
+    return start
+
+
 def _probe_due_stores(
     records: list[dict], quarantined: set[str], now_utc: datetime
 ) -> set[str]:
@@ -1751,11 +1765,16 @@ def _run(watchlist: list[dict]) -> None:
     newly_quarantined = sorted(quarantined_after - quarantined_before)
 
     health_alerts: list[str] = []
+    all_records = health_records_before + new_health_records
     for store in newly_quarantined:
         display = STORE_DISPLAY_NAMES.get(store, store.title())
+        # The outage start keeps the text unique per outage: notify.py dedupes
+        # health alerts by a hash of the text, so an identical text for a
+        # later outage would be dropped as already sent (#80).
         health_alerts.append(
             f"🚨 SCRAPER BREAKDOWN: {display} returned 0 items across all watchlist "
-            "queries! Possible website redesign or bot-wall."
+            "queries! Possible website redesign or bot-wall. "
+            f"(outage since {_outage_start(all_records, store)})"
         )
 
     recovered = [
@@ -1774,8 +1793,8 @@ def _run(watchlist: list[dict]) -> None:
             f"again after a quarantine (run {run_started_utc})."
         )
 
-    stale_stores = [
-        rec["store"]
+    stale_records = [
+        rec
         for rec in new_health_records
         # A probe that stays quarantined is already alerted; repeating a
         # dead-man alert every probe would be noise.
@@ -1786,9 +1805,18 @@ def _run(watchlist: list[dict]) -> None:
         ).total_seconds()
         > DEAD_MAN_THRESHOLD_HOURS * 3600
     ]
-    if stale_stores:
+    if stale_records:
         stale_display = ", ".join(
-            STORE_DISPLAY_NAMES.get(s, s.title()) for s in stale_stores
+            STORE_DISPLAY_NAMES.get(r["store"], r["store"].title())
+            for r in stale_records
+        )
+        # Last-good timestamps identify the outage (stable while it lasts,
+        # new after a recovery), so the dedupe in notify.py (#80) still
+        # silences repeats but never a later outage.
+        outage_ids = ", ".join(
+            f"{STORE_DISPLAY_NAMES.get(r['store'], r['store'].title())} "
+            f"last good {r['last_known_good_utc']}"
+            for r in stale_records
         )
         print(
             f"WARNING: dead-man check — no successful scrape for {stale_display} "
@@ -1797,7 +1825,8 @@ def _run(watchlist: list[dict]) -> None:
         )
         health_alerts.append(
             f"⚠️ DEAD-MAN CHECK: no successful scrape for {stale_display} in over "
-            f"{DEAD_MAN_THRESHOLD_HOURS}h. Site may be down or fully blocked."
+            f"{DEAD_MAN_THRESHOLD_HOURS}h. Site may be down or fully blocked. "
+            f"({outage_ids})"
         )
 
     SCRAPE_HEALTH_ALERTS_FILE.parent.mkdir(parents=True, exist_ok=True)

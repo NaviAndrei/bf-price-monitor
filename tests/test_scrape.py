@@ -1988,3 +1988,112 @@ def test_recovered_text_differs_per_recovery(tmp_path, monkeypatch):
         scrape.main()
         texts += [a for a in _health_alerts() if "RECOVERED" in a]
     assert len(texts) == 2 and texts[0] != texts[1]
+
+
+# --- #80: health-alert text must identify the outage ---------------------
+# notify._health_event_id hashes the text and skips an already SENT hash, so
+# a second outage with identical text would never reach Telegram.
+
+
+def _zero_record(started: str, store: str = "emag") -> dict:
+    return {
+        "store": store,
+        "run_id": started,
+        "run_started_utc": started,
+        "products_parsed": 0,
+    }
+
+
+def test_outage_start_is_first_record_of_trailing_zero_streak():
+    ok = {
+        "store": "emag",
+        "run_id": "r0",
+        "run_started_utc": "t0",
+        "products_parsed": 4,
+    }
+    other = _zero_record("tX", store="flanco")
+    records = [ok, _zero_record("t1"), other, _zero_record("t2"), _zero_record("t3")]
+
+    assert scrape._outage_start(records, "emag") == "t1"
+    # The streak growing (a failed probe) keeps the same outage identity.
+    assert scrape._outage_start(records + [_zero_record("t4")], "emag") == "t1"
+    # A success in between starts a new outage.
+    later = [*records, {**ok, "run_started_utc": "t5"}, _zero_record("t6")]
+    assert scrape._outage_start(later, "emag") == "t6"
+
+
+def test_breakdown_after_a_recovery_has_different_text(tmp_path, monkeypatch):
+    emag_results: list = []
+    _configure_run(
+        tmp_path,
+        monkeypatch,
+        [{"site": "emag", "query": "q"}, {"site": "pcgarage", "query": "q"}],
+        {
+            "emag": lambda query: emag_results,
+            "pcgarage": lambda query: [
+                _watchlist_entry(url="https://pcgarage.example/1")
+            ],
+        },
+    )
+    scrape.main()
+    scrape.main()  # second zero run: first BREAKDOWN
+    first = [a for a in _health_alerts() if "BREAKDOWN" in a]
+    assert len(first) == 1
+
+    _seed_quarantine(timedelta(hours=7))
+    emag_results.append(_watchlist_entry())
+    scrape.main()  # probe succeeds: RECOVERED
+    emag_results.clear()
+    scrape.main()
+    scrape.main()  # breaks again
+    second = [a for a in _health_alerts() if "BREAKDOWN" in a]
+
+    assert len(second) == 1 and second[0] != first[0]
+
+
+def test_same_outage_alerts_once_across_runs(tmp_path, monkeypatch):
+    _probe_run(tmp_path, monkeypatch, [])
+    _seed_quarantine(timedelta(hours=7))
+
+    for _ in range(3):  # failed probes extend the same outage
+        scrape.main()
+        assert not any("BREAKDOWN" in a for a in _health_alerts())
+
+
+def test_dead_man_text_is_stable_within_an_outage_and_new_after_one(
+    tmp_path, monkeypatch
+):
+    _configure_run(
+        tmp_path,
+        monkeypatch,
+        [{"site": "emag", "query": "q"}],
+        {"emag": lambda query: []},
+    )
+
+    def seed(last_good: datetime) -> None:
+        scrape.SCRAPE_HEALTH_FILE.parent.mkdir(parents=True, exist_ok=True)
+        stamp = last_good.isoformat()
+        scrape.SCRAPE_HEALTH_FILE.write_text(
+            json.dumps(
+                {
+                    "store": "emag",
+                    "run_id": "prev",
+                    "run_started_utc": stamp,
+                    "products_parsed": 1,
+                    "last_known_good_utc": stamp,
+                }
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+
+    def dead_man() -> str:
+        scrape.main()
+        return next(a for a in _health_alerts() if "DEAD-MAN" in a)
+
+    seed(datetime.now(UTC) - timedelta(hours=30))
+    first = dead_man()
+    assert dead_man() == first  # same outage, next run: identical, deduped
+
+    seed(datetime.now(UTC) - timedelta(hours=29))  # a later, separate outage
+    assert dead_man() != first
