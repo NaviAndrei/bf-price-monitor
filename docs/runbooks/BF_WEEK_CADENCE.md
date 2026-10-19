@@ -66,6 +66,8 @@ All in `scripts/scrape.py`:
   skipped run writes no new health record. The cooldown is derived from
   history on every run rather than stored as a flag, the same pattern as the
   T-09 Critical Selector Drift quarantine. It clears on its own.
+  (A quarantined store is likewise re-probed every 6 hours and released by
+  its first non-zero result, #79; see README "Per-store scraper health".)
   - **Limitation:** the 30 minutes are counted from the flagged run's
     *start*. GitHub usually starts scheduled runs a few minutes late, so the
     next regular 30-minute run typically lands just after the cooldown has

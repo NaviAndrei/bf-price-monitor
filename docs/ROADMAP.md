@@ -2,12 +2,24 @@
 
 | Sprint | Status | Due | Notes |
 |---|---|---|---|
-| 0-2 | Closed | — | Foundations, correctness, notification reliability |
-| 3 | Closed | 09-27 | All 6 P0 security sub-issues closed (T-14, T-15, T-16, T-17, T-18, T-35) |
-| 4 | In progress | 09-29 | SQLite storage migration |
-| 5 | Not started | 09-30 | Performance/AI guardrails |
-| 6 | Not started | 10-01 | Features MVP |
-| 7 | Not started | 10-29 | BF readiness dry run |
-| Q4 backlog | Not started | 12-31 | Dashboard, feedback labels, anomaly pilot, Docker |
+| 0-2 | Done | 09-16 to 09-23 | Foundations, correctness, notification reliability |
+| 3 | Done | 09-27 | All P0 security sub-issues closed |
+| 4 | Done (0 open issues) | 09-29 | SQLite storage migration |
+| 5 | Done (0 open issues) | 09-30 | Performance/AI guardrails |
+| 6 | Done (0 open issues) | 10-01 | Features MVP |
+| 7 | Done (0 open issues) | 10-29 | BF readiness dry run |
+| Q4 backlog | In progress | 12-31 | 4 open: #47 post-BF retro, #40 / #37 / #36 feedback labels and anomaly pilot |
 
-Last synced: 2026-09-22. Re-sync via GitHub milestones before each sprint kickoff.
+Outside a milestone: #75 local watchlist dashboard, Phase 1 (open).
+
+Shipped since the last snapshot: #79 (quarantined stores are re-probed every
+6 hours, so a quarantine can clear) and #80 (health-alert text identifies the
+outage, so a repeat outage is not deduped). Neither has been observed on a
+live repeat outage yet; see `docs/DECISIONS.md`.
+
+Housekeeping: milestones for Sprints 0, 1, 4, 5, 6 and 7 are still marked
+open on GitHub although they have no open issues; closing them is left to
+the owner.
+
+Last synced: 2026-10-19 from `gh issue list` and the milestones API. Re-sync
+via GitHub milestones before each sprint kickoff.

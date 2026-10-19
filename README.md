@@ -255,6 +255,29 @@ Setup:
    runs or spam the check into a false "down" alert. If it leaks, replace it
    in Healthchecks.io and update the secret.
 
+### Per-store scraper health
+
+Separately from Healthchecks.io, `scripts/scrape.py` keeps one row per store
+per run in `data/scrape_health.jsonl` and derives three states from that
+history on every run (there is no stored flag):
+
+- **Quarantine (selector drift):** a store whose last two runs both parsed
+  zero products while another store succeeded is skipped, and a
+  `🚨 SCRAPER BREAKDOWN` alert goes to Telegram once.
+- **Re-probe:** a quarantined store is not skipped forever. Once its newest
+  health record is 6 hours old (`QUARANTINE_PROBE_HOURS`) it is fetched
+  again. Any non-zero result releases it at once and sends one
+  `✅ RECOVERED` alert; a zero result keeps it quarantined, sends no repeat
+  alert, and restarts the 6-hour clock.
+- **Dead-man check:** `⚠️ DEAD-MAN CHECK` fires when a store has had no
+  successful scrape for over 24 hours. It is not repeated for a quarantined
+  store that is still failing its probes.
+
+Each alert text carries the outage it belongs to (BREAKDOWN: the outage
+start; DEAD-MAN: the last-good time; RECOVERED: the run time). The notifier
+skips any health alert whose text it has already sent, so this is what lets
+a second outage of the same store alert again instead of being dropped.
+
 ## Notes
 
 - Scraping only ever hits listing/search pages, respecting each site's
