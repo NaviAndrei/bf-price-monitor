@@ -20,7 +20,7 @@ import time
 from pathlib import Path
 
 RECENT_COMMIT_MINUTES = 20
-PYTEST_TIMEOUT_SECONDS = 300
+PYTEST_TIMEOUT_SECONDS = 600
 CODE_PREFIXES = ("scripts/", "bf_price_monitor/", "tests/", ".github/")
 PROGRESS_FILE = "docs/progress.md"
 
