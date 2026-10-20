@@ -343,3 +343,7 @@ Next: after the next workflow-run collection, check it with `uv run python scrip
 ## 2026-10-20 - #75 dashboard slice C: local server and page
 - `bf_price_monitor/dashboard/server.py` plus a static page serve the slice B engine on 127.0.0.1 behind S11 guards (exact Host:port, per-launch token, JSON-only, no CORS); 1137 tests pass (139 new in tests/dashboard/test_server_*.py), dashboard coverage 95%, ruff check, ruff format --check and mypy --strict clean; manual smoke run (docs/runbooks/DASHBOARD.md) still open.
 - Commits (Refs #75): e3ecd37 deps, 3617509 docs, 7d34d2e CLAUDE.md, 095f87a skeleton, a40a8ef and 7e339d3 read routes, b15b969 write routes, c00736a page, 01b62f4 review fixes. Not pushed.
+
+## 2026-10-20 - #75 dashboard: token kept per tab
+- The page keeps the token in sessionStorage so a reload keeps it, and clears it plus shows a banner on a 403 write; browser-checked against a scratch clone, 1145 tests pass, dashboard coverage 95%, ruff and mypy --strict clean.
+- Commit eb10c97 (Refs #75). Not pushed.
