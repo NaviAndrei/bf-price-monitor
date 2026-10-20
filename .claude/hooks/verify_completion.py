@@ -17,6 +17,7 @@ import json
 import subprocess
 import sys
 import time
+from pathlib import Path
 
 RECENT_COMMIT_MINUTES = 20
 PYTEST_TIMEOUT_SECONDS = 300
@@ -67,9 +68,11 @@ if recent_commit:
         )
 
 if recent_commit or dirty_python:
+    venv_python = Path(cwd) / ".venv" / "Scripts" / "python.exe"
+    python = str(venv_python) if venv_python.is_file() else sys.executable
     try:
         tests = subprocess.run(
-            [sys.executable, "-m", "pytest", "-x", "--tb=no"],
+            [python, "-m", "pytest", "-x", "--tb=no"],
             cwd=cwd,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,  # keep crashes (e.g. PermissionError) visible
