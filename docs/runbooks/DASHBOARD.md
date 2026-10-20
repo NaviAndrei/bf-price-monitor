@@ -43,7 +43,9 @@ It prints one line to the terminal, `Dashboard: http://127.0.0.1:8765/#token=...
 Open that exact address in your browser. The token is the part after
 `token=`; it is new on every launch and is never written to a log. The page
 removes it from the address bar after reading it. If you open the page
-without the fragment, paste the token into the box at the top.
+without the fragment, paste the token into the box at the top. A reload keeps
+the token for that browser tab (it is held in the tab's session storage).
+Closing the tab, or restarting the server, needs the new token pasted.
 
 Check these by hand:
 
@@ -104,6 +106,7 @@ Settings (environment variables, all optional except the first):
 | Red banner `changed somewhere else` | Another writer changed that watch first. | Press `Reload`, look, edit again |
 | `Edits that could not be applied` | A queued edit conflicted after a reload. | Read the reason, then `Dismiss` |
 | `clone problem` | The clone has uncommitted changes or is on another branch. | In the clone: `git restore --staged --worktree .` and `git switch --detach origin/master` |
+| Red banner `Token missing or wrong` and the token box is back | The saved token no longer matches (server restarted, or a wrong paste). The page forgot it and did not retry. | Paste the token from the terminal; a reload alone keeps a good token for the tab, but closing the tab or restarting the server needs a new one |
 | HTTP 423 / "clone busy" | Another dashboard process is using the clone. | Close the other one |
 
 ## 5. What the dashboard will not do

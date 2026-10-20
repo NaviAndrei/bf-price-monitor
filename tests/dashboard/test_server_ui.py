@@ -83,8 +83,41 @@ def test_page_sends_the_token_only_on_writes_and_keeps_it_out_of_the_url():
     js = _text("app.js")
     assert 'init.method !== "GET"' in js
     assert "history.replaceState" in js
-    assert "localStorage" not in js and "sessionStorage" not in js
+    assert "localStorage" not in js
     assert "document.cookie" not in js
+
+
+def test_token_is_kept_in_session_storage_only():
+    js = _text("app.js")
+    assert 'const TOKEN_KEY = "bf-dashboard-token"' in js
+    assert "sessionStorage.setItem(TOKEN_KEY" in js
+    assert "sessionStorage.getItem(TOKEN_KEY" in js
+    assert "sessionStorage.removeItem(TOKEN_KEY" in js
+    assert "localStorage" not in js
+    assert "document.cookie" not in js
+
+
+def test_token_is_never_passed_to_the_console():
+    js = _text("app.js")
+    for call in re.finditer(r"console\.\w+\s*\(([^;]*)", js):
+        assert "token" not in call.group(1).lower()
+
+
+def test_every_session_storage_call_sits_inside_a_try_block():
+    js = _text("app.js")
+    calls = list(re.finditer(r"sessionStorage\.\w+\(", js))
+    assert calls
+    for call in calls:
+        before = js[: call.start()]
+        assert before.rfind("try {") > before.rfind("function "), call.group(0)
+        assert "catch" in js[call.end() :].split("function ")[0], call.group(0)
+
+
+def test_a_rejected_write_clears_the_token_and_shows_one_message():
+    js = _text("app.js")
+    assert "response.status === 403" in js
+    assert "Token missing or wrong. Paste the token from the terminal." in js
+    assert js.count("clearToken()") >= 2  # on a 403 and on an empty paste
 
 
 def test_page_never_overwrites_after_a_409():

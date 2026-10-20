@@ -4,6 +4,11 @@
 // All text is inserted as text nodes, never as markup.
 
 const TOKEN_HEADER = "x-bf-dashboard-token";
+// The token lives in sessionStorage only: it survives a reload in this tab and
+// ends with the tab. Every storage call is wrapped; without storage the
+// in-memory variable below still works.
+const TOKEN_KEY = "bf-dashboard-token";
+const TOKEN_REJECTED = "Token missing or wrong. Paste the token from the terminal.";
 // Fields the server can change (operations.EDITABLE_FIELDS), in form order.
 const EDITABLE = ["target_price", "min_drop_percent", "channels"];
 // Shown read-only: they have a runtime consumer but no editor yet.
@@ -59,15 +64,43 @@ async function api(path, method, body) {
   } catch (err) {
     data = { error: "unexpected response" };
   }
+  if (init.method !== "GET" && response.status === 403) {
+    clearToken(); // wrong or missing: forget it and ask again, no automatic retry
+    $("token-box").hidden = false;
+  }
   return { status: response.status, data };
+}
+
+function saveToken(value) {
+  token = value;
+  try {
+    sessionStorage.setItem(TOKEN_KEY, value);
+  } catch (err) {
+    // storage unavailable: the in-memory token is enough
+  }
+}
+
+function clearToken() {
+  token = "";
+  try {
+    sessionStorage.removeItem(TOKEN_KEY);
+  } catch (err) {
+    // nothing saved, nothing to clear
+  }
 }
 
 function readTokenFromUrl() {
   const match = /(?:^|[#&])token=([\w-]+)/.exec(location.hash);
   if (match) {
-    token = match[1];
+    saveToken(match[1]);
     // keep the token out of history and the address bar
     history.replaceState(null, "", location.pathname + location.search);
+    return;
+  }
+  try {
+    token = sessionStorage.getItem(TOKEN_KEY) || "";
+  } catch (err) {
+    token = "";
   }
 }
 
@@ -96,6 +129,10 @@ function describeResult(status, data) {
       button("Retry push", retry)
     );
     return null;
+  }
+  if (status === 403) {
+    banner("error", TOKEN_REJECTED);
+    return TOKEN_REJECTED;
   }
   if (status === 409) {
     banner(
@@ -239,8 +276,9 @@ async function load() {
 }
 
 async function reload() {
-  if (token) await api("/api/refresh", "POST");
+  const refresh = token ? await api("/api/refresh", "POST") : null;
   await load();
+  if (refresh && refresh.status === 403) describeResult(refresh.status, refresh.data);
 }
 
 async function retry() {
@@ -258,19 +296,20 @@ async function send(path, body) {
 async function toggle(watch, enable) {
   const action = enable ? "enable" : "disable";
   const result = await send("/api/watches/" + watch.id + "/" + action, { expected: watch });
-  if (result.error && result.status !== 409) banner("error", result.error);
+  if (result.error && result.status !== 409 && result.status !== 403) banner("error", result.error);
 }
 
 async function remove(watch) {
   const label = watch.site + ' "' + (watch.query || watch.id) + '"';
   if (!confirm("Remove " + label + "? This is saved as a commit you can revert.")) return;
   const result = await send("/api/watches/" + watch.id + "/remove", { expected: watch });
-  if (result.error && result.status !== 409) banner("error", result.error);
+  if (result.error && result.status !== 409 && result.status !== 403) banner("error", result.error);
 }
 
 async function dismiss(opId) {
-  await api("/api/conflicts/" + opId + "/dismiss", "POST");
+  const { status, data } = await api("/api/conflicts/" + opId + "/dismiss", "POST");
   await load();
+  describeResult(status, data);
 }
 
 function numberOrNull(raw) {
@@ -340,8 +379,10 @@ function start() {
   $("edit-form").addEventListener("submit", submitEdit);
   $("edit-cancel").addEventListener("click", () => $("edit-dialog").close());
   $("btn-token").addEventListener("click", () => {
-    token = $("token-input").value.trim();
+    const pasted = $("token-input").value.trim();
     $("token-input").value = "";
+    if (pasted !== "") saveToken(pasted);
+    else clearToken();
     $("token-box").hidden = token !== "";
   });
   reload();

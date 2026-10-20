@@ -960,3 +960,22 @@ observation to the same 27 product arrays.
   when `git rev-parse HEAD` errors after a successful push. The push has
   landed and the journal entry is cleared; the result is `pushed` with an
   unknown head, so the server answers 200 instead of a misleading 500.
+
+## 2026-10-20 — Dashboard token kept per tab in sessionStorage
+- **Decision:** the page saves the per-launch token in `sessionStorage`
+  (key `bf-dashboard-token`) after reading it from the `#token=` fragment or
+  the paste box, and reads it back after a reload. Any write that returns 403
+  clears the saved and in-memory token, shows the token box and one banner
+  ("Token missing or wrong. Paste the token from the terminal."); the request
+  is not retried. If storage is unavailable the in-memory variable is used.
+- **Why sessionStorage:** it survives a reload, is scoped to the one tab, and
+  ends when the tab closes. A restart of the server makes the old token
+  invalid, and the 403 handling then clears it.
+- **Residual risk:** a script running on the page could read it. The strict
+  CSP (no inline or external script), text-only rendering, loopback binding
+  and a token that changes on every launch keep that risk small.
+- **Rejected:** in-memory only (lost on every reload, the problem being fixed);
+  `localStorage` (outlives the tab and the server, shared by all tabs);
+  keeping the fragment in the URL or history (leaks into history and
+  screenshots); an HttpOnly cookie (needs a CSRF design the header token
+  currently avoids).
