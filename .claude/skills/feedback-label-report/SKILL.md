@@ -2,7 +2,7 @@
 name: feedback-label-report
 description: Report the current alert-feedback label counts per label, the gap to the 30-label minimum for the #36 anomaly pilot, and the callback audit since a date. Counts only, never user ids. Use when checking whether the anomaly pilot can be unblocked.
 disable-model-invocation: true
-allowed-tools: Bash(python scripts/feedback.py summary), Bash(python scripts/feedback.py audit *), Read
+allowed-tools: Bash(.venv/Scripts/python.exe scripts/feedback.py summary), Bash(.venv/Scripts/python.exe scripts/feedback.py audit *), Read
 ---
 
 # Feedback label report
@@ -20,8 +20,8 @@ callback audit.
 required for `audit`.
 
 ```bash
-python scripts/feedback.py summary
-python scripts/feedback.py audit --since <ISO-8601 date or datetime>
+.venv/Scripts/python.exe scripts/feedback.py summary
+.venv/Scripts/python.exe scripts/feedback.py audit --since <ISO-8601 date or datetime>
 ```
 
 - `summary` prints `[feedback] current labels: N`, then one `label: count` line per label.

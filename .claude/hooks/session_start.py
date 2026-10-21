@@ -8,6 +8,7 @@ missing `gh`, no network, or a broken feedback CLI degrades to
 "unavailable" instead of failing the session.
 Always exits 0 (SessionStart cannot block anyway).
 """
+
 import json
 import os
 import subprocess
@@ -36,7 +37,9 @@ def run(cmd):
 
 
 def latest_ci_run():
-    out = run(["gh", "run", "list", "--limit", "1", "--json", "status,conclusion,databaseId"])
+    out = run(
+        ["gh", "run", "list", "--limit", "1", "--json", "status,conclusion,databaseId"]
+    )
     try:
         run_info = json.loads(out)[0]
     except (TypeError, ValueError, IndexError):
@@ -50,7 +53,9 @@ def feedback_summary():
     # feedback.py opens (and would create) the SQLite store; don't create a stray one.
     if not (ROOT / "data" / "price_history.db").exists():
         return unavailable
-    out = run([sys.executable, "scripts/feedback.py", "summary"])
+    venv_python = ROOT / ".venv" / "Scripts" / "python.exe"
+    python = str(venv_python) if venv_python.is_file() else sys.executable
+    out = run([python, "scripts/feedback.py", "summary"])
     if out is None:  # non-zero exit covers ImportError from the module's imports
         return unavailable
     for line in out.splitlines():
@@ -61,7 +66,19 @@ def feedback_summary():
 
 def open_issue_count():
     # gh defaults to 30 results; ask for enough that the count is real.
-    out = run(["gh", "issue", "list", "--state", "open", "--limit", "1000", "--json", "number"])
+    out = run(
+        [
+            "gh",
+            "issue",
+            "list",
+            "--state",
+            "open",
+            "--limit",
+            "1000",
+            "--json",
+            "number",
+        ]
+    )
     try:
         return f"Issues: {len(json.loads(out))} open issues"
     except (TypeError, ValueError):
@@ -73,6 +90,11 @@ try:
 except OSError:
     pass
 
-lines = ["bf-price-monitor state:", latest_ci_run(), feedback_summary(), open_issue_count()]
+lines = [
+    "bf-price-monitor state:",
+    latest_ci_run(),
+    feedback_summary(),
+    open_issue_count(),
+]
 sys.stdout.write("\n".join(lines) + "\n")
 sys.exit(0)

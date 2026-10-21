@@ -2,7 +2,7 @@
 name: create-migration
 description: Add a numbered, idempotent SQLite schema migration (the _MIGRATIONS tuple in bf_price_monitor/storage/sqlite.py, PRAGMA user_version) with real-validator checks, a grep for runtime readers, and a run-twice test. Use when the user asks to add a table, column or index to data/price_history.db, or to change a migration script.
 disable-model-invocation: true
-allowed-tools: Read, Grep, Glob, Edit, Write, Bash(python -m pytest *), Bash(python scripts/verify_migration.py *), Bash(ruff *), Bash(grep *)
+allowed-tools: Read, Grep, Glob, Edit, Write, Bash(.venv/Scripts/python.exe -m pytest *), Bash(.venv/Scripts/python.exe scripts/verify_migration.py *), Bash(ruff *), Bash(grep *)
 ---
 
 # Create a migration
@@ -15,7 +15,7 @@ different validators:
 | Kind | Where | Validator |
 |---|---|---|
 | Schema change to `data/price_history.db` | `_MIGRATIONS` in `bf_price_monitor/storage/sqlite.py` (versions 1-3 exist; numbered, applied via `PRAGMA user_version`) | `tests/unit/test_sqlite_storage.py`, `tests/unit/test_feedback_storage.py` |
-| One-off JSON-to-SQLite history import | `scripts/migrate_history_to_sqlite.py` | `python scripts/verify_migration.py` (independent recount from the source JSON) |
+| One-off JSON-to-SQLite history import | `scripts/migrate_history_to_sqlite.py` | `.venv/Scripts/python.exe scripts/verify_migration.py` (independent recount from the source JSON) |
 | Watchlist shape | `scripts/migrate_watchlist_to_modern.py` | `validate_watchlist()` in `bf_price_monitor/config/validator.py` |
 
 ## The two traps this skill exists for
@@ -32,7 +32,7 @@ different validators:
 5. Work only on a temporary database (`tmp_path`). Never point a test or script at `data/price_history.db`.
 6. Run the validator for the kind of migration, then grep for runtime readers of every touched name (`scripts/runtime_state.py` snapshots and restores the database, so always check it).
 7. Add the run-twice test and a rollback test, following the patterns named in `CHECKLIST.md` row 8 and 9.
-8. Work through every row of [CHECKLIST.md](CHECKLIST.md) and report each with its evidence. Finish with `ruff check .`, `ruff format --check .` and `python -m pytest -x --tb=short -q`, with exit codes.
+8. Work through every row of [CHECKLIST.md](CHECKLIST.md) and report each with its evidence. Finish with `ruff check .`, `ruff format --check .` and `.venv/Scripts/python.exe -m pytest -x --tb=short -q`, with exit codes.
 9. For an independent second opinion, ask the `migration-reviewer` agent to review the diff. Read-only safety comes from that agent's tool list, not from `allowed-tools`.
 
 ## Notes

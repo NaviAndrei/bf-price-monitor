@@ -27,7 +27,7 @@ files. Then pick the branch that matches. If more than one applies, run each.
    appended, and no earlier tuple was edited (compare with `git diff`); every
    statement is inside the tuple (so it shares the `BEGIN IMMEDIATE` transaction
    with the `PRAGMA user_version` bump); the change is additive.
-2. Run `python -m pytest tests/unit/test_sqlite_storage.py tests/unit/test_feedback_storage.py -q` and report the exit code and the tail of the output.
+2. Run `.venv/Scripts/python.exe -m pytest tests/unit/test_sqlite_storage.py tests/unit/test_feedback_storage.py -q` and report the exit code and the tail of the output.
 3. Confirm a run-twice test exists for the new version (pattern:
    `test_reopening_is_idempotent_and_keeps_the_salt`) and that a rollback test
    still covers it (`test_failed_migration_rolls_back_completely`). A missing
@@ -37,7 +37,7 @@ files. Then pick the branch that matches. If more than one applies, run each.
 
 ### Branch B: JSON-to-SQLite history import (`scripts/migrate_history_to_sqlite.py`)
 
-1. Run `python scripts/verify_migration.py --help` first to confirm its flags, then
+1. Run `.venv/Scripts/python.exe scripts/verify_migration.py --help` first to confirm its flags, then
    run it only against a temporary target database that you create with the
    migration script's own `--target` option in a temp directory. It recomputes expected
    counts from the source JSON independently, so a failing verifier is a real finding.
@@ -48,7 +48,7 @@ files. Then pick the branch that matches. If more than one applies, run each.
 
 1. Run `validate_watchlist()` from `bf_price_monitor/config/validator.py` on the
    resulting file: `python -c "from pathlib import Path; from bf_price_monitor.config.validator import validate_watchlist as v; v(Path('<file>')); print('valid')"`.
-2. Run `python -m pytest tests/unit/test_config_validator.py tests/unit/test_migrate_watchlist.py -q`.
+2. Run `.venv/Scripts/python.exe -m pytest tests/unit/test_config_validator.py tests/unit/test_migrate_watchlist.py -q`.
 3. Remember that a valid file is not proof the scrapers still read it correctly
    (trap 1): check what `scrape.py` and `run_loop.py` read from each entry.
 

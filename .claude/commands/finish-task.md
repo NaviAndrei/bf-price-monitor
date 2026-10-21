@@ -11,32 +11,34 @@ Follow this strict procedure:
    ```powershell
    ruff check .
    ruff format --check .
-   pytest -v
+   .venv/Scripts/python.exe -m mypy --strict bf_price_monitor/
+   .venv/Scripts/python.exe -m pytest -v
    ```
    If any check fails, stop immediately and report the error. Do not commit or push broken code.
 
 2. **Commit on master:**
-   Stage the modified files (never stage secrets, `.env`, or temporary files):
+   Stage only the files that belong to this task, by name (never secrets, `.env`, temporary files, or unrelated edits):
    ```powershell
    git status
-   git add -u
+   git add <file> <file>
    git commit --author="NaviAndrei <andrei.ivan1208@gmail.com>" -m "feat/fix: <concise summary>" -m "(Closes #$ARGUMENTS)"
    ```
    Use `Refs #$ARGUMENTS` instead of `Closes` if the commit relates to the issue but does not complete it.
    *Strict Rule:* Do NOT add `Co-Authored-By` or any AI attribution lines in the commit message.
 
-3. **Push to remote:**
-   Push directly to origin master:
+3. **Log Progress (separate docs commit):**
+   Append a clean 2-line summary to `docs/progress.md` (task completed, tests passing, commit SHA) and commit it on its own. The Stop hook blocks when a code commit has no handoff entry.
+
+4. **Pull, then push to remote:**
+   The monitor bot pushes `data/price_history.json` to origin, so pull first. Merge, never rebase. If the pull conflicts, stop and report. The push will ask for your confirmation by design.
    ```powershell
+   git pull --no-rebase --no-edit
    git push origin master
    ```
 
-4. **Update Project Status:**
+5. **Update Project Status:**
    ```powershell
    powershell -ExecutionPolicy Bypass -File scripts/set_project_status.ps1 -IssueNumber $ARGUMENTS -Status "Done"
    gh issue comment $ARGUMENTS --repo NaviAndrei/bf-price-monitor --body "Completed via commit on master. All acceptance criteria verified."
    ```
    Never run `gh issue close` -- GitHub closes the issue automatically when the `Closes` commit is pushed.
-
-5. **Log Progress:**
-   Append a clean 2-line summary to `docs/progress.md` indicating that Issue #$ARGUMENTS was completed, tests passed, and changes were pushed.

@@ -32,7 +32,7 @@ Run independent checks in parallel where you can.
 
 4. **Stored feedback label count** (print the actual number)
    ```bash
-   python scripts/feedback.py summary
+   .venv/Scripts/python.exe scripts/feedback.py summary
    ```
    Report the `current labels: N` line plus the per-label counts. PASS if the command ran
    and produced a number; the number itself is judged in item 5.

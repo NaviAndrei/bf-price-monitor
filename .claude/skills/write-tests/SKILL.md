@@ -44,5 +44,5 @@ first and extend it rather than starting a second file for the same module.
    documented in that function's own comments (e.g. `parse_price()`'s
    Romanian `.`/`,` separator convention, `load_history()`'s legacy
    unversioned-file migration).
-4. Run `python -m pytest tests/test_<module>.py -v` and show the real output
+4. Run `.venv/Scripts/python.exe -m pytest tests/test_<module>.py -v` and show the real output
    -- do not report tests as passing without having run them.
