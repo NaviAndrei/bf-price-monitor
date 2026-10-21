@@ -347,3 +347,7 @@ Next: after the next workflow-run collection, check it with `uv run python scrip
 ## 2026-10-20 - #75 dashboard: token kept per tab
 - The page keeps the token in sessionStorage so a reload keeps it, and clears it plus shows a banner on a 403 write; browser-checked against a scratch clone, 1145 tests pass, dashboard coverage 95%, ruff and mypy --strict clean.
 - Commit eb10c97 (Refs #75). Not pushed.
+
+## 2026-10-22 - Claude Code harness: background tests, venv guard, ask on push
+- Stop hook now runs tests in the background with a result cache (verify_completion.py progress|tests), a new venv_guard hook blocks system-python pytest/mypy/scripts, hooks use $CLAUDE_PROJECT_DIR, push and pull ask, and skills/commands/rules name the venv interpreter; 1216 tests pass, ruff and mypy --strict clean.
+- Commits 73ee394, 0b3618c, 947dfd7, 1299945. Not pushed.
