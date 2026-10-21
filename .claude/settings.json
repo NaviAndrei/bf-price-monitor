@@ -7,7 +7,17 @@
       "Bash(git reset --hard*)",
       "Bash(git push --force*)",
       "Bash(git push -f*)",
-      "Bash(git rebase*)"
+      "Bash(git rebase*)",
+      "PowerShell(git reset --hard *)",
+      "PowerShell(git push --force *)",
+      "PowerShell(git push -f *)",
+      "PowerShell(git rebase *)"
+    ],
+    "ask": [
+      "Bash(git push *)",
+      "PowerShell(git push *)",
+      "Bash(git pull *)",
+      "PowerShell(git pull *)"
     ]
   },
   "hooks": {
@@ -18,7 +28,8 @@
           {
             "type": "command",
             "command": "python \"$CLAUDE_PROJECT_DIR/.claude/hooks/session_start.py\"",
-            "timeout": 45
+            "timeout": 45,
+            "statusMessage": "Reading project state"
           }
         ]
       }
@@ -29,7 +40,12 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python .claude/hooks/branch_guard.py",
+            "command": "python \"$CLAUDE_PROJECT_DIR/.claude/hooks/branch_guard.py\"",
+            "timeout": 8
+          },
+          {
+            "type": "command",
+            "command": "python \"$CLAUDE_PROJECT_DIR/.claude/hooks/venv_guard.py\"",
             "timeout": 8
           }
         ]
@@ -39,7 +55,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python .claude/hooks/guard_price_history.py",
+            "command": "python \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard_price_history.py\"",
             "timeout": 8
           }
         ]
@@ -56,7 +72,7 @@
           },
           {
             "type": "command",
-            "command": "python .claude/hooks/py_compile_check.py",
+            "command": "python \"$CLAUDE_PROJECT_DIR/.claude/hooks/py_compile_check.py\"",
             "timeout": 15
           }
         ]
@@ -67,8 +83,15 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python \"$CLAUDE_PROJECT_DIR/.claude/hooks/verify_completion.py\"",
-            "timeout": 330
+            "command": "python \"$CLAUDE_PROJECT_DIR/.claude/hooks/verify_completion.py\" progress",
+            "timeout": 30
+          },
+          {
+            "type": "command",
+            "command": "python \"$CLAUDE_PROJECT_DIR/.claude/hooks/verify_completion.py\" tests",
+            "timeout": 660,
+            "asyncRewake": true,
+            "statusMessage": "Running the test suite in the background"
           }
         ]
       }
