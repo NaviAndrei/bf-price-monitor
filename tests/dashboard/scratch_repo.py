@@ -17,6 +17,7 @@ from bf_price_monitor.dashboard import config, ids
 
 WATCHLIST = Path("data") / "watchlist.json"
 AUTHOR = ("Dash Author", "dash@example.com")
+TOKEN = "browser-smoke-token"  # write token the browser tests give the server
 
 
 def git(cwd: Path, *args: str) -> str:

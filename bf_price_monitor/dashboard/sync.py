@@ -289,6 +289,10 @@ class GitSync:
         if focus is not None and focus in fates:
             state, text = fates[focus]
             reason = None
+            if state == "invalid":
+                # The caller gets this refusal in the reply; a second notice
+                # under "Edits that could not be applied" would only confuse.
+                self.journal.dismiss_conflict(focus)
         elif focus is None and fates and pushed_state == "pushed":
             kinds = {kind for kind, _ in fates.values()}
             state = "conflict" if "conflict" in kinds else "invalid"

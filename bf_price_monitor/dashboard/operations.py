@@ -60,7 +60,9 @@ def _number(value: Any, name: str) -> float:
 def _check_price(value: Any, name: str = "target_price") -> None:
     number = _number(value, name)
     if not 0 < number <= MAX_PRICE:
-        raise InvalidOperation(f"{name} must be greater than 0")
+        raise InvalidOperation(
+            f"{name} must be greater than 0 and at most {MAX_PRICE:,}"
+        )
 
 
 def _check_percent(value: Any) -> None:
