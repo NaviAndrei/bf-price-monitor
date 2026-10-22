@@ -351,3 +351,7 @@ Next: after the next workflow-run collection, check it with `uv run python scrip
 ## 2026-10-22 - Claude Code harness: background tests, venv guard, ask on push
 - Stop hook now runs tests in the background with a result cache (verify_completion.py progress|tests), a new venv_guard hook blocks system-python pytest/mypy/scripts, hooks use $CLAUDE_PROJECT_DIR, push and pull ask, and skills/commands/rules name the venv interpreter; 1216 tests pass, ruff and mypy --strict clean.
 - Commits 73ee394, 0b3618c, 947dfd7, 1299945. Not pushed.
+
+## 2026-10-22 - Claude Code harness: browser QA, verifier agent, manual-QA skill
+- Added an opt-in Chromium smoke test for the dashboard page (`-m browser`, excluded from the default run), a read-only `qa-verifier` agent and a hand-invoked `manual-qa` skill; 1222 tests pass, ruff, ruff format --check and mypy --strict clean.
+- Commit 460caab (no issue trailer). Not pushed.
