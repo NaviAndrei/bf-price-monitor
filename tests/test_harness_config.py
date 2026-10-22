@@ -102,3 +102,27 @@ def test_instructions_never_send_claude_to_the_system_python(path):
         if "plain `python -m pytest`" in line:  # the sentence that explains the trap
             continue
         assert not BARE.search(line), f"{path.name}:{number}: {line.strip()}"
+
+
+def test_browser_tests_are_opt_in_and_the_marker_is_registered():
+    import tomllib
+
+    config = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    pytest_config = config["tool"]["pytest"]["ini_options"]
+    assert "-m 'not browser'" in pytest_config["addopts"]
+    assert any(marker.startswith("browser:") for marker in pytest_config["markers"])
+
+
+def test_qa_verifier_is_read_only():
+    text = (ROOT / ".claude" / "agents" / "qa-verifier.md").read_text(encoding="utf-8")
+    frontmatter = text.split("---", 2)[1]
+    assert "disallowedTools: Edit, Write" in frontmatter
+    tools = next(line for line in frontmatter.splitlines() if line.startswith("tools:"))
+    assert "Edit" not in tools and "Write" not in tools
+
+
+def test_manual_qa_skill_is_only_run_by_hand():
+    text = (ROOT / ".claude" / "skills" / "manual-qa" / "SKILL.md").read_text(
+        encoding="utf-8"
+    )
+    assert "disable-model-invocation: true" in text

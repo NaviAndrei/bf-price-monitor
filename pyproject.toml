@@ -61,5 +61,6 @@ plugins = ["pydantic.mypy"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "--tb=short -q --basetemp=.pytest_tmp"
+addopts = "--tb=short -q --basetemp=.pytest_tmp -m 'not browser'"
+markers = ["browser: drives the dashboard in real Chromium; opt in with -m browser"]
 pythonpath = ["scripts"]
