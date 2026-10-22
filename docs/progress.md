@@ -355,3 +355,7 @@ Next: after the next workflow-run collection, check it with `uv run python scrip
 ## 2026-10-22 - Claude Code harness: browser QA, verifier agent, manual-QA skill
 - Added an opt-in Chromium smoke test for the dashboard page (`-m browser`, excluded from the default run), a read-only `qa-verifier` agent and a hand-invoked `manual-qa` skill; 1222 tests pass, ruff, ruff format --check and mypy --strict clean.
 - Commit 460caab (no issue trailer). Not pushed.
+
+## 2026-10-22 - Dashboard e2e QA: 24 manual cases, run, fixed, automated
+- Wrote docs/qa/dashboard-e2e-test-cases.md (24 cases), ran them by hand in the browser (23 PASS, TC-24 console not captured; log in docs/qa/runs/), fixed F-01 (refusal reported twice) and F-03 (wrong price-limit message), automated all cases as 21 opt-in browser tests (`-m browser`, all pass). Default suite 1221 pass, ruff, format and mypy --strict clean. F-02 (no busy state while saving) logged, not fixed.
+- Commits 45b4867 (fix and tests) and 42168ad (docs), Refs #75, not pushed.
