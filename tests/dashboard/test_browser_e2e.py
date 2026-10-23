@@ -398,3 +398,37 @@ def test_tc25_double_press_save_makes_one_commit(
     expect(page.locator("#pending-section")).to_be_hidden()
     expect(banner_texts(page)).to_have_count(0)
     expect(cell(page, LENOVO, 2)).to_have_text("850")
+
+
+def test_tc26_changed_price_between_two_presses_of_save(
+    running_dashboard: Dashboard, page: Page
+):
+    """The second press carries the old row, so the server refuses it (409):
+    the first value wins, the second is not applied and is not queued. The
+    refusal is shown twice (red banner and the conflicts list); see F-07."""
+    scratch, base = running_dashboard
+    statuses: list[int] = []
+    page.on(
+        "response",
+        lambda r: statuses.append(r.status) if r.url.endswith("/update") else None,
+    )
+    open_dashboard(page, base)
+    dialog = open_edit(page, LENOVO)
+    dialog.locator("[name=target_price]").fill("850")
+    dialog.get_by_role("button", name="Save").click()
+    dialog.locator("[name=target_price]").fill("900")
+    dialog.get_by_role("button", name="Save").click()
+    expect(dialog).to_be_hidden()
+    wait_for_subject(scratch, "chore(watchlist): update")
+    expect(page.locator("#conflicts-list li")).to_have_count(1)
+    page.wait_for_timeout(1000)
+    assert statuses == [200, 409]
+    updates_on_origin = [
+        s for s in scratch.origin_subjects() if s.startswith("chore(watchlist): update")
+    ]
+    assert len(updates_on_origin) == 1
+    assert scratch.origin_doc()["watches"][0]["target_price"] == 850
+    expect(cell(page, LENOVO, 2)).to_have_text("850")
+    expect(banner_texts(page)).to_have_count(1)
+    expect(banner_texts(page).first).to_contain_text("changed somewhere else")
+    expect(page.locator("#pending-section")).to_be_hidden()
