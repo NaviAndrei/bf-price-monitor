@@ -410,6 +410,18 @@ def test_submit_reports_its_own_fate_not_an_older_conflict(env: Env):
     assert len(res.conflicts) == 1
 
 
+def test_submit_reports_its_own_refusal_once_and_does_not_park_it(env: Env):
+    sync = env.make_sync()
+    before = env.origin_commit_count()
+    # Passes the shape check, but the replay refuses it as a duplicate.
+    res = sync.submit(operations.make_add("emag", "Laptop  Lenovo V15"))
+    assert res.state == "invalid"
+    assert "already watching" in res.detail
+    assert res.conflicts == [] and sync.status().conflicts == []
+    assert res.pending_count == 0
+    assert env.origin_commit_count() == before
+
+
 def test_dismiss_conflict_clears_it(env: Env):
     sync = env.make_sync()
     sync.journal.append(operations.make_update(WATCH_A, {"target_price": 100}))
