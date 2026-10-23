@@ -10,7 +10,7 @@
 
 ## Environment & Essential Commands
 - Windows self-hosted runner environment / PowerShell terminal.
-- **Run all tests:** `.venv/Scripts/python.exe -m pytest -v` (plain `python -m pytest` resolves to the system Python 3.12, not the venv, and misses installed extras). To see pass counts use `-o addopts="--tb=short --basetemp=.pytest_tmp"`, never `-o addopts=""` (it drops `--basetemp` and can fail with a Windows temp-folder `PermissionError`).
+- **Run all tests:** `.venv/Scripts/python.exe -m pytest -v` (plain `python -m pytest` resolves to the system Python 3.12, not the venv, and misses installed extras). To see pass counts use `-o addopts="--tb=short --basetemp=.pytest_tmp -m 'not browser'"` (the `-m` keeps the opt-in Chromium tests out; without it the count includes them), never `-o addopts=""` (it drops `--basetemp` and can fail with a Windows temp-folder `PermissionError`).
 - **Sync the venv:** `uv sync --frozen --extra dev --extra anomaly` (a bare `--extra dev` removes the anomaly packages).
 - **Lint & format checks:** `ruff check .` and `ruff format --check .`
 - **Project status update:** `powershell -ExecutionPolicy Bypass -File scripts/set_project_status.ps1 -IssueNumber <N> -Status "<Status>"`
