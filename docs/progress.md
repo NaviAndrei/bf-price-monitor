@@ -363,3 +363,7 @@ Next: after the next workflow-run collection, check it with `uv run python scrip
 ## 2026-10-23 - Dashboard QA follow-up: findings F-04 to F-06, TC-25
 - Added findings F-04 to F-06 and a TC-25 double-press case (one commit, nothing queued; F-02 reworded to match); corrected the run log's TC-17/TC-18 and build line. Browser suite 22 tests (TC-25 passed 3 of 3), default suite 1221; not re-run in full after the docs edits.
 - Commits 4a42ae1 (docs) and 5f4fd11 (TC-25 test), Refs #75, not pushed.
+
+## 2026-10-23 - Dashboard QA: addopts fix, sync unit test, DECISIONS entry, TC-26
+- CLAUDE.md addopts line now carries `-m 'not browser'`; new fast test pins that a caller's own refused edit is reported once (fails with the `_finish` dismissal reverted, passes with it); DECISIONS.md entry added; TC-26 (changed price between two presses of Save: 200 then 409, first value wins, 900 lost, refusal shown twice) automated, finding F-07 logged. Default suite 1222 pass (23 browser tests deselected), browser suite 23 pass, ruff, format and mypy --strict clean.
+- Commits listed in `git log origin/master..HEAD`, Refs #75, not pushed.
