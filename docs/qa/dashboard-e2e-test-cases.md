@@ -81,6 +81,12 @@ full suite. Each case names the automated browser test that repeats it
 | TC-21 | P1 | Conflict is not overwritten (runbook step 5) | Load the page. From `other`, change the first watch's target price and push. In the page, toggle that watch. | Red banner `This watch was changed somewhere else...` with `Reload`. Origin keeps the other clone's value; no dashboard commit. `Reload` shows the new price. | `test_tc21_conflict_not_overwritten` |
 | TC-22 | P2 | Refresh picks up remote edits | From `other`, change a watch's min drop and push. Press `Refresh from GitHub`. | The row shows the new value without a page reload. | `test_tc22_refresh_shows_remote_edit` |
 
+### Double submit
+
+| ID | P | Title | Steps | Expected | Automated by |
+|---|---|---|---|---|---|
+| TC-25 | P3 | Double press of `Save` | `Edit`, change the target price, press `Save` twice quickly (double-click). | Dialog closes, row shows the new price. Exactly one `update` commit on origin. No banner, no pending entry, no conflict entry. (Two requests are sent; the second finds the edit already applied. See finding F-02.) | `test_tc25_double_press_save_makes_one_commit` |
+
 ### Display
 
 | ID | P | Title | Steps | Expected | Automated by |
