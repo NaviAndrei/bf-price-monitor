@@ -979,3 +979,31 @@ observation to the same 27 product arrays.
   keeping the fragment in the URL or history (leaks into history and
   screenshots); an HttpOnly cookie (needs a CSRF design the header token
   currently avoids).
+
+## 2026-10-23 - Dashboard: a caller's own refused edit is reported once; slice B changes made later
+- **Decision:** when `GitSync.submit` replays the caller's own operation and
+  it is refused as `invalid` (for example a duplicate add), the entry that
+  replay parked in `conflicts.jsonl` is dismissed in `_finish`. The caller
+  already gets the refusal in the reply (HTTP 422), so a second notice under
+  "Edits that could not be applied" looked like a lost edit (QA finding F-01).
+  Pinned by `test_submit_reports_its_own_refusal_once_and_does_not_park_it`
+  (fails without the dismissal, passes with it) and by the browser test for
+  TC-09.
+- **Why here and not in `_park`:** `_park` also serves `retry()` and other
+  pending operations, whose owner is no longer waiting for a reply. Those
+  must stay in the conflicts list, so only the focused operation of a
+  `submit` is dismissed.
+- **Not covered:** the same double report still happens for a *conflict* (409)
+  of the caller's own operation: red banner plus a conflicts-list entry
+  (QA finding F-07, TC-26). A conflict means somebody else changed the
+  watch, so keeping it listed is arguably right; left open on purpose.
+- **Changes to slice B files made after slice B (`git diff 8877c5f..HEAD`):**
+  1. `sync.py`, 1e1aa8c (made in slice C, recorded above): a failed
+     `git rev-parse HEAD` after a successful push gives `pushed` with an
+     unknown head instead of an error.
+  2. `sync.py`, 45b4867: the dismissal described above.
+  3. `operations.py`, 45b4867: `_check_price` now says
+     `... must be greater than 0 and at most 10,000,000`. Before, a price
+     above the limit was refused with "must be greater than 0", which was
+     false (QA finding F-03). Message only; the accepted range is unchanged.
+  No other slice B file (`journal.py`, `store.py`, ...) has changed.
