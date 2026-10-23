@@ -86,6 +86,7 @@ full suite. Each case names the automated browser test that repeats it
 | ID | P | Title | Steps | Expected | Automated by |
 |---|---|---|---|---|---|
 | TC-25 | P3 | Double press of `Save` | `Edit`, change the target price, press `Save` twice quickly (double-click). | Dialog closes, row shows the new price. Exactly one `update` commit on origin. No banner, no pending entry, no conflict entry. (Two requests are sent; the second finds the edit already applied. See finding F-02.) | `test_tc25_double_press_save_makes_one_commit` |
+| TC-26 | P3 | Changed price between two presses of `Save` | `Edit`, set the target price to `850`, press `Save`, then at once set `900` and press `Save` again (before the first answer arrives). | The first value wins: origin has one `update` commit and the price `850`. The second request is refused (HTTP 409): one red banner `This watch was changed somewhere else...` and the same refusal under `Edits that could not be applied`. Nothing queued. The `900` is lost. See finding F-07. | `test_tc26_changed_price_between_two_presses_of_save` |
 
 ### Display
 

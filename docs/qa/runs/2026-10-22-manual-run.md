@@ -8,11 +8,11 @@ was touched. The scratch clone held the repo's real four watches.
 
 ## Result
 
-Of the 24 manual cases: 23 PASS, 0 FAIL, 1 NOT RUN, and 6 findings (see
+Of the 24 manual cases: 23 PASS, 0 FAIL, 1 NOT RUN, and 7 findings (see
 Findings). The case not run by hand is TC-24 (console errors): the manual
 browser session did not capture them, so it is covered by the automated suite
-only. TC-25 (double press of `Save`) was added after the manual run and has only
-been run in the automated suite.
+only. TC-25 (double press of `Save`) and TC-26 (changed price between two presses)
+were added after the manual run and have only been run in the automated suite.
 
 | ID | Result | Observed |
 |---|---|---|
@@ -41,6 +41,7 @@ been run in the automated suite.
 | TC-23 | PASS | `not used yet` lists cadence_minutes, track_all_time_low, owner, id; no inputs |
 | TC-24 | NOT RUN | not captured in the manual browser; see automated suite |
 | TC-25 | NOT RUN by hand | automated only: `test_tc25_double_press_save_makes_one_commit` passed 3 of 3 runs (see F-02) |
+| TC-26 | NOT RUN by hand | automated only: `test_tc26_changed_price_between_two_presses_of_save`. Seen in 3 probe runs and the final test: responses `200` then `409`; origin has one `update` commit with price 850; the row shows 850; one red banner `This watch was changed somewhere else...`; the same refusal is also listed under `Edits that could not be applied`; nothing pending (see F-07) |
 
 ## Findings
 
@@ -52,6 +53,7 @@ been run in the automated suite.
 | F-04 | P3 | One queued edit (TC-19, origin unreachable) produced two yellow banners at once: `Saved locally, not pushed: 1 change(s) are waiting.` and `Saved locally, not pushed (network). Your change is queued and nothing is lost.` Both have a `Retry push` button. The message is true but repeated. | Open. Not fixed. |
 | F-05 | none (intentional) | After a disable was queued offline (TC-19), the row still showed `On`. This is by design: the page shows the clone's last known state, and the "Saved locally, waiting to be pushed" list shows the queued edit. The row changes once the push succeeds (TC-20 showed `Off`). | Closed, no change planned. |
 | F-06 | P3 | The pending list names the operation with its internal name: `set_enabled emag "iphone 15"` instead of `disable emag "iphone 15"` (or `enable`). Cause: `describeOp` in `app.js` prints `op.op` as it is. | Open. Not fixed. |
+| F-07 | P3 | TC-26: pressing `Save` a second time with a different price before the first answer arrives sends the old row with the new price. The server correctly refuses it (409), so nothing is overwritten and origin keeps the first value. But the user's second value (900) is lost, and the refusal is shown twice: as the red banner and again under `Edits that could not be applied`, where it needs a manual dismiss. Same cause as F-02 (no busy state) plus the conflict case of the F-01 double report. | Open. Not fixed. Fixing F-02 (disable `Save` while a request is in flight) removes the trigger; the double report for conflicts would remain. |
 
 ## Not checked
 
