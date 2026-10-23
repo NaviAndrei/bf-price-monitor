@@ -365,3 +365,36 @@ def test_tc23_readonly_details(running_dashboard: Dashboard, page: Page):
     expect(details).to_contain_text("cadence_minutes: 120")
     expect(details).to_contain_text("owner: NaviAndrei")
     assert details.locator("input").count() == 0
+
+
+# --- double submit ---------------------------------------------------------
+
+
+def test_tc25_double_press_save_makes_one_commit(
+    running_dashboard: Dashboard, page: Page
+):
+    """Both presses reach the server (the page has no busy state, F-02); the
+    second finds the edit already applied, so there is one commit, no queued
+    copy and no conflict entry."""
+    scratch, base = running_dashboard
+    updates: list[int] = []
+    page.on(
+        "response",
+        lambda r: updates.append(r.status) if r.url.endswith("/update") else None,
+    )
+    open_dashboard(page, base)
+    dialog = open_edit(page, LENOVO)
+    dialog.locator("[name=target_price]").fill("850")
+    dialog.get_by_role("button", name="Save").dblclick()
+    expect(dialog).to_be_hidden()
+    wait_for_subject(scratch, "chore(watchlist): update")
+    page.wait_for_timeout(2000)  # let a second request, if any, finish
+    assert updates == [200, 200]
+    updates_on_origin = [
+        s for s in scratch.origin_subjects() if s.startswith("chore(watchlist): update")
+    ]
+    assert len(updates_on_origin) == 1
+    expect(page.locator("#conflicts-section")).to_be_hidden()
+    expect(page.locator("#pending-section")).to_be_hidden()
+    expect(banner_texts(page)).to_have_count(0)
+    expect(cell(page, LENOVO, 2)).to_have_text("850")
