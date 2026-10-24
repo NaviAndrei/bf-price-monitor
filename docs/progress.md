@@ -368,6 +368,6 @@ Next: after the next workflow-run collection, check it with `uv run python scrip
 - CLAUDE.md addopts line now carries `-m 'not browser'`; new fast test pins that a caller's own refused edit is reported once (fails with the `_finish` dismissal reverted, passes with it); DECISIONS.md entry added; TC-26 (changed price between two presses of Save: 200 then 409, first value wins, 900 lost, refusal shown twice) automated, finding F-07 logged. Default suite 1222 pass (23 browser tests deselected), browser suite 23 pass, ruff, format and mypy --strict clean.
 - Commits listed in `git log origin/master..HEAD`, Refs #75, not pushed.
 
-## 2026-10-24 - Dashboard QA: pushed, TC-24 run by hand, test count corrected
+## 2026-10-24 - Dashboard QA: pushed, TC-24 checked by script, test count corrected
 - Merged origin (19 bot commits, only data/price_history.json) and pushed 6179d12 after lint, format, mypy --strict, 1222 default and 23 browser tests passed on the merged tree (nothing rerun after the push). TC-24 checked on 6179d12 with scripted clicks and `window.confirm` stubbed (a partial sweep, not a full by-hand pass): no uncaught errors; only the expected 422 and 409 failed-request lines. Collected tests: 1245 = 1222 default + 23 browser (22 e2e + 1 smoke); the 2026-10-22 harness entry's "1222" included the smoke test and is corrected above. F-02, F-04, F-06, F-07 still open.
 - Refs #75, not pushed. Commit 45b4867's message ("21 tests") left unchanged.
