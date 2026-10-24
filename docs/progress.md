@@ -353,7 +353,7 @@ Next: after the next workflow-run collection, check it with `uv run python scrip
 - Commits 73ee394, 0b3618c, 947dfd7, 1299945. Not pushed.
 
 ## 2026-10-22 - Claude Code harness: browser QA, verifier agent, manual-QA skill
-- Added an opt-in Chromium smoke test for the dashboard page (`-m browser`, excluded from the default run), a read-only `qa-verifier` agent and a hand-invoked `manual-qa` skill; 1222 tests pass, ruff, ruff format --check and mypy --strict clean.
+- Added an opt-in Chromium smoke test for the dashboard page (`-m browser`, excluded from the default run), a read-only `qa-verifier` agent and a hand-invoked `manual-qa` skill; 1221 default tests pass plus the 1 opt-in browser smoke test (1222 together; corrected 2026-10-24), ruff, ruff format --check and mypy --strict clean.
 - Commit 460caab (no issue trailer). Not pushed.
 
 ## 2026-10-22 - Dashboard e2e QA: 24 manual cases, run, fixed, automated
@@ -367,3 +367,7 @@ Next: after the next workflow-run collection, check it with `uv run python scrip
 ## 2026-10-23 - Dashboard QA: addopts fix, sync unit test, DECISIONS entry, TC-26
 - CLAUDE.md addopts line now carries `-m 'not browser'`; new fast test pins that a caller's own refused edit is reported once (fails with the `_finish` dismissal reverted, passes with it); DECISIONS.md entry added; TC-26 (changed price between two presses of Save: 200 then 409, first value wins, 900 lost, refusal shown twice) automated, finding F-07 logged. Default suite 1222 pass (23 browser tests deselected), browser suite 23 pass, ruff, format and mypy --strict clean.
 - Commits listed in `git log origin/master..HEAD`, Refs #75, not pushed.
+
+## 2026-10-24 - Dashboard QA: pushed, TC-24 run by hand, test count corrected
+- Merged origin (19 bot commits, only data/price_history.json) and pushed 6179d12 after lint, format, mypy --strict, 1222 default and 23 browser tests passed on the merged tree (nothing rerun after the push). TC-24 run by hand on 6179d12: no uncaught errors; only the expected 422 and 409 failed-request lines. Collected tests: 1245 = 1222 default + 23 browser (22 e2e + 1 smoke); the 2026-10-22 harness entry's "1222" included the smoke test and is corrected above. F-02, F-04, F-06, F-07 still open.
+- Refs #75, not pushed. Commit 45b4867's message ("21 tests") left unchanged.

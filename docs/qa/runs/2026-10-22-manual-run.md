@@ -8,10 +8,9 @@ was touched. The scratch clone held the repo's real four watches.
 
 ## Result
 
-Of the 24 manual cases: 23 PASS, 0 FAIL, 1 NOT RUN, and 7 findings (see
-Findings). The case not run by hand is TC-24 (console errors): the manual
-browser session did not capture them, so it is covered by the automated suite
-only. TC-25 (double press of `Save`) and TC-26 (changed price between two presses)
+Of the 24 manual cases: 24 PASS, 0 FAIL, and 7 findings (see Findings).
+TC-24 (console errors) was not captured in the original session and was run by
+hand later, on 2026-10-24 against HEAD `6179d12` (see its row). TC-25 (double press of `Save`) and TC-26 (changed price between two presses)
 were added after the manual run and have only been run in the automated suite.
 
 | ID | Result | Observed |
@@ -39,7 +38,7 @@ were added after the manual run and have only been run in the automated suite.
 | TC-21 | PASS | other clone set price 2222 and pushed; toggle in page gave red `This watch was changed somewhere else...`; origin kept `other: price 2222`, no dashboard commit; `Reload` showed 2222 |
 | TC-22 | PASS | `Reload` showed the other writer's price without a page reload |
 | TC-23 | PASS | `not used yet` lists cadence_minutes, track_all_time_low, owner, id; no inputs |
-| TC-24 | NOT RUN | not captured in the manual browser; see automated suite |
+| TC-24 | PASS (run 2026-10-24, HEAD `6179d12`) | scratch server and origin, page driven by scripted clicks and form submits (not a real mouse; `window.confirm` stubbed). Covered: load, toggle off and on, add, duplicate add, edit, nothing changed, out-of-range value, markup in a query, remove, offline save then retry, conflict then Reload. Console: no uncaught errors or unhandled rejections; only 4 `Failed to load resource` lines (422 three times, 409 once), the failed requests the page reports in banners. Not covered: wrong token, pasting the token, cancelling a remove, `Refresh from GitHub`, a real click on the browser's confirm box. F-04 and F-06 were seen again in this run |
 | TC-25 | NOT RUN by hand | automated only: `test_tc25_double_press_save_makes_one_commit` passed 3 of 3 runs (see F-02) |
 | TC-26 | NOT RUN by hand | automated only: `test_tc26_changed_price_between_two_presses_of_save`. Seen in 3 probe runs and the final test: responses `200` then `409`; origin has one `update` commit with price 850; the row shows 850; one red banner `This watch was changed somewhere else...`; the same refusal is also listed under `Edits that could not be applied`; nothing pending (see F-07) |
 
