@@ -47,6 +47,7 @@ RETAILER_HOSTS = {
     "emag": "emag.ro",
     "pcgarage": "pcgarage.ro",
     "flanco": "flanco.ro",
+    "itgalaxy": "itgalaxy.ro",
     "altex": "altex.ro",
 }
 

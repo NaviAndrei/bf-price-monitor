@@ -12,7 +12,14 @@ from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 from pathlib import Path
 from typing import Any, Literal, TypeVar
-from urllib.parse import parse_qsl, urlencode, urlparse, urlsplit, urlunsplit
+from urllib.parse import (
+    parse_qsl,
+    quote_plus,
+    urlencode,
+    urlparse,
+    urlsplit,
+    urlunsplit,
+)
 
 import requests
 from bs4 import BeautifulSoup
@@ -109,6 +116,7 @@ LISTING_READY_TIMEOUT_MS = 8_000
 LISTING_CONTAINER_SELECTORS = {
     "pcgarage": ".product_box",
     "flanco": "li.product-item",
+    "itgalaxy": "article.product-box",
 }
 LISTING_FALLBACK_SELECTOR = "body"
 
@@ -227,6 +235,7 @@ STORE_DISPLAY_NAMES = {
     "pcgarage": "PC Garage",
     "flanco": "Flanco",
     "altex": "Altex",
+    "itgalaxy": "ITGalaxy",
 }
 
 
@@ -1131,6 +1140,83 @@ def scrape_flanco_listing(query: str) -> list[dict]:
     return results
 
 
+def itgalaxy_stock_status(card) -> str:
+    # ITGalaxy's `.availability` div carries a class and a label (verified
+    # live 2026-10-28 on one 36-card listing): `instock` with "in stoc
+    # suficient" or "in stoc limitat" (the class does not tell them apart,
+    # the label does), and `insupplierstock` with "in stoc depozit/furnizor".
+    # No sold-out card appeared in that sample, so the out-of-stock branch
+    # below is a defensive guess at the label/class, not observed markup.
+    el = card.select_one(".availability")
+    if not el:
+        return "unknown"
+    classes = " ".join(el.get("class") or []).lower()
+    label = el.get_text(" ", strip=True).lower()
+    if "outofstock" in classes or "epuizat" in label or "indisponibil" in label:
+        return "out_of_stock"
+    if "insupplierstock" in classes or "furnizor" in label:
+        return "supplier_stock"
+    if "limitat" in label:
+        return "limited_stock"
+    if "instock" in classes:
+        return "in_stock"
+    return "unknown"
+
+
+def scrape_itgalaxy_listing(query: str) -> list[dict]:
+    # Listing page only: /cauta/?search=<query> is the site's own search form
+    # (GET, no JS needed); robots.txt (read 2026-10-28) does not disallow
+    # /cauta/ for `*`. Never a product page. The page is server-rendered with
+    # no schema.org Product JSON-LD, so the semantic layer finds nothing and
+    # the visible price span is what actually supplies the price.
+    # Card HTML (verified 2026-10-28):
+    #   <article class="product-box item ...">
+    #     <h2 class="name"><a href="https://www.itgalaxy.ro/ssd/pny/<slug>-873776/">Title</a></h2>
+    #     <div class="availability text-center insupplierstock">in stoc depozit/furnizor</div>
+    #     <span id="price-873776" aria-label="Pret 1.235,99 lei">1.235,99 lei</span>
+    # The add-to-cart onclick also carries a price, but it is the price
+    # without VAT (734.70 against 888.99 shown), so it is never read.
+    url = f"https://www.itgalaxy.ro/cauta/?search={quote_plus(query)}"
+    html = fetch_with_browser(url, "itgalaxy")
+    if not html:
+        return []
+    soup = BeautifulSoup(html, "html.parser")
+    jsonld_products = extract_jsonld_products(soup)
+    results = []
+    for card in soup.select("article.product-box"):
+        title_el = card.select_one("h2.name a")
+        price_el = card.select_one('span[id^="price-"]')
+        if not (title_el and title_el.get("href")):
+            continue
+        title_text = title_el.get_text(strip=True)
+        if not title_matches_query(title_text, query):
+            continue
+        card_url = title_el["href"]
+        price = resolve_layered_price(card, jsonld_products, title_text, card_url)
+        if price is None and price_el:
+            price = parse_price(price_el.get_text(strip=True))
+        if price is None:
+            extract_with_ai(query, card_url)
+            log_extraction_failure(
+                "itgalaxy", card_url, query, "no price found in any extraction layer"
+            )
+            continue
+        results.append(
+            {
+                "title": title_text,
+                "price": price,
+                "url": card_url,
+                "stock_status": itgalaxy_stock_status(card),
+                # The listing card names no seller and the site's marketplace
+                # status is unverified, so this is recorded as unknown (the
+                # same choice as eMAG) rather than assumed first-party.
+                "seller": None,
+                "is_marketplace": None,
+            }
+        )
+    return results
+
+
 _ScraperT = TypeVar("_ScraperT", bound=Callable[..., Any])
 
 
@@ -1171,6 +1257,7 @@ SCRAPERS = {
     "emag": with_retry(scrape_emag_listing),
     "pcgarage": with_retry(scrape_pcgarage_listing, site_name="pcgarage"),
     "flanco": with_retry(scrape_flanco_listing, site_name="flanco"),
+    "itgalaxy": with_retry(scrape_itgalaxy_listing, site_name="itgalaxy"),
     "altex": placeholder_scraper(with_retry(scrape_altex_listing)),
 }
 

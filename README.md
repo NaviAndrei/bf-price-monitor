@@ -13,6 +13,7 @@ free tier — no paid services required.
 | eMAG | Live | plain `requests`; listing page has no seller data, so `seller`/`is_marketplace` are always `null` |
 | PC Garage | Live | Playwright + playwright-stealth (Cloudflare JS challenge blocks plain `requests`); first-party only |
 | Flanco | Live | Playwright + playwright-stealth, including the legally-mandated 30-day reference price; first-party only |
+| ITGalaxy | Live (added 2026-10-28; no watches yet) | Playwright + playwright-stealth; server-rendered `/cauta/?search=` listing, price from the visible span (no Product JSON-LD); `seller`/`is_marketplace` are `null` because the card names no seller, so `seller_policy: "trusted"` is not supported for ITGalaxy; the out-of-stock markup is unverified (no sold-out card was seen live, the fixture is synthetic) |
 | Altex | Not working, excluded on purpose | — |
 
 Altex is fronted by Akamai and stalls the TLS handshake for a plain

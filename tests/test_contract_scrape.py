@@ -201,6 +201,93 @@ def test_flanco_jsonld_price_wins_over_stale_css_price(monkeypatch):
     assert results[0]["price"] == 2199.00
 
 
+# --- ITGalaxy (Playwright via fetch_with_browser) ---------------------------
+
+ITGALAXY_QUERY = "ssd 1tb"
+
+
+def _itgalaxy_fixture(monkeypatch, name, seen_urls=None):
+    def fake_fetch(url, site):
+        if seen_urls is not None:
+            seen_urls.append((url, site))
+        return _load_fixture("itgalaxy", name)
+
+    monkeypatch.setattr(scrape, "fetch_with_browser", fake_fetch)
+
+
+def test_itgalaxy_success_extracts_price_title_url_and_every_stock_state(
+    monkeypatch,
+):
+    seen = []
+    _itgalaxy_fixture(monkeypatch, "success", seen)
+    results = scrape.scrape_itgalaxy_listing(ITGALAXY_QUERY)
+    assert [r["stock_status"] for r in results] == [
+        "in_stock",
+        "limited_stock",
+        "supplier_stock",
+    ]
+    assert all(r["price"] > 0 for r in results)
+    assert all(
+        r["url"].startswith("https://www.itgalaxy.ro/") and r["title"] for r in results
+    )
+    # Unknown seller is recorded as unknown, never assumed first-party.
+    assert all(r["seller"] is None and r["is_marketplace"] is None for r in results)
+    # Search URL: https, allowlisted host, query encoded with quote_plus.
+    assert seen == [("https://www.itgalaxy.ro/cauta/?search=ssd+1tb", "itgalaxy")]
+
+
+def test_itgalaxy_parses_romanian_thousands_price_from_the_visible_span(
+    monkeypatch,
+):
+    _itgalaxy_fixture(monkeypatch, "success")
+    prices = [r["price"] for r in scrape.scrape_itgalaxy_listing(ITGALAXY_QUERY)]
+    # The cards read "1.115,99 lei", "1.220,99 lei" and "888,99 lei": "." is
+    # the thousands separator, "," the decimal one.
+    assert prices == [1115.99, 1220.99, 888.99]
+
+
+def test_itgalaxy_no_price_yields_no_results_and_logs_failure(monkeypatch):
+    _itgalaxy_fixture(monkeypatch, "no_price")
+    assert scrape.scrape_itgalaxy_listing(ITGALAXY_QUERY) == []
+    lines = scrape.EXTRACTION_FAILURES_FILE.read_text(encoding="utf-8").splitlines()
+    assert json.loads(lines[0])["store"] == "itgalaxy"
+
+
+def test_itgalaxy_out_of_stock_flags_stock_status(monkeypatch):
+    # The fixture's sold-out markup is synthetic (see the fixture comment).
+    _itgalaxy_fixture(monkeypatch, "out_of_stock")
+    results = scrape.scrape_itgalaxy_listing(ITGALAXY_QUERY)
+    assert len(results) == 1
+    assert results[0]["stock_status"] == "out_of_stock"
+    assert results[0]["price"] == 888.99
+
+
+def test_itgalaxy_changed_markup_breaks_current_selectors(monkeypatch):
+    _itgalaxy_fixture(monkeypatch, "changed_markup")
+    assert scrape.scrape_itgalaxy_listing(ITGALAXY_QUERY) == []
+
+
+def test_itgalaxy_jsonld_price_wins_over_stale_css_price(monkeypatch):
+    _itgalaxy_fixture(monkeypatch, "jsonld_priority")
+    results = scrape.scrape_itgalaxy_listing(ITGALAXY_QUERY)
+    assert len(results) == 1
+    assert results[0]["price"] == 799.00
+
+
+def test_itgalaxy_query_is_encoded_not_interpolated(monkeypatch):
+    seen = []
+    _itgalaxy_fixture(monkeypatch, "success", seen)
+    scrape.scrape_itgalaxy_listing("a&b=c d/../x")
+    assert seen[0][0] == "https://www.itgalaxy.ro/cauta/?search=a%26b%3Dc+d%2F..%2Fx"
+
+
+def test_itgalaxy_registered_with_display_name_and_browser_readiness_selector():
+    assert "itgalaxy" in scrape.SCRAPERS
+    assert not scrape.is_placeholder_scraper(scrape.SCRAPERS["itgalaxy"])
+    assert scrape.STORE_DISPLAY_NAMES["itgalaxy"] == "ITGalaxy"
+    assert scrape.LISTING_CONTAINER_SELECTORS["itgalaxy"] == "article.product-box"
+
+
 # --- T-07: failure capture ---------------------------------------------------
 
 

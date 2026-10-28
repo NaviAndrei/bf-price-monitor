@@ -60,17 +60,25 @@ def test_single_site_watch_produces_one_retailer_check(monkeypatch):
 
 def test_fanout_expands_only_non_placeholder_retailers(monkeypatch):
     watchlist = [_watch(id="a", site=scrape.FANOUT_SITE)]
-    monkeypatch.setitem(scrape.SCRAPERS, "emag", lambda q: [_result()])
-    monkeypatch.setitem(scrape.SCRAPERS, "pcgarage", lambda q: [_result()])
-    monkeypatch.setitem(scrape.SCRAPERS, "flanco", lambda q: [_result()])
-    monkeypatch.setitem(
-        scrape.SCRAPERS, "altex", scrape.placeholder_scraper(lambda q: [])
+    # Replace the whole registry, not single entries: fan-out walks every
+    # registered shop, so a shop added later and left unpatched would make a
+    # live fetch here.
+    monkeypatch.setattr(
+        scrape,
+        "SCRAPERS",
+        {
+            "emag": lambda q: [_result()],
+            "pcgarage": lambda q: [_result()],
+            "flanco": lambda q: [_result()],
+            "itgalaxy": lambda q: [_result()],
+            "altex": scrape.placeholder_scraper(lambda q: []),
+        },
     )
     report = qa.run_audit(watchlist, history={}, sleep_fn=lambda _: None)
     checked = {r["retailer_checked"] for r in report["records"]}
     # Placeholder retailers are excluded from fan-out expansion entirely
     # (scrape.py's own _watch_retailers behavior) -- altex never appears.
-    assert checked == {"emag", "pcgarage", "flanco"}
+    assert checked == {"emag", "pcgarage", "flanco", "itgalaxy"}
 
 
 def test_matching_result_produces_pass(monkeypatch):

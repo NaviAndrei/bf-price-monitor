@@ -7,5 +7,5 @@ returns products (scripts/scrape.py), so a watch on it could never fire.
 
 from __future__ import annotations
 
-KNOWN_SITES: tuple[str, ...] = ("emag", "pcgarage", "flanco", "all")
+KNOWN_SITES: tuple[str, ...] = ("emag", "pcgarage", "flanco", "itgalaxy", "all")
 CHANNELS: tuple[str, ...] = ("telegram", "email", "ntfy")

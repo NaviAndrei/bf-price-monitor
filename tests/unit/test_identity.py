@@ -36,7 +36,7 @@ EMAG_URL = f"https://emag.ro/laptop-lenovo-v15-g4-amn/pd/{EMAG_ID}"
 # -- adapters -----------------------------------------------------------------
 
 
-@pytest.mark.parametrize("retailer", ["emag", "pcgarage", "flanco"])
+@pytest.mark.parametrize("retailer", ["emag", "pcgarage", "flanco", "itgalaxy"])
 def test_adapters_extract_the_stored_sku_for_real_fixture_urls(retailer):
     for offer in FIXTURE[retailer]:
         extraction = extract_retailer_sku(retailer, offer["url"])
@@ -97,6 +97,9 @@ def test_flanco_category_prefixes_are_stripped():
         ("emag", "https://www.emag.ro/laptop/pd/bad id!/"),
         ("pcgarage", "https://www.pcgarage.ro/"),
         ("flanco", "https://www.flanco.ro/laptop-it/laptop"),
+        ("itgalaxy", "https://www.itgalaxy.ro/"),
+        ("itgalaxy", "https://www.itgalaxy.ro/ssd/"),
+        ("itgalaxy", "https://www.itgalaxy.ro/ssd/pny/no-numeric-id/"),
     ],
 )
 def test_urls_outside_the_retailer_pattern_are_rejected(retailer, url):
@@ -139,7 +142,17 @@ def test_all_fixture_fingerprints_are_unique():
         for r, offers in FIXTURE.items()
         for o in offers
     ]
-    assert len(set(fingerprints)) == len(fingerprints) == 12
+    assert len(set(fingerprints)) == len(fingerprints) == 16
+
+
+def test_itgalaxy_sku_survives_a_slug_rename_and_category_move():
+    original = "https://www.itgalaxy.ro/ssd/pny/cs2241-1tb-ssd-pcie-gen4-x4-873776/"
+    renamed = "https://itgalaxy.ro/hard-disk/pny/new-name-for-the-same-873776/?ref=x"
+    assert (
+        extract_retailer_sku("itgalaxy", original).sku
+        == extract_retailer_sku("itgalaxy", renamed).sku
+        == "873776"
+    )
 
 
 # -- normalization ----------------------------------------------------------------

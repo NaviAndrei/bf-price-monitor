@@ -88,10 +88,28 @@ def _flanco_sku(url: str) -> str:
     return segments[-1].lower()
 
 
+_ITGALAXY_TRAILING_ID = re.compile(r"-(\d{3,})$")
+
+
+def _itgalaxy_sku(url: str) -> str:
+    # https://www.itgalaxy.ro/<category>/<brand>/<slug>-<id>/ -- the numeric
+    # id at the end of the last segment is ITGalaxy's own product id (the
+    # same number as `adaugaincos-<id>` and `data-ecpid` on the listing), so
+    # it survives a slug rename; category and brand prefixes are dropped.
+    segments = _path_segments(url)
+    if len(segments) < 2:
+        raise IdentityError("ITGalaxy URL has no product segment")
+    match = _ITGALAXY_TRAILING_ID.search(segments[-1])
+    if match is None:
+        raise IdentityError("ITGalaxy URL has no trailing numeric product id")
+    return match.group(1)
+
+
 SKU_ADAPTERS: dict[str, Callable[[str], str]] = {
     "emag": _emag_sku,
     "pcgarage": _pcgarage_sku,
     "flanco": _flanco_sku,
+    "itgalaxy": _itgalaxy_sku,
 }
 
 

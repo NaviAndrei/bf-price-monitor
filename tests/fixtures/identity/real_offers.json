@@ -64,5 +64,27 @@
       "title": "Laptop ASUS Vivobook 16 A1605VA-MB1947, Intel Core i5-13420H, 16 inch, RAM 8GB, SSD 512GB, Intel UHD Graphics, No OS, Cool Silver",
       "legacy_sku": "laptop-asus-vivobook-16-a1605va-mb1947-intel-core-i5-13420h-16-inch-ram-8gb-ssd-512gb-intel-uhd-graphics-no-os-cool-silver.html"
     }
+  ],
+  "itgalaxy": [
+    {
+      "url": "https://www.itgalaxy.ro/ssd/pny/cs2241-1tb-ssd-pcie-gen4-x4-873776/",
+      "title": "SSD PNY 1TB PCIe M.2",
+      "legacy_sku": "873776"
+    },
+    {
+      "url": "https://www.itgalaxy.ro/ssd/pny/cs1030-1tb-pcie-m-2-586020/",
+      "title": "SSD PNY CS1030 1TB PCIe M.2",
+      "legacy_sku": "586020"
+    },
+    {
+      "url": "https://www.itgalaxy.ro/ssd/pny/cs900-1tb-sata-iii-2-5-inch-511212/",
+      "title": "SSD PNY CS900 1TB SATA-III 2.5 inch",
+      "legacy_sku": "511212"
+    },
+    {
+      "url": "https://www.itgalaxy.ro/ssd/pny/cs1030-1tb-m-2-nvme-1-3-pcie-3-0-x4-1005269/",
+      "title": "SSD PNY CS1030 1TB M.2 NVMe 1.3 PCIe 3.0 x4",
+      "legacy_sku": "1005269"
+    }
   ]
 }
