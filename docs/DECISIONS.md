@@ -1007,3 +1007,25 @@ observation to the same 27 product arrays.
      above the limit was refused with "must be greater than 0", which was
      false (QA finding F-03). Message only; the accepted range is unchanged.
   No other slice B file (`journal.py`, `store.py`, ...) has changed.
+
+## 2026-10-28 — BF peak window set to 5-30 Nov 2026
+The owner set `BF_PEAK_START_UTC` = `2026-11-05T18:00:00+00:00` and
+`BF_PEAK_END_UTC` = `2026-11-30T21:59:00+00:00` as repository variables
+(read back with `gh variable list` on 2026-10-28). They replace the
+Thursday 26 to Friday 27 Nov window that the docs used as an example. The
+stores run campaigns from late October to late November, so one Black
+Friday day was the wrong unit for the 30-minute cadence. Black Friday itself
+is still Friday 27 Nov 2026.
+- One window, because `scripts/cadence_gate.py` reads one start and end pair.
+  The window already runs to 30 Nov 23:59 local, so Flanco's last day is
+  inside it and no second window is configured.
+- The gate stays fail-closed. The 30-minute cadence runs only when both
+  variables are set and valid, and the cadence stays at 2 hours before 5 Nov.
+- Repository variables, not secrets, are what `monitor.yml` reads. Two
+  secrets with the same names (created 2026-09-28) are unused and stay until
+  the owner deletes them.
+- Campaign dates are owner-supplied, from press reports. Not checked by the
+  assistant against store pages. Recorded in
+  `docs/runbooks/BF_WEEK_CADENCE.md`, section 1.
+- Known gap: the 30-minute cadence does not cover Flanco, Altex or evoMAG
+  before 5 Nov. Those runs stay at the 2-hour cadence.

@@ -17,17 +17,23 @@ T-32 (#43).
   when the current UTC time falls inside the window defined by two
   repository **variables** (Settings → Secrets and variables → Actions →
   Variables):
-  - `BF_PEAK_START_UTC` — ISO 8601 with offset, e.g. `2026-11-26T18:00:00+00:00`
-  - `BF_PEAK_END_UTC` — ISO 8601 with offset, e.g. `2026-11-27T21:59:00+00:00`
+  - `BF_PEAK_START_UTC` — ISO 8601 with offset. Set on 2026-10-28 to `2026-11-05T18:00:00+00:00`
+  - `BF_PEAK_END_UTC` — ISO 8601 with offset. Set on 2026-10-28 to `2026-11-30T21:59:00+00:00`
 - Both variables are **unset by default**. With either one unset, unparsable,
   or missing its UTC offset, the gate **fails closed**: the 30-minute cron is
   skipped. The 2-hour cron and `workflow_dispatch` always pass the gate.
 - **The BF window is not hardcoded.** eMAG, PC Garage, and Flanco announce
   their Black Friday campaign dates themselves, and not far enough ahead to
-  bake into code. Set the variables once the actual dates are announced.
-  The blueprint target of "Thursday 20:00 to Friday 23:59" is Romania local
-  time, which is UTC+2 in late November. So Thursday 20:00 local is
-  `18:00:00+00:00`, and Friday 23:59 local is `21:59:00+00:00`.
+  bake into code. The variables hold the window the owner configured on
+  2026-10-28: 5 Nov 20:00 to 30 Nov 23:59 Romania local time (UTC+2 in late
+  November). That is wider than the original blueprint target of "Thursday
+  20:00 to Friday 23:59", which is kept for reference only and is no longer
+  the configured window.
+- **Changing the window:** edit the two variables, with
+  `gh variable set BF_PEAK_START_UTC --body "<ISO 8601>" --repo NaviAndrei/bf-price-monitor`
+  (same for `BF_PEAK_END_UTC`), or use Settings → Secrets and variables →
+  Actions → Variables. The gate reads one start and end pair, so a second
+  window needs a code change.
 - **Scope note:** the blueprint asked for 30 minutes on "high-priority items".
   `data/watchlist.json` has no priority field today, so during the window
   **all** watches run at 30 minutes. With the current watchlist size (4
@@ -42,6 +48,33 @@ T-32 (#43).
 - Outside the window, the 30-minute gate check costs one checkout plus one
   Python call on the self-hosted runner (seconds). It never installs
   Playwright or touches a retailer.
+
+### Configured window and campaign calendar
+
+Coverage at the 30-minute cadence, with the window starting 5 Nov 20:00 local:
+
+- eMAG 6 Nov campaign: inside the window.
+- evoMAG main stage 6-8 Nov: inside the window.
+- Altex stage 2: inside the window only if its dates fall between 5 and 30
+  Nov. Its dates were not supplied.
+- Flanco (22 Oct to 30 Nov): 5 to 30 Nov runs at 30 minutes. 22 Oct to 4 Nov
+  runs at the 2-hour cadence.
+- Altex/Media Galaxy (29 Oct to 18 Nov) and evoMAG (29 Oct to 15 Nov): 29 Oct
+  to 4 Nov runs at the 2-hour cadence.
+- Last weekend: the window already runs to 30 Nov 23:59 local, so Flanco's
+  last day is covered. No second window is configured.
+
+Campaign dates, **as of 2026-10-28, from press reports, not store pages**.
+They were supplied by the owner and have not been checked by the assistant
+against store pages. Dates can change.
+
+| Store | Campaign | Dates |
+|---|---|---|
+| eMAG | Campaign day | 6 Nov (one day) |
+| evoMAG | Full campaign; main stage | 29 Oct to 15 Nov; main stage 6 to 8 Nov |
+| Flanco | Campaign | 22 Oct to 30 Nov |
+| Altex / Media Galaxy | Campaign; stage 2 dates not supplied | 29 Oct to 18 Nov |
+| PC Garage | Not officially announced | none |
 
 ## 2. Request-safety limits (always on, every run)
 

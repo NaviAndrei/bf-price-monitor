@@ -293,6 +293,28 @@ this document, including the two below, are still unchecked.
 - Flanco's recurring single-product parse failure is unchanged.
 - Teams remains removed by the prior 2026-09-26 decision.
 
+### Window configuration (2026-10-28)
+
+The decision matrix above has no window gate, so this is recorded as
+configuration, not as a gate result. Values read with `gh variable list`
+on 2026-10-28:
+
+- `BF_PEAK_START_UTC` = `2026-11-05T18:00:00+00:00`
+- `BF_PEAK_END_UTC` = `2026-11-30T21:59:00+00:00`
+
+Checklist for the window:
+
+- [x] `BF_PEAK_START_UTC` and `BF_PEAK_END_UTC` are set as repository
+  variables (confirmed 2026-10-28).
+- [x] `monitor.yml` reads repository **variables**, not secrets (`vars.`,
+  lines 58-59). A value stored as a secret has no effect on the cadence gate.
+- [ ] Owner: delete the two repository **secrets** with the same names
+  (`BF_PEAK_START_UTC`, `BF_PEAK_END_UTC`, created 2026-09-28). They are
+  unused. Not deleted by the assistant.
+
+The window's coverage gaps and the campaign dates are in
+[BF_WEEK_CADENCE.md](runbooks/BF_WEEK_CADENCE.md), section 1.
+
 ### Document status
 
 This document is now a **provisional readiness assessment**, not a
