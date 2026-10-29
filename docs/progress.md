@@ -371,3 +371,15 @@ Next: after the next workflow-run collection, check it with `uv run python scrip
 ## 2026-10-24 - Dashboard QA: pushed, TC-24 checked by script, test count corrected
 - Merged origin (19 bot commits, only data/price_history.json) and pushed 6179d12 after lint, format, mypy --strict, 1222 default and 23 browser tests passed on the merged tree (nothing rerun after the push). TC-24 checked on 6179d12 with scripted clicks and `window.confirm` stubbed (a partial sweep, not a full by-hand pass): no uncaught errors; only the expected 422 and 409 failed-request lines. Collected tests: 1245 = 1222 default + 23 browser (22 e2e + 1 smoke); the 2026-10-22 harness entry's "1222" included the smoke test and is corrected above. F-02, F-04, F-06, F-07 still open.
 - Refs #75, not pushed. Commit 45b4867's message ("21 tests") left unchanged.
+
+## 2026-10-29 - Read-only on-demand product search command
+- Done: `scripts/search_product.py`, `tests/test_search_product.py` and `docs/design/product-search.md` add a read-only product search across the registered shops, one request per shop; loose matching is the default, `--strict` gives the monitor's exact matching; cache only with `--cache-dir`; UTF-8 stdout. Commit d65808a, on origin/master, nothing unpushed.
+- Tests (reported by the last gate run, not re-run here): search tests 104 passed; full non-browser suite 1339 passed, 23 deselected; 99% coverage on the script.
+- Verified live (2026-10-29): one search per shop for pcgarage, flanco and itgalaxy; emag was answered from cache. Statuses: ok for emag, flanco and itgalaxy, no_match for pcgarage, none blocked; `data/` unchanged. The cp1252 crash on an emag title with U+FE0F reproduced live before the fix; the cp1252 regression test failed before the fix; no live rerun after the fix.
+- Unverified: prices not yet compared with the live shop pages; CI result of the push; no run during Black Friday traffic.
+- Follow-ups:
+  1. scrape.py strict `title_matches_query` fails when a comma is attached to a query word (confirmed 2026-10-29 on 'Casti Anker Soundcore, Wireless, Bluetooth, Dark Grey'); fix after Black Friday, with a regression test.
+  2. `search_product.py` imports the private `identity._fold`; add a public alias in `identity.py`.
+  3. A zero-result page without a screenshot gets the detail "no matching offers" because the scraper swallows `ListingReadinessTimeout`; needs a scrape.py change.
+  4. Dashboard endpoint `POST /api/search` later, as a subprocess calling the CLI with `--json`, hard timeout around 150 s, token-guarded.
+  5. Adjacent, not fixed: `fetch_with_browser` returns HTML on a non-challenge 403; emag, pcgarage and flanco do not URL-encode `&` and `#`; `load_history` leaks a file handle; `identity.match_titles` always applies the `SPEC_UNVERIFIED_CPU` penalty, so phones and SSDs cannot reach "high" confidence.
