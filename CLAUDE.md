@@ -47,6 +47,9 @@
 - `testing.md` — loads when `tests/**` is read: pre-commit gate, ruff auto-fix trap, no live network in tests.
 - `feedback.md` — loads when `scripts/feedback.py` or `scripts/anomaly_pilot.py` is read: counts-only output, 30-label gate.
 
+## Owner decisions (final, do not re-ask)
+- **Black Friday cadence and window:** the owner decided on 2026-10-30 that the peak cadence is **1 hour** and that it starts when `BF_PEAK_START_UTC` says so (5 Nov 2026 18:00 UTC to 30 Nov 21:59 UTC, set 2026-10-28). Do not question the window, the campaign dates or the cadence in a new session. `monitor.yml` still registers a `*/30` cron, so moving to 1 hour is a workflow change the owner asks for explicitly.
+
 ## Roadmap source
 Roadmap lives in GitHub milestones/issues, not a standalone file. See docs/ROADMAP.md
 for the last-synced snapshot and docs/progress.md for the active sprint handoff.
