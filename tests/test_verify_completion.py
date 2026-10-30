@@ -3,6 +3,7 @@
 import importlib.util
 import os
 import subprocess
+import tempfile
 import time
 from pathlib import Path
 
@@ -137,9 +138,12 @@ def test_old_commit_and_clean_tree_runs_nothing(repo):
     assert runner.calls == 0
 
 
-def test_not_a_git_repo_is_ignored(tmp_path):
-    assert vc.check_tests(str(tmp_path), Runner(0)) == (0, "")
-    assert vc.check_progress(str(tmp_path)) == []
+def test_not_a_git_repo_is_ignored():
+    # tmp_path lives under this repo (pytest basetemp is .pytest_tmp), so git
+    # would find the repo's history there; use the system temp folder instead.
+    with tempfile.TemporaryDirectory() as outside:
+        assert vc.check_tests(outside, Runner(0)) == (0, "")
+        assert vc.check_progress(outside) == []
 
 
 def test_progress_mode_flags_code_commit_without_the_handoff_log(repo):
