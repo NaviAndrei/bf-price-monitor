@@ -383,3 +383,7 @@ Next: after the next workflow-run collection, check it with `uv run python scrip
   3. A zero-result page without a screenshot gets the detail "no matching offers" because the scraper swallows `ListingReadinessTimeout`; needs a scrape.py change.
   4. Dashboard endpoint `POST /api/search` later, as a subprocess calling the CLI with `--json`, hard timeout around 150 s, token-guarded.
   5. Adjacent, not fixed: `fetch_with_browser` returns HTML on a non-challenge 403; emag, pcgarage and flanco do not URL-encode `&` and `#`; `load_history` leaks a file handle; `identity.match_titles` always applies the `SPEC_UNVERIFIED_CPU` penalty, so phones and SSDs cannot reach "high" confidence.
+
+## 2026-10-30 - Hook test no longer reads the repo's git history
+- `test_not_a_git_repo_is_ignored` in `tests/test_verify_completion.py` now builds its folder with `tempfile` outside the repo; pytest's `tmp_path` sits under `.pytest_tmp` inside the checkout, so git found the repo and the stop hook's progress check fired on a recent code commit. The hook test file ran 11 passed with ruff check and format clean (local run); Quality Gate run 41052805134 on the commit passed.
+- Commit 0743551, pushed, in sync with origin/master. Unverified: why CI passed this test on d65808a before the fix.
