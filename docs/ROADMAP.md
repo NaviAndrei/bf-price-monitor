@@ -21,5 +21,5 @@ Housekeeping: milestones for Sprints 0, 1, 4, 5, 6 and 7 are still marked
 open on GitHub although they have no open issues; closing them is left to
 the owner.
 
-Last synced: 2026-10-19 from `gh issue list` and the milestones API. Re-sync
+Last synced: 2026-10-31 from `gh issue list --state all` (the open set, #36 #37 #40 #47 #75, and the newest close date, 2026-10-19, are unchanged) and the milestones API. Re-sync
 via GitHub milestones before each sprint kickoff.

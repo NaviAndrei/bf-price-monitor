@@ -1029,3 +1029,100 @@ is still Friday 27 Nov 2026.
   `docs/runbooks/BF_WEEK_CADENCE.md`, section 1.
 - Known gap: the 30-minute cadence does not cover Flanco, Altex or evoMAG
   before 5 Nov. Those runs stay at the 2-hour cadence.
+
+## 2026-10-30 — BF peak cadence is 1 hour, as an odd-UTC-hour cron
+The owner decided the peak cadence is 1 hour, starting when
+`BF_PEAK_START_UTC` says so (variables unchanged: 2026-11-05T18:00:00+00:00
+to 2026-11-30T21:59:00+00:00). This supersedes the 30-minute cadence of the
+2026-09-28 entry above. The owner approved the workflow change as an
+exception to the Sprint 9 freeze.
+- `monitor.yml` keeps `0 */2 * * *` (even UTC hours, always runs) and the
+  gated cron changes from `*/30 * * * *` to `0 1-23/2 * * *` (odd UTC
+  hours). Inside the window that is one run per hour; outside it, one per
+  two hours. The two never fire in the same minute, so no duplicate run
+  waits behind the `monitor` concurrency group.
+- `TIGHT_CADENCE_CRON` in `scripts/cadence_gate.py` is set to the same
+  string. **Failure mode if they drift apart:** the gate treats any
+  unknown schedule string as ungated, so the hourly cron would scrape all
+  year, outside the window. `tests/test_monitor_workflow.py` fails CI if the
+  workflow's crons and the constant differ.
+- Rejected: keeping `*/30` (the owner chose 1 hour). Rejected: a gated
+  `0 * * * *` cron, because on even hours it fires in the same minute as the
+  2-hour cron and the two runs queue behind each other.
+- Not verified until the first scheduled gate run on or after 5 Nov 18:00
+  UTC; the owner records that result.
+
+## 2026-10-31 — Catch-up dispatcher delivers the hourly BF cadence
+Measured from `gh` output on 100 schedule runs (2026-10-21 05:05 to
+2026-10-30 20:56 UTC): GitHub delivered 41% of the 2-hour runs and 11.5% of
+the `*/30` runs. Scraping averaged 4.9 runs per day against 12 expected; the
+gap between scraping runs had a median of 5.1 h and a maximum of 7.4 h; the
+self-hosted runner picked up jobs in a median of 2 s. The loss is on
+GitHub's side, so adding more crons will not fix it. The window, dates and
+1-hour cadence are unchanged (owner decision).
+- `scripts/peak_dispatch.py`, run every 10 minutes by Windows Task Scheduler
+  on the runner PC, dispatches `monitor.yml` (`workflow_dispatch`) when the
+  newest non-skipped scrape is 55 minutes old or older, inside the BF
+  window. It never dispatches while a run is queued or in progress. Missing
+  window variables mean "no peak window" (only the optional
+  `--baseline-interval` applies); invalid ones are an error with exit 1.
+  Every `gh` call carries `--repo NaviAndrei/bf-price-monitor`. No change to
+  `monitor.yml`, `cadence_gate.py` or the scrapers: a dispatch always passes
+  the gate.
+- Why catch-up and not a fixed hourly trigger: a trigger that fires every
+  hour regardless would add a second scrape whenever a cron also arrived.
+  The dispatcher looks at what actually ran, so a cron that arrives resets
+  the clock and nothing doubles. A cron that arrives late after a dispatch
+  can still double up once; the concurrency group serialises it.
+- Rejected: an external cron service holding a token (a secret with
+  `actions: write` on a third party, for no gain over a task on the PC that
+  already hosts the runner). Rejected: running the scrape outside GitHub (it
+  would bypass the workflow's golden-gate, state restore and persist
+  steps).
+- Security: the token is fine-grained, one repository, `Actions` read/write
+  plus `Variables` read, with an expiry. It is stored as a DPAPI-encrypted
+  file under `%LOCALAPPDATA%\bf-price-monitor\` (outside the repo) and a
+  PowerShell wrapper trims it into `GH_TOKEN` for one process; the owner's
+  main `gh` login is untouched. The script never prints or logs it (stderr from `gh` is
+  redacted for `ghp_`, `gho_`, `github_pat_` shapes). The workflow's checkout
+  and permissions are untouched; the repo is public and the runner is the
+  owner's machine, so no `pull_request` trigger was added.
+- Not verified until the Task Scheduler task runs on or after 5 Nov 18:00
+  UTC; the owner records that result.
+
+## 2026-10-31 — T-60: a non-ephemeral self-hosted runner on a public repo is an accepted risk
+The scrapers run in a Windows browser environment with a persistent cache, so `monitor.yml` runs its four jobs on the owner's
+PC (`PC-A1208`, runner service installed per `docs/runbooks/RUNNER_SETUP.md`).
+The runner is not ephemeral and the repository is public. Ephemeral or
+just-in-time runners were considered and rejected (roadmap addendum, "Not
+building"); the risk is accepted with the mitigations below.
+- Risk: code that reaches a job on this runner runs on the owner's PC with
+  the runner service's rights and can read what the service account can read.
+- Mitigations in place today:
+  - No `pull_request` or `pull_request_target` trigger on any `self-hosted`
+    workflow, with an explicit warning in `.github/workflows/monitor.yml:3-11`.
+    The two workflows that do use `pull_request` (`quality.yml:3`,
+    `docker.yml:9`) run on `ubuntu-latest` (`quality.yml:12`, `quality.yml:89`,
+    `docker.yml:39`).
+  - Least privilege: `permissions: {}` at workflow level
+    (`monitor.yml:40`) and on the gate job (`monitor.yml:51`); only the
+    persist job writes contents; `persist-credentials: false` on every
+    checkout (`monitor.yml:57`, `86`, `139`).
+  - All actions pinned to commit SHAs (enforced by
+    `tests/test_monitor_workflow.py::test_action_pins_unchanged`).
+  - Service account `NT AUTHORITY\NETWORK SERVICE` (not an administrator) and
+    DACLs that remove `Authenticated Users` from the runner directories
+    (`docs/runbooks/RUNNER_SETUP.md` sections 1 and 2).
+  - Per-run cleanup of orphaned browsers and temp debris
+    (`monitor.yml:375-384`, `scripts/runner_cleanup.ps1`).
+- Not mitigated: a persistent runner keeps its disk between jobs, so one
+  compromised job could leave something behind for the next.
+- Owner to confirm: where the secrets used by the jobs are stored and that
+  none reach the work tree; the repository setting for approving workflow runs from
+  outside contributors (Settings > Actions > General) and whether the
+  service account really is `NETWORK SERVICE` today (last inspected
+  2026-09-23).
+- Re-open when: a `pull_request`-type trigger is wanted on a self-hosted job;
+  the runner PC gains a second purpose or other users; the repository takes
+  outside collaborators; a secret with write access beyond this repo is
+  added; or the project moves to a dedicated runner host.

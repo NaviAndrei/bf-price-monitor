@@ -32,7 +32,7 @@
 1. **Plan first:** Before writing code for an issue, inspect relevant files and state the plan: modified files, test strategy, and rollback points.
 2. **Implement small slices:** Change only files relevant to the active issue. Do not perform speculative refactoring.
 3. **Pre-commit verification:** Run `ruff check .` and `.venv/Scripts/python.exe -m pytest -x --tb=short -q`. Never commit code that breaks existing tests or drops test coverage.
-4. **Handoff logging:** After completing and committing work on an issue, append a concise 2-line summary to `docs/progress.md` (task completed, tests passing, commit SHA).
+4. **Handoff logging:** After completing and committing work on an issue, append a concise summary (2-5 bullets) to `docs/progress.md` (task completed, tests passing, commit SHA).
     - Entry format: `## YYYY-MM-DD - <title>`, then `- ` bullets for what changed and the tests, ending with `Commit <sha>, Refs #N, pushed` or `not pushed` (drop `Refs #N` when there is no issue).
     - The Stop hook (`.claude/hooks/verify_completion.py`) flags a recent code commit that has no `docs/progress.md` change; a docs-only follow-up commit with the entry clears it.
 - **Issue closing:** Always use `(Closes #N)` in the commit message trailer. Never run `gh issue close` manually — GitHub closes the issue automatically on push. Use `Refs #N` only when a commit relates to but does not complete an issue.
@@ -48,7 +48,7 @@
 - `feedback.md` — loads when `scripts/feedback.py` or `scripts/anomaly_pilot.py` is read: counts-only output, 30-label gate.
 
 ## Owner decisions (final, do not re-ask)
-- **Black Friday cadence and window:** the owner decided on 2026-10-30 that the peak cadence is **1 hour** and that it starts when `BF_PEAK_START_UTC` says so (5 Nov 2026 18:00 UTC to 30 Nov 21:59 UTC, set 2026-10-28). Do not question the window, the campaign dates or the cadence in a new session. `monitor.yml` still registers a `*/30` cron, so moving to 1 hour is a workflow change the owner asks for explicitly.
+- **Black Friday cadence and window:** the owner decided on 2026-10-30 that the peak cadence is **1 hour** and that it starts when `BF_PEAK_START_UTC` says so (5 Nov 2026 18:00 UTC to 30 Nov 21:59 UTC, set 2026-10-28). Do not question the window, the campaign dates or the cadence in a new session. The workflow now implements it (not yet deployed or verified): `monitor.yml` has `0 */2 * * *` plus the gated odd-hour cron `0 1-23/2 * * *`, which must equal `TIGHT_CADENCE_CRON` in `scripts/cadence_gate.py` (a test enforces it). Delivery: `scripts/peak_dispatch.py` (Task Scheduler, every 10 min) dispatches `monitor.yml` when a scrape is due, because GitHub delivered only 41% of the 2-hour crons (measured 2026-10-21..30). Treat it as verified only after the first scheduled gate run and the first dispatcher tick in the window, which the owner records.
 
 ## Roadmap source
 Roadmap lives in GitHub milestones/issues, not a standalone file. See docs/ROADMAP.md

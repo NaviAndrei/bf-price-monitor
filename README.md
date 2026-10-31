@@ -60,7 +60,7 @@ than crashing the run.
    retry and dead-letter handling.
 4. `.github/workflows/monitor.yml` runs all three scripts every 2 hours (and
    on manual trigger) from the current `master` tip. During a configured
-   Black Friday week it also runs every 30 minutes; see
+   Black Friday week it runs every hour; see
    [docs/runbooks/BF_WEEK_CADENCE.md](docs/runbooks/BF_WEEK_CADENCE.md).
    Then
    `scripts/persist_history.py` commits `data/price_history.json` back to the
@@ -252,7 +252,7 @@ grace period elapses.
 Setup:
 
 1. Create a Healthchecks.io check with a schedule matching the workflow's
-   cron (`0 */2 * * *`, i.e. every 2 hours). The 30-minute Black Friday
+   cron (`0 */2 * * *`, i.e. every 2 hours). The hourly Black Friday
    cron only scrapes inside the configured peak window, so this 2-hour
    schedule stays the baseline.
 2. Add its ping URL as the `HEALTHCHECK_URL` repository Actions secret

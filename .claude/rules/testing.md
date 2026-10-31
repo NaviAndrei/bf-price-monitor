@@ -12,4 +12,5 @@ paths:
 - **Source-text tests are not UI tests:** `tests/dashboard/test_server_ui.py` checks the page's files, not what a browser does. A change to the page's behaviour needs a browser test or a manual step.
 - **Prove, do not assert:** a check counts only when a run showed it. Quote the pytest summary line or the command output in the report.
 - **`tmp_path` is inside the repo:** locally, `--basetemp=.pytest_tmp` puts it under this git checkout, so git walks up into the repo's history. A test that needs a folder outside any repo (for example `test_not_a_git_repo_is_ignored`) must use `tempfile.TemporaryDirectory()`.
+- **Manual runs use their own base temp:** run pytest by hand with `--basetemp=.pytest_tmp_manual`, because the Stop hook's pytest uses `.pytest_tmp` and two runs sharing it can delete each other's files (`.gitignore` covers `.pytest_tmp_*/`).
 - **Independent check before "done":** for a change to a dashboard, pipeline stage, or hook, run the `qa-verifier` agent against the spec. It is read-only and reads the spec fresh.
