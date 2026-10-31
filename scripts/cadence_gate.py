@@ -1,10 +1,12 @@
 """BF-week adaptive cadence gate (T-32, #43).
 
-monitor.yml runs on two schedules: the normal `0 */2 * * *` cadence, and a
-tighter `*/30 * * * *` cadence meant only for the configured BF peak window.
-This script is the single source of truth for whether a given triggered run
-should actually scrape: the 2-hour cron and any `workflow_dispatch` always
-proceed; the 30-minute cron proceeds only when `now` (UTC) falls inside the
+monitor.yml runs on two schedules: the normal `0 */2 * * *` cadence (even UTC
+hours), and a second `0 1-23/2 * * *` cron (odd UTC hours) meant only for the
+configured BF peak window. Together they give one run per hour inside the
+window and one per two hours outside it. This script is the single source of
+truth for whether a given triggered run should actually scrape: the 2-hour
+cron and any `workflow_dispatch` always proceed; the odd-hour cron proceeds
+only when `now` (UTC) falls inside the
 window defined by the BF_PEAK_START_UTC / BF_PEAK_END_UTC repository
 variables (ISO 8601, e.g. "2026-11-26T18:00:00+00:00").
 
@@ -26,7 +28,10 @@ import os
 import sys
 from datetime import UTC, datetime
 
-TIGHT_CADENCE_CRON = "*/30 * * * *"
+# Must equal the second cron in .github/workflows/monitor.yml; any other
+# schedule string is treated as ungated (tests/test_monitor_workflow.py
+# fails if the two drift apart).
+TIGHT_CADENCE_CRON = "0 1-23/2 * * *"
 
 
 def is_in_peak_window(
@@ -46,7 +51,7 @@ def is_in_peak_window(
 
 def should_run(event_name: str, schedule: str | None) -> bool:
     # workflow_dispatch (manual trigger) and the baseline 2-hour cron always
-    # proceed; only the tightened 30-minute cron is gated by the peak window.
+    # proceed; only the tightened odd-hour cron is gated by the peak window.
     if event_name != "schedule" or schedule != TIGHT_CADENCE_CRON:
         return True
     return is_in_peak_window(

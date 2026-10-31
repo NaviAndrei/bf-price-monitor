@@ -75,3 +75,53 @@ def test_is_in_peak_window_rejects_naive_boundaries():
 def test_is_in_peak_window_rejects_unparsable_boundaries():
     now = datetime(2026, 11, 27, 10, 0, tzinfo=UTC)
     assert cadence_gate.is_in_peak_window(now, "not-a-date", "also-not-a-date") is False
+
+
+_START = "2026-11-05T18:00:00+00:00"
+_END = "2026-11-30T21:59:00+00:00"
+
+
+def test_tight_cron_is_the_odd_hour_cron():
+    # Odd UTC hours never share a minute with the even-hour baseline cron.
+    assert cadence_gate.TIGHT_CADENCE_CRON == "0 1-23/2 * * *"
+
+
+def test_odd_hour_run_inside_the_window_scrapes(monkeypatch):
+    monkeypatch.setenv("BF_PEAK_START_UTC", _START)
+    monkeypatch.setenv("BF_PEAK_END_UTC", _END)
+    _freeze_now(monkeypatch, datetime(2026, 11, 20, 13, 0, tzinfo=UTC))
+
+    assert cadence_gate.should_run("schedule", cadence_gate.TIGHT_CADENCE_CRON) is True
+
+
+def test_odd_hour_run_before_and_after_the_window_is_skipped(monkeypatch):
+    monkeypatch.setenv("BF_PEAK_START_UTC", _START)
+    monkeypatch.setenv("BF_PEAK_END_UTC", _END)
+    for moment in (
+        datetime(2026, 11, 5, 17, 0, tzinfo=UTC),
+        datetime(2026, 11, 30, 23, 0, tzinfo=UTC),
+    ):
+        _freeze_now(monkeypatch, moment)
+        assert (
+            cadence_gate.should_run("schedule", cadence_gate.TIGHT_CADENCE_CRON)
+            is False
+        )
+
+
+def test_window_boundaries_are_inclusive():
+    start = datetime(2026, 11, 5, 18, 0, tzinfo=UTC)
+    end = datetime(2026, 11, 30, 21, 59, tzinfo=UTC)
+    assert cadence_gate.is_in_peak_window(start, _START, _END) is True
+    assert cadence_gate.is_in_peak_window(end, _START, _END) is True
+
+
+def test_old_half_hour_string_is_ungated_so_the_constant_must_match_the_workflow():
+    assert cadence_gate.should_run("schedule", "*/30 * * * *") is True
+
+
+def test_tight_cadence_fails_closed_on_invalid_variables(monkeypatch):
+    monkeypatch.setenv("BF_PEAK_START_UTC", "not-a-date")
+    monkeypatch.setenv("BF_PEAK_END_UTC", _END)
+    _freeze_now(monkeypatch, datetime(2026, 11, 20, 13, 0, tzinfo=UTC))
+
+    assert cadence_gate.should_run("schedule", cadence_gate.TIGHT_CADENCE_CRON) is False

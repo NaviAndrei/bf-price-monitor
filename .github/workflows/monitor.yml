@@ -13,13 +13,16 @@ name: Price Monitor
 on:
   schedule:
     - cron: "0 */2 * * *"
-    # T-32 (#43): BF-week adaptive cadence. This tighter cron always fires,
-    # but the `gate` job below (scripts/cadence_gate.py) only lets the real
-    # scrape proceed when `now` falls inside the BF_PEAK_START_UTC /
+    # T-32 (#43): BF-week adaptive cadence. This odd-UTC-hour cron always
+    # fires, but the `gate` job below (scripts/cadence_gate.py) only lets the
+    # real scrape proceed when `now` falls inside the BF_PEAK_START_UTC /
     # BF_PEAK_END_UTC repository variables -- unset by default, so this
-    # cron is a no-op outside a deliberately configured BF week. See
+    # cron is a no-op outside a deliberately configured BF week. With the
+    # even-hour cron above it gives one run per hour inside the window and
+    # never fires at the same minute as it. The string must equal
+    # TIGHT_CADENCE_CRON in scripts/cadence_gate.py. See
     # docs/runbooks/BF_WEEK_CADENCE.md.
-    - cron: "*/30 * * * *"
+    - cron: "0 1-23/2 * * *"
   workflow_dispatch:
     inputs:
       send_test_alert:
@@ -41,7 +44,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   # T-32 (#43): fast (checkout + one script, no Playwright/uv setup), so
-  # deciding "not now" on the 30-minute cron outside the BF peak window
+  # deciding "not now" on the odd-hour cron outside the BF peak window
   # costs seconds of self-hosted runner time, not a full scrape cycle.
   gate:
     runs-on: self-hosted

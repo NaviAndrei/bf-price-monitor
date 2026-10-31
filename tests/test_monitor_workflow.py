@@ -173,3 +173,15 @@ def test_concurrency_block_unchanged(text):
 def test_action_pins_unchanged(text):
     uses = re.findall(r"^\s*(?:- )?uses:\s*(\S+)", text, re.MULTILINE)
     assert uses == PINNED_USES
+
+
+def test_schedule_crons_match_the_cadence_gate_constant(text):
+    # Editing the workflow cron without TIGHT_CADENCE_CRON (or the reverse)
+    # would make the gate treat the hourly cron as ungated, so it would
+    # scrape all year.
+    import cadence_gate
+
+    crons = re.findall(r'^\s*- cron: "([^"]+)"', text, re.MULTILINE)
+    assert crons.count(cadence_gate.TIGHT_CADENCE_CRON) == 1
+    assert crons.count("0 */2 * * *") == 1
+    assert len(crons) == 2
