@@ -627,6 +627,51 @@ def test_main_attaches_deal_stats_without_changing_rule_verdict(monkeypatch, tmp
     assert "history_30d" not in out
 
 
+# --- T-49: zero or missing baseline quarantines one alert, keeps the batch ------
+
+
+def test_main_quarantines_zero_or_missing_baseline_and_keeps_batch(
+    monkeypatch, tmp_path, capsys
+):
+    alerts_file = tmp_path / "alerts.json"
+    formatted_file = tmp_path / "formatted_alerts.json"
+    zero_old = {
+        **HIKE_THEN_DROP_ALERT,
+        "url": "https://example.test/zero-old",
+        "old_price": 0.0,
+    }
+    zero_low = {
+        **HIKE_THEN_DROP_ALERT,
+        "url": "https://example.test/zero-low",
+        "thirty_day_low": 0.0,
+    }
+    none_low = {
+        **HIKE_THEN_DROP_ALERT,
+        "url": "https://example.test/none-low",
+        "thirty_day_low": None,
+    }
+    good = {**HIKE_THEN_DROP_ALERT, "url": "https://example.test/good"}
+    alerts_file.write_text(
+        json.dumps([zero_old, zero_low, none_low, good]), encoding="utf-8"
+    )
+    monkeypatch.setattr("analyze.ALERTS_FILE", alerts_file)
+    monkeypatch.setattr("analyze.FORMATTED_FILE", formatted_file)
+    monkeypatch.setattr(
+        "analyze.get_analysis",
+        lambda client, prompt, rule_verdict, thirty_day_low, **kw: default_analysis(
+            rule_verdict, thirty_day_low, **kw
+        ),
+    )
+
+    analyze_main()
+
+    [out] = json.loads(formatted_file.read_text(encoding="utf-8"))
+    assert out["url"] == "https://example.test/good"
+    err = capsys.readouterr().err
+    for url in ("zero-old", "zero-low", "none-low"):
+        assert f"https://example.test/{url}" in err
+
+
 # --- T-45 (#63) follow-up: empty 30-day window fallback wording ----------------
 
 # Last seen 45 days ago (history_days >= 14, so the rule engine runs), nothing

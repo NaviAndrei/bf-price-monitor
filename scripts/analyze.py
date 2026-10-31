@@ -41,7 +41,7 @@ class RawAlertCandidate(BaseModel):
     url: str
     old_price: float | None
     new_price: float
-    thirty_day_low: float
+    thirty_day_low: float | None
     history_days: int
     reference_price: float | None = None
     stock_status: str
@@ -592,6 +592,14 @@ def main():
             raise
 
         thirty_day_low = a.get("thirty_day_low")
+        # T-49: a zero or missing baseline makes the discount division
+        # meaningless. Quarantine just this alert; the rest of the batch runs.
+        if not a.get("old_price") or not thirty_day_low:
+            print(
+                f"Quarantined alert with zero or missing price for {a.get('url')}",
+                file=sys.stderr,
+            )
+            continue
         metrics = evaluate_omnibus_rule(
             a["new_price"],
             a["old_price"],
