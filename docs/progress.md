@@ -387,3 +387,41 @@ Next: after the next workflow-run collection, check it with `uv run python scrip
 ## 2026-10-30 - Hook test no longer reads the repo's git history
 - `test_not_a_git_repo_is_ignored` in `tests/test_verify_completion.py` now builds its folder with `tempfile` outside the repo; pytest's `tmp_path` sits under `.pytest_tmp` inside the checkout, so git found the repo and the stop hook's progress check fired on a recent code commit. The hook test file ran 11 passed with ruff check and format clean (local run); Quality Gate run 41052805134 on the commit passed.
 - Commit 0743551, pushed, in sync with origin/master. Unverified: why CI passed this test on d65808a before the fix.
+
+## 2026-10-30 - Black Friday peak cadence changed to 1 hour
+- `monitor.yml` gated cron `*/30 * * * *` is now `0 1-23/2 * * *` (odd UTC hours) next to the unchanged `0 */2 * * *`; `TIGHT_CADENCE_CRON` in `scripts/cadence_gate.py` matches. New tests cover odd-hour run inside and outside the window, inclusive boundaries, invalid variables, and a contract test that the workflow crons equal the constant. Runbook, README, DECISIONS and CLAUDE.md updated.
+- Unverified: the first live scheduled gate run (on or after 5 Nov 18:00 UTC). Commit not made, not pushed.
+
+## 2026-10-31 - Catch-up dispatcher for the hourly BF cadence
+- New `scripts/peak_dispatch.py` (run every 10 min by Task Scheduler) dispatches `monitor.yml` only when a scrape is due: window from `BF_PEAK_START_UTC`/`BF_PEAK_END_UTC`, 55-minute threshold, never while a run is in progress, fail closed on bad variables, one log line per tick. Backed by measurement: 41% of the 2-hour crons delivered. Runbook section 4a, DECISIONS entry and CLAUDE.md line added; `monitor.yml` and `cadence_gate.py` unchanged. The owner registers the task and the token (not done here).
+- Tests: `tests/test_peak_dispatch.py` 39 passed offline at that time (49 measured 2026-10-31, after the close-out and 401/403/404 hint tests), 95% coverage of the script then (96% measured 2026-10-31, `tests/test_peak_dispatch.py` plus `tests/test_reference_price_window.py`, missed lines 88-89, 95, 157, 211-212, 295). Unverified: live behaviour, the scheduled task.
+- Commit: pending; the owner records the SHA after committing.
+
+## 2026-10-31 - BF week close-out: dispatcher hardening, T-51 tests, T-60 decision
+- `scripts/peak_dispatch.py`: every `gh` call now carries `--repo NaviAndrei/bf-price-monitor`; missing window variables mean "no peak window" (the `--baseline-interval` cadence still applies) instead of a full skip; invalid variables still exit 1. Runbook section 4a now describes a DPAPI-encrypted token file plus a PowerShell wrapper under `%LOCALAPPDATA%\bf-price-monitor\` (trimmed token, absolute `schtasks` paths, 401 versus 403/404 table, rollback that matches the missing-variable rule). The dispatcher test file is now 46 tests, not the 39 in the entry above.
+- T-51: `docs/design/reference-price.md` states the reference-price rule as implemented and `tests/test_reference_price_window.py` (6 tests) pins it; the code behaved as expected, `scripts/` unchanged. T-60: DECISIONS entry for the non-ephemeral self-hosted runner on a public repo. CLAUDE.md item 4 now says "2-5 bullets"; `docs/ROADMAP.md` sync date refreshed (open issue set unchanged).
+- Tests (measured 2026-10-31, local run, `--basetemp=.pytest_tmp_manual`, `-m "not browser"`): 1398 passed, 23 deselected, 0 failed. An earlier run the same day had one failure, `test_base_with_surrounding_whitespace_or_crlf_is_accepted[
+]`, which passed on its own and did not recur; the suspected cause (the Stop hook's pytest sharing `.pytest_tmp`) is unproven; 21 of 21 mutations of `peak_dispatch.py` caught. Commits pending; the owner records the SHAs after committing, expected in order: (1) cadence feat (`monitor.yml`, `cadence_gate.py`, their two tests), (2) dispatcher feat (`peak_dispatch.py`, its test), (3) docs and tests, (4) a follow-up recording these SHAs here and in the two entries above that say "pending".
+
+## 2026-10-31 - Peak dispatch: live path recon, 403 hint, fail-closed wrapper
+- Dry-run passed on 2026-10-31, no dispatch: the default run logged `skip: outside peak window, baseline off`, and `--dry-run --baseline-interval 120` logged `not-due: last scrape 94 min ago, due at 115`. Those dry-runs used the gh keyring login, not the DPAPI token, so the token-loading path is not verified.
+- Unverified until the owner reports the live run: the real dispatch (Actions write), the scheduled task `bf-peak-dispatch` and the wrapper `%LOCALAPPDATA%\bf-price-monitor\peak_dispatch.ps1`. Neither the task nor the wrapper existed at recon. Token expiry: TBD (no doc records it, and no rotation step covers this token yet).
+- Fixed: `scripts/peak_dispatch.py` adds a fix hint to gh's HTTP 401, 403 and 404 errors (`test_http_status_from_gh_is_explained_with_the_fix`). The runbook's section 4a wrapper now stops with exit 1 when `gh_token.dpapi` is missing or empty, instead of silently falling back to the keyring login, and clears `GH_TOKEN` in a `finally`. Checked on dummy files in the scratchpad only: missing and empty exit 1, a valid file loads.
+- Flagged, not fixed: a dead token makes every tick log `error` with no alert; `RUN_LIST_LIMIT` is 30 against a 24 h lookback; the runbook's `schtasks` line has no `/RU`, so the task runs only while the user is logged on; the "due at 115" figure holds only with `--baseline-interval 120` (the window threshold is 55).
+- Tests: `ruff check .` and `ruff format --check .` clean; `pytest` gave 1402 passed, 23 deselected (measured 2026-10-31).
+- Commit: none; not pushed. Changed: `scripts/peak_dispatch.py`, `tests/test_peak_dispatch.py`, `docs/runbooks/BF_WEEK_CADENCE.md`, `docs/progress.md`.
+
+## 2026-10-31 - Peak dispatch: token saved, guarded save command
+- Owner report, live 2026-10-31: the DPAPI token file was saved and the read-only dry-run passed. Not verified by me; the token value was never read or written anywhere. It supersedes the earlier note that the dry-runs used the keyring login.
+- Still unverified: Actions write (a real dispatch), the wrapper `%LOCALAPPDATA%\bf-price-monitor\peak_dispatch.ps1` under Task Scheduler, the `bf-peak-dispatch` task, and the first real dispatch. Token expiry is still not recorded.
+- Runbook section 4a step 2 now uses a guarded save: it reads the clipboard, accepts only a `github_pat_` or `ghp_` prefix with length 40 or more, prints "saved, length N" or "rejected, length N", and clears the clipboard. Logic checked on dummy values in the scratchpad (valid, short, wrong prefix, surrounding whitespace, inner space, DPAPI round trip); the real clipboard calls were not run. The step 3 wrapper already trimmed, set `GH_TOKEN` in process scope only, removed it in `finally`, never logged it and threw on a missing or empty file, so it is unchanged.
+- Flagged, not fixed: no progress entry says the token returns 401; only the troubleshooting table and the dispatcher's 401 hint mention it. The wrapper's exit 1 relies on `throw` under `powershell -File` (checked on dummy files earlier, not under Task Scheduler).
+- Commit: none; not pushed. Changed: `docs/runbooks/BF_WEEK_CADENCE.md`, `docs/progress.md`.
+
+## 2026-10-31 - Post-push verification of 462bc97 (read-only)
+- Verified at 21:40 UTC: HEAD = origin/master = `462bc97`; top commits in order `462bc97`, `4d30b06`, `12ac05d`, `b6726a7`.
+- Verified: certifi is pinned to 2026.10.23 in `requirements.txt` and `uv.lock` on origin/master. Quality Gate, Docker Image and Graph Update (uv) succeeded on `462bc97` (19:46 UTC).
+- Verified: Dependabot alerts #24 and #36 (certifi, critical) are still `open`, `fixed_at` null. Open total 44 (2 critical, 9 high, 24 medium, 9 low).
+- Finding: no scheduled Price Monitor run since 18:01 UTC (run 41227341535, on `422326f`), a gap of 3 h 39 min with the 20:00 and 21:00 UTC crons not seen. Nothing was dispatched or re-run.
+- Unverified: the TLS check on the new certifi pin, because no Price Monitor run on `462bc97` exists. The 18:01 UTC run's log (1082 lines) has no SSL or certificate matches, but it predates the bump.
+- Commit: none; not pushed. Changed: `docs/progress.md`.
