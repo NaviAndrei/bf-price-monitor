@@ -35,4 +35,4 @@ statement below.
 - Observed, not declared: the low comes from this monitor's own scrapes. A
   price the shop held between two scrapes is invisible.
 - Per retailer product, so a shop's other sales channels are not covered.
-- A zero or missing price in the window is not guarded (T-49, analysis only).
+- A zero, negative or non-finite scraped price is dropped before history, and an alert with such a `thirty_day_low` is skipped (T-49). An invalid row already in history still affects that product until it leaves the window.

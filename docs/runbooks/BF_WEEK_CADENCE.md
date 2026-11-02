@@ -266,33 +266,73 @@ next to the log, outside the repo.
    the token again and rerun.
 3. Create the wrapper `%LOCALAPPDATA%\bf-price-monitor\peak_dispatch.ps1`.
    It decrypts the token into `GH_TOKEN` for this one process, trims it (a
-   stray space or newline makes GitHub answer 401), and runs the script with
-   absolute paths:
+   stray space or newline makes GitHub answer 401), runs the script with
+   absolute paths, and appends an `error` line to the log if the wrapper
+   itself throws:
    ```powershell
    $ErrorActionPreference = "Stop"
-   $file = Join-Path $env:LOCALAPPDATA "bf-price-monitor\gh_token.dpapi"
-   # Without a token gh silently uses your main keyring login, which is broader
-   # than this token, so a missing or empty file must stop the run here.
-   $text = if (Test-Path $file) { "$(Get-Content $file -Raw)".Trim() }
-   if (-not $text) { throw "gh_token.dpapi is missing or empty: not falling back to the keyring login" }
-   $ss = ConvertTo-SecureString $text
-   $token = [System.Net.NetworkCredential]::new("", $ss).Password.Trim()
+   $dir = Join-Path $env:LOCALAPPDATA "bf-price-monitor"
+   $file = Join-Path $dir "gh_token.dpapi"
    try {
+     # Without a token gh silently uses your main keyring login, which is broader
+     # than this token, so a missing or empty file must stop the run here.
+     $text = if (Test-Path $file) { "$(Get-Content $file -Raw)".Trim() }
+     if (-not $text) { throw "gh_token.dpapi is missing or empty: not falling back to the keyring login" }
+     $ss = ConvertTo-SecureString $text
+     $token = [System.Net.NetworkCredential]::new("", $ss).Password.Trim()
      $env:GH_TOKEN = $token
+     # A non-zero python exit does not throw; the script logs its own errors.
      & "D:\Projects\bf-price-monitor\.venv\Scripts\python.exe" "D:\Projects\bf-price-monitor\scripts\peak_dispatch.py"
      exit $LASTEXITCODE
+   } catch {
+     # Only exceptions are logged here (same line format as peak_dispatch.py).
+     try {
+       $msg = "wrapper: $($_.Exception.GetType().Name): $($_.Exception.Message)"
+       $msg = ($msg -replace '(?:gh[pousr]_|github_pat_)[A-Za-z0-9_]+', '[redacted]') -replace '\s+', ' '
+       if ($msg.Length -gt 200) { $msg = $msg.Substring(0, 200) }
+       $now = (Get-Date).ToUniversalTime().ToString("yyyy-MM-dd'T'HH:mm:ss'Z'")
+       [System.IO.File]::AppendAllText((Join-Path $dir "peak_dispatch.log"), "$now`terror`t$msg`r`n", [System.Text.UTF8Encoding]::new($false))
+     } catch { }
+     exit 1
    } finally {
      Remove-Item Env:GH_TOKEN -ErrorAction SilentlyContinue
    }
    ```
-   A missing or empty token file ends the wrapper with exit code 1 and one of
-   those two messages, and nothing is dispatched.
+   A missing or empty token file ends the wrapper with exit code 1 and that
+   message, and nothing is dispatched. The wrapper also appends it to the
+   log as an `error` line starting `wrapper:` (see Failure modes).
    Add `--baseline-interval 120` to the script line only after one
    supervised day (see Rollback).
-4. Register the task as your own user, with absolute paths:
+4. Check whether the task exists, then register it on a fresh install only.
+   Inspecting changes nothing and is always safe:
    ```powershell
-   schtasks /Create /TN "bf-peak-dispatch" /SC MINUTE /MO 10 /RL LIMITED /TR "powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"C:\Users\IvanA\AppData\Local\bf-price-monitor\peak_dispatch.ps1\""
+   Export-ScheduledTask -TaskName "bf-peak-dispatch"
+   Get-ScheduledTaskInfo -TaskName "bf-peak-dispatch"
    ```
+   If the task exists, compare it with "Task configuration" below and stop:
+   do not register over it or rebuild it from defaults. Fresh install, no
+   task of that name yet (the script stops if one exists, and builds the
+   wrapper path from `LOCALAPPDATA`; the backtick-quoted `"$wrapper"` keeps a
+   path with spaces as one argument):
+   ```powershell
+   & {
+     $ErrorActionPreference = "Stop"
+     $name = "bf-peak-dispatch"
+     $wrapper = Join-Path $env:LOCALAPPDATA "bf-price-monitor\peak_dispatch.ps1"
+     if (-not (Test-Path -LiteralPath $wrapper)) { throw "wrapper not found: $wrapper" }
+     if (Get-ScheduledTask -TaskName $name -ErrorAction SilentlyContinue) {
+       throw "task $name already exists: not changing it"
+     }
+     $arguments = "--headless powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File `"$wrapper`""
+     $action = New-ScheduledTaskAction -Execute "$env:SystemRoot\System32\conhost.exe" -Argument $arguments
+     $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval (New-TimeSpan -Minutes 10)
+     $principal = New-ScheduledTaskPrincipal -UserId "$env:USERDOMAIN\$env:USERNAME" -LogonType Interactive -RunLevel Limited
+     $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -MultipleInstances IgnoreNew -ExecutionTimeLimit (New-TimeSpan -Minutes 8)
+     Register-ScheduledTask -TaskName $name -Action $action -Trigger $trigger -Principal $principal -Settings $settings | Out-Null
+   }
+   ```
+   Without `-Force`, `Register-ScheduledTask` also refuses an existing name.
+   Afterwards run `Export-ScheduledTask` and compare it with the table below.
 5. Verify before 5 Nov 18:00 UTC. Run the wrapper by hand, then look at the
    log after the task has run a few times:
    ```powershell
@@ -301,6 +341,23 @@ next to the log, outside the repo.
    ```
    Outside the window with no baseline it logs `skip: outside peak window,
    baseline off`. Keep the PC awake from 5 to 30 Nov (no sleep on AC power).
+
+**Task configuration.** Read back from the live task on 2026-11-02 with
+`Export-ScheduledTask` and `Get-ScheduledTask`. Settings the export omits are
+at their defaults, so it does not print them. The setup script above builds
+the same values; the script itself has not been run (syntax and argument
+checks only).
+
+| Item | Value | Status |
+|---|---|---|
+| Principal | Current user, `InteractiveToken` (runs only while that user is signed in), run level Limited | Supported setting |
+| Trigger | Time trigger, start 2026-11-01 16:11, repeat every `PT10M`, no end | Supported setting |
+| Action | `C:\Windows\System32\conhost.exe` with `--headless powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "<LOCALAPPDATA>\bf-price-monitor\peak_dispatch.ps1"` | `conhost --headless` is not a documented Task Scheduler feature; it works here (last result 0, log lines written) but may change with Windows |
+| `ExecutionTimeLimit` | `PT8M` (Task Scheduler default is `PT72H`) | Supported setting. Forced stop at 8 minutes and child-process cleanup are untested |
+| Batteries | `DisallowStartIfOnBatteries` false, `StopIfGoingOnBatteries` false | Supported setting |
+| `MultipleInstancesPolicy` | `IgnoreNew` | Supported setting; a tick that starts while the last one still runs is dropped without a log line |
+| `WakeToRun`, `StartWhenAvailable` | Both false (defaults, so absent from the export) | Supported setting; a sleeping PC is not woken and missed ticks are not replayed |
+| `UseUnifiedSchedulingEngine` | `true` | A documented XML element, but nothing here shows why it is true: on this machine saving the task set it, and restoring `PT72H` did not clear it. PT8M is not shown to need it |
 
 **Troubleshooting.** The log line carries the `gh` exit code and the first
 200 characters of its error, with token-shaped text removed.
@@ -320,8 +377,22 @@ remove that flag too (or disable the task) for a full stop.
 **Failure modes.**
 
 - PC off or asleep: nothing is dispatched, and the runner is offline too.
-- Token wrong or expired (see Troubleshooting): every tick exits 1 and logs `error`;
+- Token that GitHub rejects (see Troubleshooting): every tick exits 1 and logs `error`;
   the scheduled crons still run at their delivered rate.
+- Failures before the script runs: a missing or empty `gh_token.dpapi`, a token
+  file that cannot be decrypted, or a wrong Python path make the wrapper's
+  `catch` append `error  wrapper: <exception type>: <message>` (first 200
+  characters, token-shaped text removed) and exit 1. A non-zero exit from
+  Python is not logged by the wrapper; the script logs its own errors. Tested
+  2026-11-02 with the token file renamed: the line was written. No line is
+  written when the wrapper file is missing or has a syntax error, when
+  `powershell.exe` cannot start, or when the task is killed at 8 minutes.
+- Do not rely on the task result: with the `conhost --headless` action, Task
+  Scheduler showed `LastTaskResult` 0 for that run although the wrapper exited
+  1 (cause not investigated). Use the log.
+- A tick longer than 8 minutes is stopped by the execution limit. The script
+  allows far longer (each `gh` call may take 60 s and a tick can make dozens),
+  so a hung tick is cut off and writes no log line (inferred, untested).
 - A delayed cron run can still arrive after a dispatch and queue behind it
   in the `monitor` concurrency group, giving two scrapes close together.
   The dispatcher only counts runs it can see, so it cannot prevent that.
