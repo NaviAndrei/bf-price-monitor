@@ -1,6 +1,7 @@
 # scripts/analyze.py
 import hashlib
 import json
+import math
 import os
 import re
 import sys
@@ -108,6 +109,14 @@ PROMPT_TEMPLATE_VERSION = "omnibus-v2"
 LLM_MAX_TOKENS = 250
 
 REQUIRED_ANALYSIS_KEYS = {"verdict", "verdict_score", "summary", "is_recommended"}
+
+
+def _is_valid_price(value: object) -> bool:
+    # T-49: type first, then finiteness, then sign, so the check itself can
+    # never raise on a string, bool or other unexpected value.
+    if isinstance(value, bool) or not isinstance(value, int | float):
+        return False
+    return math.isfinite(value) and value > 0
 
 
 def evaluate_omnibus_rule(
@@ -592,11 +601,13 @@ def main():
             raise
 
         thirty_day_low = a.get("thirty_day_low")
-        # T-49: a zero or missing baseline makes the discount division
-        # meaningless. Quarantine just this alert; the rest of the batch runs.
-        if not a.get("old_price") or not thirty_day_low:
+        # T-49: a zero, missing or invalid baseline makes the discount
+        # division meaningless. Quarantine just this alert; the rest of the
+        # batch runs. A missing key still fails at the validation above.
+        if not a.get("old_price") or not _is_valid_price(thirty_day_low):
             print(
-                f"Quarantined alert with zero or missing price for {a.get('url')}",
+                f"Quarantined alert with zero, missing or invalid price for "
+                f"{a.get('url')}",
                 file=sys.stderr,
             )
             continue

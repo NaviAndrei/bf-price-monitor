@@ -672,6 +672,60 @@ def test_main_quarantines_zero_or_missing_baseline_and_keeps_batch(
         assert f"https://example.test/{url}" in err
 
 
+@pytest.mark.parametrize(
+    "bad_low",
+    [float("nan"), float("inf"), float("-inf"), -5.0, True, "95"],
+    ids=["nan", "inf", "-inf", "negative", "bool", "string"],
+)
+def test_main_quarantines_invalid_thirty_day_low_and_keeps_batch(
+    monkeypatch, tmp_path, capsys, bad_low
+):
+    # T-49: NaN, inf, a negative number, a bool or a numeric string passed the
+    # old falsy check and either raised mid-batch or produced a nonsense verdict.
+    alerts_file = tmp_path / "alerts.json"
+    formatted_file = tmp_path / "formatted_alerts.json"
+    bad = {
+        **HIKE_THEN_DROP_ALERT,
+        "url": "https://example.test/bad-low",
+        "thirty_day_low": bad_low,
+    }
+    good = {**HIKE_THEN_DROP_ALERT, "url": "https://example.test/good"}
+    alerts_file.write_text(json.dumps([bad, good]), encoding="utf-8")
+    monkeypatch.setattr("analyze.ALERTS_FILE", alerts_file)
+    monkeypatch.setattr("analyze.FORMATTED_FILE", formatted_file)
+    monkeypatch.setattr(
+        "analyze.get_analysis",
+        lambda client, prompt, rule_verdict, thirty_day_low, **kw: default_analysis(
+            rule_verdict, thirty_day_low, **kw
+        ),
+    )
+
+    analyze_main()
+
+    [out] = json.loads(formatted_file.read_text(encoding="utf-8"))
+    assert out["url"] == "https://example.test/good"
+    assert "https://example.test/bad-low" in capsys.readouterr().err
+
+
+def test_main_still_raises_when_thirty_day_low_key_is_missing(
+    monkeypatch, tmp_path, capsys
+):
+    # Characterization (T-01 boundary): a missing key is a schema error and
+    # fails loudly. Only a present-but-bad value is quarantined (T-49).
+    alerts_file = tmp_path / "alerts.json"
+    alert = {k: v for k, v in HIKE_THEN_DROP_ALERT.items() if k != "thirty_day_low"} | {
+        "url": "https://example.test/no-low"
+    }
+    alerts_file.write_text(json.dumps([alert]), encoding="utf-8")
+    monkeypatch.setattr("analyze.ALERTS_FILE", alerts_file)
+    monkeypatch.setattr("analyze.FORMATTED_FILE", tmp_path / "formatted.json")
+
+    with pytest.raises(ValidationError):
+        analyze_main()
+
+    assert "https://example.test/no-low" in capsys.readouterr().err
+
+
 # --- T-45 (#63) follow-up: empty 30-day window fallback wording ----------------
 
 # Last seen 45 days ago (history_days >= 14, so the rule engine runs), nothing
