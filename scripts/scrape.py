@@ -2,6 +2,7 @@
 import functools
 import hashlib
 import json
+import math
 import random
 import re
 import sys
@@ -516,6 +517,18 @@ def _await_listing_ready(page, site_name: str) -> None:
         raise ListingReadinessTimeout(f"{site_name}: {selector}") from e
 
 
+def _valid_price(value: object) -> float | None:
+    # T-49: only a real, finite, positive number counts as a price. Anything
+    # else (0, negative, NaN, inf, bool, text) becomes None so it flows into
+    # the existing fallback chain and extraction-failure log instead of
+    # reaching history.
+    if isinstance(value, bool) or not isinstance(value, int | float):
+        return None
+    if not math.isfinite(value) or value <= 0:
+        return None
+    return float(value)
+
+
 def parse_price(raw: str) -> float | None:
     # Romanian retailers format prices as "1.234,56 Lei"/"RON": "." is a
     # thousands separator, "," is the decimal separator.
@@ -524,7 +537,7 @@ def parse_price(raw: str) -> float | None:
     cleaned = re.sub(r"(?i)(lei|ron)", "", raw).strip()
     cleaned = cleaned.replace(".", "").replace(",", ".")
     try:
-        return float(cleaned)
+        return _valid_price(float(cleaned))
     except ValueError:
         return None
 
@@ -547,7 +560,7 @@ def _parse_semantic_price_value(raw: str | None) -> float | None:
     # text (e.g. a data-price copied straight from the visible label) falls
     # back to parse_price().
     try:
-        return float(raw)
+        return _valid_price(float(raw))
     except ValueError:
         return parse_price(raw)
 

@@ -2097,3 +2097,160 @@ def test_dead_man_text_is_stable_within_an_outage_and_new_after_one(
 
     seed(datetime.now(UTC) - timedelta(hours=29))  # a later, separate outage
     assert dead_man() != first
+
+
+# --- T-49: zero, negative and non-finite prices never become prices ------------
+
+
+@pytest.mark.parametrize(
+    "raw", ["0,00 Lei", "0", "-5,00 Lei", "nan", "inf", "-inf", "NaN Lei"]
+)
+def test_parse_price_rejects_zero_negative_and_non_finite(raw):
+    assert scrape.parse_price(raw) is None
+
+
+def test_parse_price_still_parses_valid_romanian_prices():
+    assert scrape.parse_price("1.234,56 Lei") == 1234.56
+    assert scrape.parse_price("899 RON") == 899.0
+
+
+@pytest.mark.parametrize(
+    "raw", ["0", "0.00", "-1798.99", "nan", "inf", "-inf", "0,00 Lei", "-5,00 Lei"]
+)
+def test_parse_semantic_price_value_rejects_zero_negative_and_non_finite(raw):
+    assert scrape._parse_semantic_price_value(raw) is None
+
+
+def test_parse_semantic_price_value_still_parses_valid_values():
+    assert scrape._parse_semantic_price_value("1798.99") == 1798.99
+    assert scrape._parse_semantic_price_value("1.234,56 Lei") == 1234.56
+
+
+@pytest.mark.parametrize(
+    "value",
+    [None, True, False, float("nan"), float("inf"), float("-inf"), 0, 0.0, -5, -0.01]
+    + ["5", "abc", ""],
+)
+def test_valid_price_rejects_bad_values(value):
+    assert scrape._valid_price(value) is None
+
+
+def test_valid_price_accepts_positive_int_and_float_as_float():
+    assert scrape._valid_price(1) == 1.0
+    assert isinstance(scrape._valid_price(1), float)
+    assert scrape._valid_price(2999.99) == 2999.99
+
+
+_VALID_PRICE_HTML = "2&#46;999<sup><small>&#44;</small>99</sup> <span>Lei</span>"
+
+
+def _emag_html(*cards, jsonld_price=None):
+    # cards: (slug, price_html). JSON-LD, when given, targets the first card.
+    parts = ["<html><body>"]
+    if jsonld_price is not None:
+        slug = cards[0][0]
+        parts.append(
+            '<script type="application/ld+json">'
+            + json.dumps(
+                {
+                    "@type": "Product",
+                    "name": f"Laptop Lenovo V15 {slug}",
+                    "url": f"https://www.emag.ro/laptop-lenovo-v15-{slug}/pd/{slug}/",
+                    "offers": {"@type": "Offer", "price": jsonld_price},
+                }
+            )
+            + "</script>"
+        )
+    for slug, price_html in cards:
+        parts.append(
+            '<div class="card-item">'
+            f'<a class="card-v2-title" '
+            f'href="https://www.emag.ro/laptop-lenovo-v15-{slug}/pd/{slug}/">'
+            f"Laptop Lenovo V15 {slug}</a>"
+            f'<p class="product-new-price">{price_html}</p>'
+            "</div>"
+        )
+    parts.append("</body></html>")
+    return "".join(parts)
+
+
+def test_jsonld_zero_price_falls_through_to_valid_css_price(monkeypatch):
+    html = _emag_html(("aaa", _VALID_PRICE_HTML), jsonld_price="0")
+    monkeypatch.setattr(scrape, "fetch", lambda url, site: html)
+
+    [result] = scrape.scrape_emag_listing("laptop lenovo v15")
+
+    assert result["price"] == 2999.99
+
+
+def test_card_with_only_invalid_prices_is_skipped_and_logged(monkeypatch):
+    html = _emag_html(("aaa", "0<sup><small>,</small>00</sup> <span>Lei</span>"))
+    monkeypatch.setattr(scrape, "fetch", lambda url, site: html)
+    before = scrape._run_state.failure_counts.get("emag", 0)
+
+    assert scrape.scrape_emag_listing("laptop lenovo v15") == []
+
+    assert scrape._run_state.failure_counts.get("emag", 0) == before + 1
+
+
+def test_main_keeps_valid_listing_and_drops_invalid_prices_from_history(
+    tmp_path, monkeypatch
+):
+    html = _emag_html(
+        ("good", _VALID_PRICE_HTML),
+        ("zero", "0<sup><small>,</small>00</sup> <span>Lei</span>"),
+        ("nan", "nan"),
+        ("neg", "-5,00 Lei"),
+    )
+    monkeypatch.setattr(scrape, "fetch", lambda url, site: html)
+    _configure_run(
+        tmp_path,
+        monkeypatch,
+        [{"site": "emag", "query": "laptop lenovo v15"}],
+        {"emag": scrape.scrape_emag_listing},
+    )
+
+    scrape.main()
+
+    products = json.loads((tmp_path / "price_history.json").read_text("utf-8"))[
+        "products"
+    ]
+    assert [e["history"][0]["price"] for e in products.values()] == [2999.99]
+    [record] = [
+        json.loads(line)
+        for line in scrape.SCRAPE_HEALTH_FILE.read_text("utf-8").splitlines()
+    ]
+    assert record["products_parsed"] == 1
+    assert record["parse_failures"] == 3
+    failures = scrape.EXTRACTION_FAILURES_FILE.read_text("utf-8").splitlines()
+    assert len(failures) == 3
+
+
+def test_main_site_with_only_invalid_prices_counts_as_zero_products(
+    tmp_path, monkeypatch
+):
+    html = _emag_html(
+        ("zero", "0<sup><small>,</small>00</sup> <span>Lei</span>"),
+        ("nan", "nan"),
+    )
+    monkeypatch.setattr(scrape, "fetch", lambda url, site: html)
+    _configure_run(
+        tmp_path,
+        monkeypatch,
+        [{"site": "emag", "query": "laptop lenovo v15"}],
+        {"emag": scrape.scrape_emag_listing},
+    )
+
+    scrape.main()
+
+    products = json.loads((tmp_path / "price_history.json").read_text("utf-8"))[
+        "products"
+    ]
+    assert products == {}
+    [record] = [
+        json.loads(line)
+        for line in scrape.SCRAPE_HEALTH_FILE.read_text("utf-8").splitlines()
+    ]
+    assert record["products_parsed"] == 0
+    assert record["parse_failures"] == 2
+    assert record["last_known_good_utc"] is None
