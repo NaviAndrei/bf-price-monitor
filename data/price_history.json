@@ -53718,6 +53718,12 @@
           "observed_at": "2026-11-05T19:42:34.513634+00:00",
           "price": 2305.29,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-11-06",
+          "observed_at": "2026-11-06T03:51:07.928826+00:00",
+          "price": 1835.88,
+          "stock_status": "in_stock"
         }
       ],
       "seller": "PC Garage",
@@ -59438,6 +59444,12 @@
           "observed_at": "2026-11-05T19:42:34.513634+00:00",
           "price": 3004.29,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-11-06",
+          "observed_at": "2026-11-06T03:51:07.928826+00:00",
+          "price": 2456.3,
+          "stock_status": "in_stock"
         }
       ],
       "seller": "PC Garage",
@@ -60828,6 +60840,12 @@
           "date": "2026-11-05",
           "observed_at": "2026-11-05T19:42:34.513634+00:00",
           "price": 3004.29,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-11-06",
+          "observed_at": "2026-11-06T03:51:07.928826+00:00",
+          "price": 2456.3,
           "stock_status": "in_stock"
         }
       ],
@@ -62310,6 +62328,12 @@
           "observed_at": "2026-11-05T19:42:34.513634+00:00",
           "price": 3283.89,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-11-06",
+          "observed_at": "2026-11-06T03:51:07.928826+00:00",
+          "price": 2684.9,
+          "stock_status": "in_stock"
         }
       ],
       "seller": "PC Garage",
@@ -63790,6 +63814,12 @@
           "date": "2026-11-05",
           "observed_at": "2026-11-05T19:42:34.513634+00:00",
           "price": 3283.89,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-11-06",
+          "observed_at": "2026-11-06T03:51:07.928826+00:00",
+          "price": 2284.85,
           "stock_status": "in_stock"
         }
       ],
@@ -77970,6 +78000,12 @@
           "observed_at": "2026-11-05T19:42:34.513634+00:00",
           "price": 3493.59,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-11-06",
+          "observed_at": "2026-11-06T03:51:07.928826+00:00",
+          "price": 2807.6,
+          "stock_status": "in_stock"
         }
       ],
       "seller": "PC Garage",
@@ -78973,6 +79009,12 @@
           "date": "2026-11-05",
           "observed_at": "2026-11-05T19:42:34.513634+00:00",
           "price": 3773.19,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-11-06",
+          "observed_at": "2026-11-06T03:51:07.928826+00:00",
+          "price": 3068.89,
           "stock_status": "in_stock"
         }
       ],
@@ -86424,6 +86466,12 @@
           "observed_at": "2026-11-05T19:42:34.513634+00:00",
           "price": 4052.79,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-11-06",
+          "observed_at": "2026-11-06T03:51:07.928826+00:00",
+          "price": 3158.73,
+          "stock_status": "in_stock"
         }
       ],
       "seller": "PC Garage",
@@ -89913,6 +89961,12 @@
           "observed_at": "2026-11-05T19:42:34.513634+00:00",
           "price": 5171.19,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-11-06",
+          "observed_at": "2026-11-06T03:51:07.928826+00:00",
+          "price": 4375.34,
+          "stock_status": "in_stock"
         }
       ],
       "seller": "PC Garage",
@@ -91408,6 +91462,12 @@
           "observed_at": "2026-11-05T19:42:34.513634+00:00",
           "price": 4891.59,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-11-06",
+          "observed_at": "2026-11-06T03:51:07.928826+00:00",
+          "price": 3999.75,
+          "stock_status": "in_stock"
         }
       ],
       "seller": "PC Garage",
@@ -92738,6 +92798,12 @@
           "date": "2026-11-05",
           "observed_at": "2026-11-05T19:42:34.513634+00:00",
           "price": 5870.19,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-11-06",
+          "observed_at": "2026-11-06T03:51:07.928826+00:00",
+          "price": 5028.57,
           "stock_status": "in_stock"
         }
       ],
@@ -96034,6 +96100,12 @@
           "date": "2026-11-05",
           "observed_at": "2026-11-05T19:42:34.513634+00:00",
           "price": 3563.49,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-11-06",
+          "observed_at": "2026-11-06T03:51:07.928826+00:00",
+          "price": 2930.08,
           "stock_status": "in_stock"
         }
       ],
@@ -100079,6 +100151,12 @@
           "observed_at": "2026-11-05T19:42:34.513634+00:00",
           "price": 4891.59,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-11-06",
+          "observed_at": "2026-11-06T03:51:07.928826+00:00",
+          "price": 3999.75,
+          "stock_status": "in_stock"
         }
       ],
       "seller": "PC Garage",
@@ -101650,6 +101728,12 @@
           "date": "2026-11-05",
           "observed_at": "2026-11-05T19:42:34.513634+00:00",
           "price": 5520.69,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-11-06",
+          "observed_at": "2026-11-06T03:51:07.928826+00:00",
+          "price": 4416.2,
           "stock_status": "in_stock"
         }
       ],
@@ -105076,6 +105160,12 @@
           "observed_at": "2026-11-05T19:42:34.513634+00:00",
           "price": 5450.79,
           "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-11-06",
+          "observed_at": "2026-11-06T03:51:07.928826+00:00",
+          "price": 4848.89,
+          "stock_status": "limited_stock"
         }
       ],
       "seller": "PC Garage",
@@ -106237,6 +106327,12 @@
           "date": "2026-11-05",
           "observed_at": "2026-11-05T19:42:34.513634+00:00",
           "price": 2305.29,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-11-06",
+          "observed_at": "2026-11-06T03:51:07.928826+00:00",
+          "price": 1884.8,
           "stock_status": "in_stock"
         }
       ],
@@ -107709,6 +107805,12 @@
           "observed_at": "2026-11-05T19:42:34.513634+00:00",
           "price": 4472.19,
           "stock_status": "limited_stock"
+        },
+        {
+          "date": "2026-11-06",
+          "observed_at": "2026-11-06T03:51:07.928826+00:00",
+          "price": 3950.72,
+          "stock_status": "limited_stock"
         }
       ],
       "seller": "PC Garage",
@@ -108459,6 +108561,12 @@
           "date": "2026-11-05",
           "observed_at": "2026-11-05T19:42:34.513634+00:00",
           "price": 4891.59,
+          "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-11-06",
+          "observed_at": "2026-11-06T03:51:07.928826+00:00",
+          "price": 3983.41,
           "stock_status": "in_stock"
         }
       ],
@@ -109510,6 +109618,12 @@
           "observed_at": "2026-11-05T19:42:34.513634+00:00",
           "price": 5171.19,
           "stock_status": "in_stock"
+        },
+        {
+          "date": "2026-11-06",
+          "observed_at": "2026-11-06T03:51:07.928826+00:00",
+          "price": 4359.0,
+          "stock_status": "in_stock"
         }
       ],
       "seller": "PC Garage",
@@ -110337,6 +110451,23 @@
       "all_time_low": 5370.0,
       "all_time_high": 5370.0,
       "first_seen": "2026-11-05"
+    },
+    "https://pcgarage.ro/notebook-laptop/asus/156-vivobook-15-f1504ma-fhd-procesor-intel-core-3-304-6m-cache-up-to-430-ghz-8gb-ddr5-256gb-ssd-intel-graphics-no-os-quiet-blue": {
+      "title": "Laptop ASUS 15.6'' Vivobook 15 F1504MA, FHD, Procesor Intel® Core™ 3 304 (6M Cache, up to 4.30 GHz), 8GB DDR5, 256GB SSD, Intel Graphics, No OS, Quiet Blue",
+      "site": "pcgarage",
+      "history": [
+        {
+          "date": "2026-11-06",
+          "observed_at": "2026-11-06T03:51:07.928826+00:00",
+          "price": 2497.39,
+          "stock_status": "in_stock"
+        }
+      ],
+      "seller": "PC Garage",
+      "is_marketplace": false,
+      "all_time_low": 2497.39,
+      "all_time_high": 2497.39,
+      "first_seen": "2026-11-06"
     }
   }
 }
